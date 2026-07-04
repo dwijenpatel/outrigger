@@ -1,0 +1,27 @@
+[
+  {
+    "id": "firing-start",
+    "prompt": "Start a build-loop firing on the current plan.",
+    "expected_skills": ["build-loop"]
+  },
+  {
+    "id": "resume-after-crash",
+    "prompt": "The last firing died mid-task. Pick up where it left off.",
+    "expected_skills": ["build-loop"]
+  },
+  {
+    "id": "neg-explain-code",
+    "prompt": "Explain what harness/governor.py does.",
+    "expected_skills": []
+  },
+  {
+    "id": "neg-one-off-question",
+    "prompt": "How many tasks are in the ledger right now?",
+    "expected_skills": []
+  },
+  {
+    "id": "neg-doc-edit",
+    "prompt": "Fix the typo in docs/research/README.md line 12.",
+    "expected_skills": []
+  }
+]

@@ -10,7 +10,7 @@ You are the orchestrator for one operator-started firing. Deterministic machiner
 
 ## 0. Start (mandatory, in order)
 
-1. Acquire the run marker: `harness.loop.acquire_run_marker(state/run.marker, <firing-id>)`. A live-owner refusal means STOP — concurrent firings are operator-arbitrated.
+1. Acquire the run marker: `harness.loop.acquire_run_marker(state/run.marker, <firing-id>)`. A live-owner refusal means STOP — concurrent firings are operator-arbitrated. Immediately write `state/closure-hook.json` via `harness.loop.closure_hook_config(...)` — the registered Stop hook reads it, and a live firing without it blocks every stop (fail-closed).
 2. Verify gates: `python3 -m harness.selftest` must pass. A gate that cannot prove itself does not guard this firing (fail closed: stop, report).
 3. Check skill inventory: `harness.loop.skill_budget_check` — over budget means skills are silently vanishing; stop and report.
 4. **Resume from artifacts only:** `harness.loop.resume_context(...)`. Act on the bundle (git facts, reconciled digest, pending events). Never resume from a prior session's summary — logs and notes are claims, not evidence. Drain `pending_events` before new work.

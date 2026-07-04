@@ -69,6 +69,32 @@ def load_snapshot(path: str) -> dict:
     return doc
 
 
+def load_hook_config(path: str, base_dir: str) -> dict:
+    """Stop-hook mode config (H1), written by the loop at firing start
+    (``loop.closure_hook_config``). Required keys: ``snapshot``, ``ledger``,
+    ``events`` — paths resolved against ``base_dir``. Unreadable or malformed
+    config raises: during a live firing the hook fails closed on it."""
+    try:
+        with open(path) as fh:
+            doc = json.load(fh)
+    except FileNotFoundError:
+        raise ClosureError(
+            f"no closure hook config at {path} — a live firing must declare "
+            f"its closure inputs (loop.closure_hook_config at firing start)"
+        ) from None
+    except json.JSONDecodeError as exc:
+        raise ClosureError(f"closure hook config {path} corrupt: {exc}") from None
+    if not isinstance(doc, dict):
+        raise ClosureError(f"closure hook config {path}: not an object")
+    out = dict(doc)
+    for key in ("snapshot", "ledger", "events"):
+        val = doc.get(key)
+        if not isinstance(val, str) or not val:
+            raise ClosureError(f"closure hook config {path}: missing {key!r}")
+        out[key] = val if os.path.isabs(val) else os.path.join(base_dir, val)
+    return out
+
+
 def closure_check(snapshot: dict, ledger: _ledger.Ledger, log: _ledger.EventLog,
                   artifacts: dict | None = None,
                   evidence_ts: str | None = None,

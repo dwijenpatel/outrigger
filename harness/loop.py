@@ -87,6 +87,37 @@ def release_run_marker(path: str) -> bool:
         return False
 
 
+def run_marker_live(path: str) -> dict | None:
+    """Read the advisory run marker; return its doc only when the owner pid is
+    alive. A missing, torn, or dead-owner marker is *not* a live firing — the
+    H1 Stop-hook closure gate keys on this to stay inert outside firings."""
+    try:
+        with open(path) as fh:
+            doc = json.load(fh)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return None
+    try:
+        pid = int(doc.get("pid", -1))
+    except (TypeError, ValueError):
+        return None
+    return doc if pid > 0 and _pid_alive(pid) else None
+
+
+def closure_hook_config(path: str, snapshot: str, ledger: str, events: str,
+                        **extra) -> dict:
+    """Write the Stop-hook closure config at firing start (H1). The hook reads
+    it from a fixed path; a live firing without one blocks stopping — so the
+    loop writes it right after acquiring the run marker."""
+    doc = {"snapshot": snapshot, "ledger": ledger, "events": events, **extra}
+    parent = os.path.dirname(path) or "."
+    os.makedirs(parent, exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as fh:
+        json.dump(doc, fh, sort_keys=True)
+    os.replace(tmp, path)
+    return doc
+
+
 # -- headless flags ---------------------------------------------------------------
 
 

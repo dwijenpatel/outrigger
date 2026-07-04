@@ -32,13 +32,54 @@ from . import vault as _vault
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOOKS = os.path.join(REPO_ROOT, "hooks")
+SETTINGS = os.path.join(REPO_ROOT, ".claude", "settings.json")
 
 
-def _run(script: str, stdin_doc=None, args=(), cwd=None) -> subprocess.CompletedProcess:
+def _run(script: str, stdin_doc=None, args=(), cwd=None,
+         env=None) -> subprocess.CompletedProcess:
+    run_env = dict(os.environ)
+    if env:
+        run_env.update(env)
     return subprocess.run(
         [sys.executable, os.path.join(HOOKS, script), *args],
         input=json.dumps(stdin_doc) if stdin_doc is not None else "",
-        capture_output=True, text=True, timeout=60, cwd=cwd)
+        capture_output=True, text=True, timeout=60, cwd=cwd, env=run_env)
+
+
+def check_hook_registration(settings_path: str = SETTINGS) -> list:
+    """H1: an unregistered hook is a library, not an enforcement layer. Verify
+    the committed settings register every enforcement hook; missing or
+    unparseable registration is a failing case (fail closed)."""
+    try:
+        with open(settings_path) as fh:
+            doc = json.load(fh)
+        hooks_cfg = doc.get("hooks") or {}
+    except (OSError, json.JSONDecodeError) as exc:
+        return [{"case": "H1 hook registration readable",
+                 "expected": "parseable settings", "got": str(exc)[:200],
+                 "ok": False, "stderr": ""}]
+
+    def commands(event):
+        out = []
+        for entry in hooks_cfg.get(event) or []:
+            for h in entry.get("hooks") or []:
+                out.append((entry.get("matcher", ""), h.get("command", "")))
+        return out
+
+    pre, stop = commands("PreToolUse"), commands("Stop")
+    checks = (
+        ("git_guard registered for Bash",
+         any("git_guard.py" in c and "Bash" in m for m, c in pre)),
+        ("git_guard registered for file tools",
+         any("git_guard.py" in c and "Edit" in m for m, c in pre)),
+        ("prefix_edit_warn registered",
+         any("prefix_edit_warn.py" in c for _m, c in pre)),
+        ("closure_gate registered on Stop",
+         any("closure_gate.py" in c for _m, c in stop)),
+    )
+    return [{"case": f"H1 {name}", "expected": "registered",
+             "got": "registered" if ok else "MISSING", "ok": ok, "stderr": ""}
+            for name, ok in checks]
 
 
 def _git(repo, *args):
@@ -170,6 +211,21 @@ def run_selftests() -> dict:
         cases.append({"case": "isolation declaration covers all six layers",
                       "expected": "no missing layers", "got": str(missing or "ok"),
                       "ok": not missing, "stderr": ""})
+
+        # -- H1 closure Stop-hook mode, both directions ---------------------------
+        project = os.path.join(root, "project")
+        os.makedirs(os.path.join(project, "state"))
+        env = {"CLAUDE_PROJECT_DIR": project}
+        cases.append(_case("H1 closure hook inert without a live firing", False,
+                           _run("closure_gate.py", {"cwd": project}, env=env)))
+        with open(os.path.join(project, "state", "run.marker"), "w") as fh:
+            json.dump({"owner": "selftest", "pid": os.getpid()}, fh)
+        cases.append(_case(
+            "H1 closure hook fails CLOSED: live firing, no closure config",
+            True, _run("closure_gate.py", {"cwd": project}, env=env)))
+
+    # -- H1 hook registration ----------------------------------------------------
+    cases.extend(check_hook_registration())
 
     return {"ok": all(c["ok"] for c in cases), "cases": cases,
             "proved": sum(c["ok"] for c in cases), "total": len(cases)}

@@ -209,3 +209,96 @@ class LoggingAndCliTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StalenessAndPreflightTests(unittest.TestCase):
+    """H8 — readings carry age; stale rungs fall through; preflight gates
+    firing starts."""
+
+    def statusline(self, pct=40):
+        return {"rate_limits": {"five_hour": {"used_percentage": pct}}}
+
+    def oauth(self, pct=50):
+        return {"five_hour": {"utilization": pct}}
+
+    def test_fresh_reading_carries_age(self):
+        occ = governor.resolve(statusline_doc=self.statusline(),
+                               statusline_read_at=1000.0, now_ts=1100.0)
+        self.assertEqual(occ.source, "statusline")
+        self.assertAlmostEqual(occ.age_s, 100.0)
+
+    def test_stale_statusline_falls_through_to_oauth(self):
+        occ = governor.resolve(statusline_doc=self.statusline(),
+                               statusline_read_at=0.0,
+                               oauth_doc=self.oauth(),
+                               oauth_read_at=900.0, now_ts=1000.0,
+                               stale_after_s=600)
+        self.assertEqual(occ.source, "oauth-usage")
+
+    def test_all_live_rungs_stale_falls_to_estimate(self):
+        occ = governor.resolve(statusline_doc=self.statusline(),
+                               statusline_read_at=0.0,
+                               runlog_records=[], now_ts=100_000.0,
+                               stale_after_s=600)
+        self.assertEqual(occ.source, "estimate")
+        self.assertTrue(occ.optimistic)
+
+    def test_stale_only_rung_raises(self):
+        with self.assertRaises(governor.GovernorError) as ctx:
+            governor.resolve(statusline_doc=self.statusline(),
+                             statusline_read_at=0.0, now_ts=100_000.0)
+        self.assertIn("staleness ceiling", str(ctx.exception))
+
+    def test_future_timestamp_is_a_rung_failure(self):
+        with self.assertRaises(governor.GovernorError) as ctx:
+            governor.resolve(statusline_doc=self.statusline(),
+                             statusline_read_at=2000.0, now_ts=1000.0)
+        self.assertIn("future", str(ctx.exception))
+
+    def test_age_unknown_without_timestamps_behaves_as_before(self):
+        occ = governor.resolve(statusline_doc=self.statusline())
+        self.assertIsNone(occ.age_s)
+        decision = governor.decide(occ)
+        self.assertEqual(decision["effective_thresholds"]["degrade"], 0.8)
+
+    def test_age_widens_the_margin(self):
+        # 0.78 occupancy: ok on fresh data, degrade on a 300s-old reading
+        occ = governor.resolve(statusline_doc=self.statusline(78),
+                               statusline_read_at=700.0, now_ts=1000.0,
+                               stale_after_s=600)
+        decision = governor.decide(occ)
+        self.assertAlmostEqual(
+            decision["effective_thresholds"]["degrade"], 0.75)
+        self.assertEqual(decision["status"], "degrade")
+        self.assertAlmostEqual(decision["reading_age_s"], 300.0)
+        fresh = governor.decide(governor.resolve(
+            statusline_doc=self.statusline(78)))
+        self.assertEqual(fresh["status"], "ok")
+
+    def test_preflight_normal_with_live_rung(self):
+        got = governor.preflight(statusline_doc=self.statusline(),
+                                 statusline_read_at=950.0, now_ts=1000.0)
+        self.assertEqual(got["mode"], "normal")
+        self.assertEqual(got["restrictions"], [])
+        self.assertIn("statusline", got["why"])
+
+    def test_preflight_conservative_without_live_rung(self):
+        got = governor.preflight()
+        self.assertEqual(got["mode"], "conservative")
+        self.assertAlmostEqual(got["thresholds"]["degrade"], 0.65)
+        self.assertIn("cheap-serial only", got["restrictions"])
+        self.assertIn("never clears a preflight", got["why"])
+
+    def test_preflight_conservative_on_stale_only_data(self):
+        got = governor.preflight(statusline_doc=self.statusline(),
+                                 statusline_read_at=0.0, now_ts=100_000.0)
+        self.assertEqual(got["mode"], "conservative")
+        self.assertIn("staleness ceiling", got["why"])
+
+    def test_preflight_cli_exit_codes(self):
+        import subprocess
+        conservative = subprocess.run(
+            [sys.executable, "-m", "harness.governor", "--preflight"],
+            capture_output=True, text=True, timeout=30)
+        self.assertEqual(conservative.returncode, 3)
+        self.assertIn("conservative", conservative.stdout)

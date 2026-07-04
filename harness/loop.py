@@ -130,16 +130,31 @@ def headless_env(base_env: dict | None = None) -> dict:
     return env
 
 
+def machinery_deny_rules() -> list:
+    """H10 (§7 wiring amendment 5): file-tool deny rules for the loop's own
+    machinery, applied to every worker **unconditionally** — branch-name
+    prefixes are a dev convenience for the loop's own development, not a
+    boundary a worker with git can adopt. Bash-side writes are caught by the
+    machinery-paths gate step at merge; these rules close the file-tool path
+    inside the worker session itself."""
+    from . import hooks as _hooks
+    return [f"{tool}({glob})"
+            for glob in _hooks.MACHINERY_GLOBS
+            for tool in ("Edit", "Write", "NotebookEdit")]
+
+
 def worker_settings(vault_path: str | None = None) -> dict:
-    """Strict worker settings; merges the vault isolation fragment when a
-    vault is in play. Import stays lazy to keep loop importable standalone."""
+    """Strict worker settings: machinery denies always (H10); the vault
+    isolation fragment merged in when a vault is in play. Imports stay lazy
+    to keep loop importable standalone."""
     from . import vault as _vault
     settings: dict = {"sandbox": {"enabled": True,
                                   "allowUnsandboxedCommands": False,
-                                  "failIfUnavailable": True}}
+                                  "failIfUnavailable": True},
+                      "permissions": {"deny": machinery_deny_rules()}}
     if vault_path:
         frag = _vault.isolation_settings(vault_path)
-        settings["permissions"] = frag["permissions"]
+        settings["permissions"]["deny"] += frag["permissions"]["deny"]
         settings["sandbox"] = frag["sandbox"]
     return settings
 

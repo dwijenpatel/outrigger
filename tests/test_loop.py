@@ -68,6 +68,22 @@ class HeadlessTests(unittest.TestCase):
         self.assertIn("Read(.vault/**)", s["permissions"]["deny"])
         self.assertEqual(s["sandbox"]["denyRead"], [".vault"])
 
+    def test_worker_settings_deny_machinery_unconditionally(self):
+        # H10: with or without a vault, workers cannot file-tool-edit the
+        # loop's own machinery — no branch-name loophole
+        for s in (loop.worker_settings(),
+                  loop.worker_settings(vault_path=".vault")):
+            denies = s["permissions"]["deny"]
+            for glob in ("harness/**", "hooks/**", ".claude/**",
+                         "docs/plan/**", "docs/design/**", "tools/**"):
+                for tool in ("Edit", "Write", "NotebookEdit"):
+                    self.assertIn(f"{tool}({glob})", denies)
+
+    def test_machinery_denies_do_not_displace_vault_denies(self):
+        denies = loop.worker_settings(vault_path=".vault")["permissions"]["deny"]
+        self.assertIn("Edit(harness/**)", denies)
+        self.assertIn("Edit(.vault/**)", denies)
+
 
 class ResumeContextTests(unittest.TestCase):
     def test_bundle_is_artifact_only(self):

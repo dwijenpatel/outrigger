@@ -118,7 +118,7 @@ class ReplayPlanTests(unittest.TestCase):
         plan = replay.replay_plan(MANIFEST, ["ui/list.py"], CORPUS)
         self.assertFalse(plan["enabled"])
         self.assertEqual(plan["replay"], [])
-        self.assertEqual(sorted(plan["rerun_fresh"]), CORPUS)
+        self.assertEqual(sorted(plan["rerun_fresh"]), sorted(CORPUS))
 
     def test_safe_rts_never_skips_affected(self):
         plan = replay.replay_plan(MANIFEST, ["billing/charge.py"], CORPUS,

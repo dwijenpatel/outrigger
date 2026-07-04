@@ -138,3 +138,31 @@ class BlockerCardTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CrossProviderCardTests(unittest.TestCase):
+    """H5 — cross-provider validator is a ratified option, never a default."""
+
+    def correlation(self, blind):
+        return {"correlated_blind_spots": len(blind), "blind_spot_ids": blind,
+                "trials_scored": 6, "sole_catcher_trials": 1}
+
+    def test_blind_spot_recommends_adoption(self):
+        doc = rat.cross_provider_card("critical", self.correlation(["c3"]))
+        rat.validate_card(doc)
+        self.assertIn("c3", doc["situation"])
+        self.assertIn("Add one cross-provider validator", doc["recommendation"])
+        self.assertEqual([o["key"] for o in doc["options"]],
+                         ["adopt", "hold"])
+        # renders as a committed card without error
+        self.assertIn("<!-- opt:adopt -->", rat.render_card(doc))
+
+    def test_no_blind_spot_recommends_hold(self):
+        doc = rat.cross_provider_card("critical", self.correlation([]))
+        self.assertIn("Hold", doc["recommendation"])
+        self.assertIn("none", doc["situation"])
+
+    def test_card_id_is_per_profile(self):
+        self.assertEqual(
+            rat.cross_provider_card("high", self.correlation([]))["card_id"],
+            "cross-provider-validator-high")

@@ -97,16 +97,34 @@ class CanaryLog(_JsonlLog):
         })
 
     def result(self, canary_id: str, caught: bool,
-               caught_by_lens: str | None = None) -> dict:
+               caught_by_lens: str | None = None,
+               lens_results: dict | None = None) -> dict:
+        """Record a trial outcome. ``lens_results`` (H5: {lens: caught_bool},
+        one entry per panel lens) enables panel-correlation telemetry; when
+        present it must agree with ``caught`` — an inconsistent record would
+        poison both measurements."""
         planted = {r["canary_id"] for r in self.read() if r["kind"] == "planted"}
         if canary_id not in planted:
             raise CalibrationError(
                 f"canary {canary_id!r} was never planted — results only exist "
                 f"for real trials")
-        return self._append({
+        rec = {
             "ts": _utcnow_iso(), "kind": "result", "canary_id": canary_id,
             "caught": bool(caught), "caught_by_lens": caught_by_lens,
-        })
+        }
+        if lens_results is not None:
+            if not isinstance(lens_results, dict) or not lens_results or \
+                    not all(isinstance(k, str) and k for k in lens_results):
+                raise CalibrationError(
+                    "lens_results must be a non-empty {lens: bool} dict")
+            normalized = {k: bool(v) for k, v in lens_results.items()}
+            if any(normalized.values()) != bool(caught):
+                raise CalibrationError(
+                    f"canary {canary_id!r}: caught={bool(caught)} contradicts "
+                    f"lens_results {normalized} — refusing an inconsistent "
+                    f"trial record")
+            rec["lens_results"] = normalized
+        return self._append(rec)
 
     def trials(self) -> list:
         """Completed trials, oldest→newest: [{'canary_id', 'caught', ...}]."""
@@ -145,6 +163,47 @@ def downgrade_allowed(canary_trials: list, escapes: list,
     return {"allowed": True,
             "why": f"last {len(recent)} canary trials all caught; no escape "
                    f"since"}
+
+
+def panel_correlation(trials: list) -> dict:
+    """H5 — aggregate canary trials panel-wide (§7 panel amendment): errors
+    correlate across models, so N same-family lenses are not N independent
+    draws. A planted defect missed by **every** lens is a *correlated blind
+    spot* — direct evidence the panel's redundancy bought nothing on that
+    defect class. Trials without per-lens results cannot measure correlation
+    and are reported unscored, never guessed."""
+    scored = [t for t in trials
+              if isinstance(t.get("lens_results"), dict) and t["lens_results"]]
+    blind_ids, sole = [], 0
+    per_lens: dict = {}
+    for trial in scored:
+        results = {k: bool(v) for k, v in trial["lens_results"].items()}
+        for lens, caught in results.items():
+            cell = per_lens.setdefault(lens, {"trials": 0, "caught": 0})
+            cell["trials"] += 1
+            cell["caught"] += 1 if caught else 0
+        catchers = sum(results.values())
+        if catchers == 0:
+            blind_ids.append(trial["canary_id"])
+        elif catchers == 1:
+            sole += 1
+    if not scored:
+        why = ("panel correlation unmeasured — no per-lens canary results yet "
+               "(pass lens_results to CanaryLog.result)")
+    elif blind_ids:
+        why = (f"{len(blind_ids)} of {len(scored)} scored trial(s) missed by "
+               f"EVERY lens ({', '.join(blind_ids[:5])}) — correlated blind "
+               f"spot(s); redundancy bought nothing there")
+    else:
+        why = (f"no all-lenses-missed trial in {len(scored)} scored trial(s); "
+               f"{sole} caught by a single lens (lens diversity carrying)")
+    return {"trials_scored": len(scored),
+            "trials_unscored": len(trials) - len(scored),
+            "correlated_blind_spots": len(blind_ids),
+            "blind_spot_ids": blind_ids,
+            "sole_catcher_trials": sole,
+            "per_lens": per_lens,
+            "why": why}
 
 
 def kill_rate(trials: list) -> float | None:

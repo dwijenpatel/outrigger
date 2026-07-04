@@ -102,6 +102,43 @@ def blocker_to_card(blocker: dict) -> dict:
     }
 
 
+def cross_provider_card(profile: str, correlation: dict,
+                        cost_note: str = "API-billed, outside the Max "
+                                         "windows") -> dict:
+    """H5 — the §7 cross-provider validator is a decision-card *option*:
+    operator-ratified, never a silent default. Built from panel-correlation
+    telemetry (``calibration.panel_correlation``) so the card carries the
+    evidence the decision is about."""
+    blind = correlation.get("correlated_blind_spots", 0)
+    scored = correlation.get("trials_scored", 0)
+    ids = ", ".join(correlation.get("blind_spot_ids", [])[:5]) or "none"
+    situation = (
+        f"Panel-correlation telemetry for profile {profile!r}: "
+        f"{blind} correlated blind-spot trial(s) over {scored} scored canary "
+        f"trial(s) (all-lenses-missed: {ids}). Same-family lenses are not "
+        f"independent draws (errors correlate across models, rising with "
+        f"capability); a cross-provider validator adds de-correlated "
+        f"leverage. Cost: {cost_note}.")
+    recommendation = (
+        f"Add one cross-provider validator lens to {profile!r} — the panel "
+        f"demonstrated a correlated blind spot." if blind else
+        f"Hold — no all-lenses-missed trial observed on {profile!r}; keep "
+        f"the cross-provider option in reserve.")
+    return {
+        "card_id": f"cross-provider-validator-{profile}",
+        "situation": situation,
+        "recommendation": recommendation,
+        "options": [
+            {"key": "adopt",
+             "label": f"Add a cross-provider validator to {profile} "
+                      f"(opt-in, {cost_note})"},
+            {"key": "hold",
+             "label": "Keep the all-Claude panel; revisit on the next "
+                      "blind-spot event"},
+        ],
+    }
+
+
 def parse_cards(text: str) -> list:
     """Parse committed cards back out of PROPOSALS.md."""
     cards = []

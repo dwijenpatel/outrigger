@@ -86,6 +86,62 @@ class CanaryTests(unittest.TestCase):
         self.assertIn("escape", got["why"])
 
 
+class PanelCorrelationTests(unittest.TestCase):
+    """H5 — all-lenses-missed canaries are correlated blind spots."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.log = CanaryLog(os.path.join(self.dir.name, "canaries.jsonl"))
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def trial(self, cid, lens_results):
+        self.log.plant(cid, "planted defect", "task/x",
+                       expected_lens="correctness")
+        self.log.result(cid, caught=any(lens_results.values()),
+                        lens_results=lens_results)
+
+    def test_inconsistent_lens_results_refused(self):
+        self.log.plant("c1", "planted", "task/x", expected_lens="correctness")
+        with self.assertRaises(CalibrationError):
+            self.log.result("c1", caught=False,
+                            lens_results={"correctness": True})
+
+    def test_empty_lens_results_refused(self):
+        self.log.plant("c1", "planted", "task/x", expected_lens="correctness")
+        with self.assertRaises(CalibrationError):
+            self.log.result("c1", caught=False, lens_results={})
+
+    def test_blind_spot_detected(self):
+        self.trial("c1", {"correctness": False, "security": False})
+        self.trial("c2", {"correctness": True, "security": False})
+        got = calibration.panel_correlation(self.log.trials())
+        self.assertEqual(got["trials_scored"], 2)
+        self.assertEqual(got["correlated_blind_spots"], 1)
+        self.assertEqual(got["blind_spot_ids"], ["c1"])
+        self.assertEqual(got["sole_catcher_trials"], 1)
+        self.assertIn("EVERY lens", got["why"])
+        self.assertEqual(got["per_lens"]["correctness"],
+                         {"trials": 2, "caught": 1})
+        self.assertEqual(got["per_lens"]["security"],
+                         {"trials": 2, "caught": 0})
+
+    def test_no_blind_spots_reports_diversity_carrying(self):
+        self.trial("c1", {"correctness": True, "security": False})
+        got = calibration.panel_correlation(self.log.trials())
+        self.assertEqual(got["correlated_blind_spots"], 0)
+        self.assertIn("lens diversity", got["why"])
+
+    def test_unscored_trials_reported_never_guessed(self):
+        self.log.plant("c1", "planted", "task/x", expected_lens="correctness")
+        self.log.result("c1", caught=True, caught_by_lens="correctness")
+        got = calibration.panel_correlation(self.log.trials())
+        self.assertEqual(got["trials_scored"], 0)
+        self.assertEqual(got["trials_unscored"], 1)
+        self.assertIn("unmeasured", got["why"])
+
+
 class KillRateTests(unittest.TestCase):
     def test_kill_rate_math(self):
         trials = [{"killed": True}, {"killed": True}, {"killed": False}]

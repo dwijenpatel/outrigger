@@ -72,6 +72,36 @@ class EvidenceMdTests(unittest.TestCase):
         self.assertIn("~", text.splitlines()[0])
         self.assertIn("totals estimated (~)", text)
 
+    def test_panel_correlation_line(self):
+        text = self.gen()
+        self.assertIn("panel correlation: panel correlation unmeasured", text)
+        scored = [{"canary_id": "c1", "caught": False, "kind": "result",
+                   "ts": "2026-07-04T00:00:00Z",
+                   "lens_results": {"correctness": False, "security": False}}]
+        text = self.gen(canary_trials=scored)
+        self.assertIn("missed by EVERY lens", text)
+
+    def test_false_fail_line(self):
+        text = self.gen()
+        self.assertIn("false-FAIL rate: no replay adjudications recorded",
+                      text)
+        ff = [{"event": "false_fail", "lens": "correctness",
+               "reproduced": 1, "unreproduced": 3, "no_repro": 2,
+               "ts": "2026-07-04T00:00:00Z"}]
+        text = self.gen(runlog_records=[rec()] + ff)
+        self.assertIn("false-FAIL rate: 75% of adjudicated error findings "
+                      "unreproduced (3 of 4; 2 carried no repro)", text)
+
+    def test_false_fail_rollup_math(self):
+        got = evidence.false_fail_rollup([
+            {"event": "false_fail", "lens": "a", "reproduced": 1,
+             "unreproduced": 1, "no_repro": 0},
+            {"event": "false_fail", "lens": "b", "unreproduced": 1},
+            {"event": "task_complete"}])
+        self.assertAlmostEqual(got["rate"], 2 / 3)
+        self.assertEqual(got["per_lens"]["b"]["unreproduced"], 1)
+        self.assertIsNone(evidence.false_fail_rollup([])["rate"])
+
     def test_unmeasured_kill_rate_treated_weak(self):
         self.assertIn("treated as weak", self.gen())
         strong = self.gen(kill_trials=[{"killed": True}] * 9 +

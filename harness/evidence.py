@@ -14,6 +14,7 @@ import os
 
 from . import governor as _governor
 from .calibration import kill_rate as _kill_rate
+from .calibration import panel_correlation as _panel_correlation
 
 
 class EvidenceError(ValueError):
@@ -39,6 +40,27 @@ def rollup(runlog_records: list) -> dict:
         if rec.get("outcome") == "fail":
             totals["fails"] += 1
     return {"cells": cells, "totals": totals}
+
+
+def false_fail_rollup(runlog_records: list) -> dict:
+    """H4/H5 — aggregate false_fail events (per-lens verifier precision).
+    ``rate`` = unreproduced / adjudicated; None when nothing was adjudicated
+    (never fabricated)."""
+    per_lens: dict = {}
+    totals = {"reproduced": 0, "unreproduced": 0, "no_repro": 0}
+    for rec in runlog_records:
+        if rec.get("event") != "false_fail":
+            continue
+        lens = rec.get("lens") or "?"
+        cell = per_lens.setdefault(
+            lens, {"reproduced": 0, "unreproduced": 0, "no_repro": 0})
+        for field in totals:
+            count = rec.get(field) or 0
+            cell[field] += count
+            totals[field] += count
+    adjudicated = totals["reproduced"] + totals["unreproduced"]
+    rate = (totals["unreproduced"] / adjudicated) if adjudicated else None
+    return {"per_lens": per_lens, "totals": totals, "rate": rate}
 
 
 def catch_rate(escapes: list, merged_tasks: int) -> dict:
@@ -77,6 +99,18 @@ def generate_evidence_md(runlog_records: list, escapes: list,
     lines.append(f"visible-oracle kill-rate: "
                  + (f"{krate:.0%}" if krate is not None else
                     "unmeasured (treated as weak — rigor stays up)"))
+    correlation = _panel_correlation(canary_trials)
+    lines.append(f"panel correlation: {correlation['why']}")
+    ff = false_fail_rollup(runlog_records)
+    lines.append(
+        "false-FAIL rate: "
+        + (f"{ff['rate']:.0%} of adjudicated error findings unreproduced "
+           f"({ff['totals']['unreproduced']} of "
+           f"{ff['totals']['reproduced'] + ff['totals']['unreproduced']}; "
+           f"{ff['totals']['no_repro']} carried no repro)"
+           if ff["rate"] is not None else
+           "no replay adjudications recorded yet (repro_mode off or no "
+           "FAIL verdicts)"))
     lines.append(f"governor: {gov['readings']} reading(s) from "
                  + (", ".join(gov["sources"]) or "no sources")
                  + (f"; worst windows {gov['worst_windows']}"

@@ -138,3 +138,55 @@ class JsonSchemaParityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AmbiguityBlockerTests(unittest.TestCase):
+    """H9 — spec ambiguities park high/critical tasks pre-implementation."""
+
+    def handoff(self, ambiguities):
+        return {"outcome": "pass", "summary": "authored 4 held-out tests",
+                "intent": "pin the pagination contract",
+                "key_changes_made": ["pins last-page boundary"],
+                "key_learnings": [],
+                "spec_ambiguities": ambiguities}
+
+    def test_high_profile_ambiguities_become_blockers(self):
+        blockers = schemas.ambiguity_blockers(
+            self.handoff(["Is page size 1-indexed or 0-indexed?",
+                          "Does 'user' include service accounts?"]),
+            task_id="t7", profile="high")
+        self.assertEqual(len(blockers), 2)
+        for b in blockers:
+            schemas.validate_blocker(b)  # already validated; stays valid
+            self.assertEqual(b["task_id"], "t7")
+            self.assertIn("pre-implementation", b["repro"])
+            self.assertEqual([o["key"] for o in b["options"]],
+                             ["clarify", "proceed-as-read"])
+        self.assertIn("1-indexed", blockers[0]["repro"])
+
+    def test_routine_profile_stays_advisory(self):
+        blockers = schemas.ambiguity_blockers(
+            self.handoff(["ambiguous wording"]), task_id="t7",
+            profile="routine")
+        self.assertEqual(blockers, [])
+
+    def test_no_ambiguities_no_blockers(self):
+        self.assertEqual(
+            schemas.ambiguity_blockers(self.handoff([]), "t7", "critical"),
+            [])
+
+    def test_malformed_ambiguities_loud(self):
+        with self.assertRaises(SchemaError):
+            schemas.validate_handoff(self.handoff([""]))
+        with self.assertRaises(SchemaError):
+            schemas.validate_handoff(self.handoff("not a list"))
+
+    def test_blocker_card_roundtrip(self):
+        from harness import ratification
+        blocker = schemas.ambiguity_blockers(
+            self.handoff(["Which tenant sees archived rows?"]),
+            task_id="t9", profile="critical")[0]
+        card = ratification.blocker_to_card(blocker)
+        text = ratification.render_card(card)
+        self.assertIn("Which tenant sees archived rows?", text)
+        self.assertIn("<!-- opt:clarify -->", text)

@@ -16,6 +16,10 @@
       "type": "array", "items": {"type": "string", "minLength": 1},
       "description": "Surprising only — not captured by prior lessons"
     },
+    "spec_ambiguities": {
+      "type": "array", "items": {"type": "string", "minLength": 1},
+      "description": "H9: spec readings that had to be guessed (test-author especially). On high/critical profiles these park the task for the operator BEFORE implementation spends tokens; advisory on lower profiles"
+    },
     "files_touched": {"type": "array", "items": {"type": "string"}}
   }
 }

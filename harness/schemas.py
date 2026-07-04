@@ -93,6 +93,8 @@ def validate_handoff(doc: dict) -> dict:
     files = doc.get("files_touched", [])
     if not isinstance(files, list) or not all(isinstance(f, str) for f in files):
         raise SchemaError("handoff: files_touched must be a list of paths")
+    if "spec_ambiguities" in doc:
+        _require_str_list(doc, "spec_ambiguities", "handoff")
     if doc["outcome"] == "pass" and not doc["key_changes_made"]:
         raise SchemaError("handoff: a passing task with zero material changes "
                           "is a no-op claiming success (§9 no-op rule)")
@@ -120,6 +122,42 @@ def validate_blocker(doc: dict) -> dict:
     if len(set(keys)) != len(keys):
         raise SchemaError("blocker: option keys must be unique")
     return dict(doc)
+
+
+BLOCKING_AMBIGUITY_PROFILES = ("high", "critical")
+
+
+def ambiguity_blockers(handoff: dict, task_id: str, profile: str,
+                       blocking_profiles: tuple = BLOCKING_AMBIGUITY_PROFILES
+                       ) -> list:
+    """H9 (§6.3 amendment) — the spec is the one shared input blind validation
+    cannot audit. On blocking profiles, the test-author's ``spec_ambiguities``
+    become blocker records that **park the task before the implementer spends
+    tokens** on an ambiguous spec; one operator round-trip resolves each. On
+    lower profiles they stay advisory (riding ``key_learnings``)."""
+    doc = validate_handoff(handoff)
+    ambiguities = doc.get("spec_ambiguities") or []
+    if profile not in blocking_profiles or not ambiguities:
+        return []
+    blockers = []
+    for i, text in enumerate(ambiguities, start=1):
+        blockers.append(validate_blocker({
+            "task_id": task_id,
+            "repro": f"spec ambiguity {i}/{len(ambiguities)} "
+                     f"(test-author, pre-implementation): {text}",
+            "recommendation": "Clarify the spec before implementation spends "
+                              "tokens on a guess — validated-wrong software "
+                              "is the expensive outcome here",
+            "options": [
+                {"key": "clarify",
+                 "label": "Clarify the spec (task resumes with the "
+                          "clarified wording)"},
+                {"key": "proceed-as-read",
+                 "label": "Proceed with the test-author's stated reading "
+                          "(accept the risk on this profile)"},
+            ],
+        }))
+    return blockers
 
 
 def load_json_schema(name: str) -> dict:

@@ -75,6 +75,13 @@ Corrections produced by the fact-check passes, kept so future readers don't re-i
   knowledge/chat benchmarks; coding/correctness-graded work sits at ~30–56%.
 - **Unfused 2026-07-04:** the "90% time reduction at ~15× tokens" citation combines two separate
   Anthropic measurements (parallelism time-cut; token multiplier vs chat baseline).
+- **Corrected 2026-07-04 (live probe, Claude Code 2.1.45):** the design's §5.3 claim "invalid
+  ids fail loud" for the Workflow spawn path's per-agent `model`/`effort` overrides does **not**
+  hold as stated — an invalid `effort` string is silently accepted (no error), and an invalid
+  `model` id fails only as an async `null` result + workflow-level log entry, not a catchable
+  throw. See `tools/budget-governor/probe-spawn-portability-2026-07-04.md` for the full
+  methodology and re-verification protocol; the harness's spawn code must validate `(model,
+  effort)` itself rather than trusting the primitive to reject bad config.
 
 **Absence-of-feature findings** (strong, but inherently harder to prove than a positive): Kiro
 closure gate; Spec Kit automated final gate; LangGraph built-in critic; any published

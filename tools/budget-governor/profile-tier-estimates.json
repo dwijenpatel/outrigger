@@ -1,0 +1,34 @@
+{
+  "_meta": {
+    "purpose": "Stage-0/1 per-profile cost estimate used by the SS5.1 admission rule before the SS5.3 duration-bucket predictor is validated and flagged on. One column (starting tier), not the full bucket x profile matrix.",
+    "status": "UNPOPULATED. Every 'p50'/'p90'/'p95' below is null because no run-log telemetry exists yet. Do NOT invent numbers here -- design SS5.1/SS10.3 is explicit that ceilings must be runtime-calibrated, never hard-coded. Populate via populate_estimates.py once real tasks have run.",
+    "units": "total tokens per task attempt, summed across the implementer + full validator panel for that profile",
+    "bootstrap_procedure": [
+      "1. Run at least MIN_SAMPLES_PER_PROFILE real tasks per profile through the loop (manually is fine for the first batch).",
+      "2. Append one JSONL line per completed task to a run-log: {\"profile\": \"...\", \"total_tokens\": N}.",
+      "3. Run: python3 populate_estimates.py <run-log.jsonl> --write. This recomputes p50/p90/p95 per profile from the log and rewrites this file's cost_estimate_by_profile block only -- risk_profiles and overshoot_variance_by_tier_effort are edited by hand.",
+      "4. Re-run periodically as more tasks complete; sample_size grows and estimates sharpen. Below MIN_SAMPLES_PER_PROFILE, the admission rule (SS5.1) should treat the estimate as low-confidence and forecast conservatively (e.g. widen the quantile used)."
+    ],
+    "min_samples_per_profile": 8,
+    "last_calibrated": null
+  },
+  "risk_profiles": {
+    "routine":  { "starting_tier": "cheap",    "validator_count": 1, "lenses": ["correctness"], "effort": "low" },
+    "elevated": { "starting_tier": "standard", "validator_count": 2, "lenses": ["correctness", "repro"], "effort": "medium" },
+    "high":     { "starting_tier": "capable",  "validator_count": 3, "lenses": ["correctness", "repro", "security"], "effort": "high" },
+    "critical": { "starting_tier": "max",      "validator_count": 4, "lenses": ["correctness", "repro", "security", "perf"], "effort": "high" }
+  },
+  "cost_estimate_by_profile": {
+    "routine":  { "p50": null, "p90": null, "p95": null, "sample_size": 0 },
+    "elevated": { "p50": null, "p90": null, "p95": null, "sample_size": 0 },
+    "high":     { "p50": null, "p90": null, "p95": null, "sample_size": 0 },
+    "critical": { "p50": null, "p90": null, "p95": null, "sample_size": 0 }
+  },
+  "overshoot_variance_by_tier_effort": {
+    "_comment": "Per (tier, effort) cell: how far actual spend tends to exceed the p50 estimate, since thinking budgets are soft targets with a long overshoot tail (design SS5.3, arXiv 2507.02076). Populate the same way once telemetry exists; until then the admission rule should assume a wide, conservative margin.",
+    "cheap":    { "low": null, "medium": null, "high": null, "xhigh": null, "max": null },
+    "standard": { "low": null, "medium": null, "high": null, "xhigh": null, "max": null },
+    "capable":  { "low": null, "medium": null, "high": null, "xhigh": null, "max": null },
+    "max":      { "low": null, "medium": null, "high": null, "xhigh": null, "max": null }
+  }
+}

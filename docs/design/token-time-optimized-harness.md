@@ -271,10 +271,17 @@ wasted cheap attempt `[measured]`).
      start tier back up when telemetry crosses it. (This threshold is exactly the >40%-failure
      regime where published work says upfront routing should replace the cascade `[measured]`.)
 - **Effort axis.** Profiles carry `effort` alongside `model`. The Workflow-based spawn path
-  threads per-agent `model` *and* `effort` (verified by direct probe: all five effort levels
-  dispatch; model overrides are honored; invalid ids fail loud), with a batch of parallel
-  `Agent` calls as the portable fallback (model-only; effort session-level). Effort lands in
-  the run-log so the controller segments cost/catch-rate by `(tier, model_id, effort)`.
+  threads per-agent `model` *and* `effort` (re-verified by direct probe on Claude Code 2.1.45,
+  2026-07-04: all five effort levels dispatch; both tested model overrides are honored — see
+  [tools/budget-governor/probe-spawn-portability-2026-07-04.md](../../tools/budget-governor/probe-spawn-portability-2026-07-04.md)),
+  with a batch of parallel `Agent` calls as the portable fallback (model-only; effort
+  session-level). **Correction:** "invalid ids fail loud" does not hold as previously stated —
+  an invalid `effort` string is **silently accepted** with no error, and an invalid `model` id
+  fails only as an async `null` result + a workflow-level log entry, not a catchable throw.
+  **The spawn code must therefore validate `(model, effort)` against an explicit allowlist
+  before calling `agent()`/`Workflow`**, and must check results for `null` rather than relying on
+  an exception. Effort lands in the run-log so the controller segments cost/catch-rate by
+  `(tier, model_id, effort)`.
   **Neither uniform default is safe:** always-low drops agent success ~20pts, always-high
   overthinks trivial work (≈1,953% extra tokens on trivial inputs) `[measured]` — effort is
   *routed*, never a static default. Effort is a **soft** target with an overshoot tail, not a
@@ -543,7 +550,8 @@ the 1,310:1 single-user ratio is the other datapoint `[contested]`. Design assum
 **cache reads are cheap but not free; a cache-busted turn is catastrophic either way** — so the
 discipline in §5.2 is unconditional, and the budget governor counts cache reads at a configurable
 weight (default conservative) until Anthropic documents the truth. This is the single
-highest-value controlled measurement to run (§12 open question 2).
+highest-value controlled measurement to run — the protocol and runner are built, not yet
+executed (§12 open question 2).
 
 ### 10.3 Volatility log (why nothing is hard-coded)
 
@@ -589,16 +597,25 @@ Cheapest proven lever first; each flip gated on the previous stage's telemetry.
    `rate_limits` feed now covers in-session utilization (§5.1), but headless `-p` firings still
    have no official surface — they fall back to the unstable OAuth-usage endpoint or the
    optimistic local estimate until a headless-capable API ships.
-2. **Cache-read quota weight** (§10.2) — *the highest-value experiment*: one firing with
-   deliberate cache-busting vs one without, same work, compare the statusline `used_percentage`
-   movement, before tuning the governor's cache-read weight away from conservative.
-3. **Per-agent effort portability:** the Workflow spawn path is probe-verified on the current
-   Claude Code build; the parallel-`Agent`-calls fallback stays the default until the
-   primitive is verified wherever the harness runs.
+2. **Cache-read quota weight** (§10.2) — *the highest-value experiment*: a matched-content
+   cache-preserving vs cache-busting protocol is written and ready
+   ([tools/budget-governor/cache-read-quota-weight-experiment.md](../../tools/budget-governor/cache-read-quota-weight-experiment.md)),
+   with a working runner script, but **deliberately not yet executed** — it spends real Max-plan
+   quota, so the operator decides when to run it (ideally right after a window reset).
+3. **Per-agent effort portability:** re-probed on Claude Code 2.1.45 (2026-07-04) — dispatch of
+   both axes is reconfirmed, but the probe also found the primitive does **not** reliably reject
+   invalid `(model, effort)` ids (see §5.3 correction and
+   [tools/budget-governor/probe-spawn-portability-2026-07-04.md](../../tools/budget-governor/probe-spawn-portability-2026-07-04.md)).
+   Remaining open: whether this holds on other builds/environments the harness might run on —
+   the parallel-`Agent`-calls fallback stays the default until re-probed there; re-run
+   `tools/budget-governor/probe-spawn-portability.js` on any new build before trusting it.
 4. **Window-occupancy forecasting:** the admission rule needs a per-task burn forecast; measured
    spend varies up to 30× same-task and models can't self-predict it (§5.1), so start with
    P95-quantile profile×tier estimates and only upgrade to duration buckets once the predictor's
-   features are validated against measured burn.
+   features are validated against measured burn. The predictor, its calibration gate, and the
+   estimate table are built and self-tested (not yet fed real telemetry, since no tasks have run
+   through the loop): [tools/budget-governor/](../../tools/budget-governor/) — see its README for
+   how the two forecasts (admission vs tier-routing) share one bootstrap loop.
 5. **Headless quota regime:** track whether the paused Agent-SDK change (§10.3) un-pauses; if it
    does, the governor's accounting swaps from window bin-packing to a monthly dollar budget for
    headless firings, so the "which pool does this spend drain" abstraction must already exist.

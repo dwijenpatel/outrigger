@@ -166,6 +166,10 @@ def clean_checkout(repo: str, ref: str, dest: str) -> str:
     return dest
 
 
+def _rev_parse_head(repo: str, ref: str) -> str:
+    return _git(repo, "rev-parse", ref).stdout.strip()
+
+
 # -- the gate --------------------------------------------------------------------
 
 
@@ -180,9 +184,13 @@ def run_gate(repo: str, branch: str, base: str = "main",
              evidence_dir: str | None = None,
              require_clean: bool = True,
              min_lenses: int = 1,
-             test_timeout: int = 1800) -> dict:
+             test_timeout: int = 1800,
+             stamp_dir: str | None = None) -> dict:
     """Run the full gate. Fail-fast on the first blocking step; every executed
-    step is reported. Returns the report dict (see ``render_report``)."""
+    step is reported. Returns the report dict (see ``render_report``).
+
+    With ``stamp_dir``, a PASS writes the H2 gate stamp (branch + HEAD sha)
+    the merge interlock demands during a live firing — and only a PASS does."""
     if task_profile not in PROFILES:
         raise GateError(f"unknown profile {task_profile!r}")
     steps: list = []
@@ -196,6 +204,11 @@ def run_gate(repo: str, branch: str, base: str = "main",
 
     def finish(ok):
         report["ok"] = ok
+        if ok and stamp_dir:
+            from . import interlocks as _interlocks  # lazy: no import cycle
+            head = _rev_parse_head(repo, branch)
+            report["gate_stamp"] = _interlocks.write_gate_stamp(
+                stamp_dir, branch, head, base, ok=True)
         if evidence_dir:
             os.makedirs(evidence_dir, exist_ok=True)
             with open(os.path.join(evidence_dir, "gate-report.json"), "w") as fh:

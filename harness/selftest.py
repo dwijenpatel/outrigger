@@ -76,6 +76,12 @@ def check_hook_registration(settings_path: str = SETTINGS) -> list:
          any("prefix_edit_warn.py" in c for _m, c in pre)),
         ("closure_gate registered on Stop",
          any("closure_gate.py" in c for _m, c in stop)),
+        ("merge_interlock registered for Bash",
+         any("merge_interlock.py" in c and "Bash" in m for m, c in pre)),
+        ("spawn_interlock registered for Bash",
+         any("spawn_interlock.py" in c and "Bash" in m for m, c in pre)),
+        ("spawn_interlock registered for Task/Agent",
+         any("spawn_interlock.py" in c and "Task" in m for m, c in pre)),
     )
     return [{"case": f"H1 {name}", "expected": "registered",
              "got": "registered" if ok else "MISSING", "ok": ok, "stderr": ""}
@@ -223,6 +229,30 @@ def run_selftests() -> dict:
         cases.append(_case(
             "H1 closure hook fails CLOSED: live firing, no closure config",
             True, _run("closure_gate.py", {"cwd": project}, env=env)))
+
+        # -- H2 merge + spawn interlocks, both directions --------------------------
+        # (the scratch `repo` has no live marker; `project` above has one)
+        merge_doc = {"tool_name": "Bash", "cwd": repo,
+                     "tool_input": {"command": "git merge feat/x"}}
+        cases.append(_case("H2 merge interlock inert outside a firing", False,
+                           _run("merge_interlock.py", merge_doc,
+                                env={"CLAUDE_PROJECT_DIR": repo})))
+        merge_doc["cwd"] = project
+        cases.append(_case(
+            "H2 merge interlock blocks unstamped merge in a firing", True,
+            _run("merge_interlock.py", merge_doc, env=env)))
+        spawn_doc = {"tool_name": "Task", "cwd": project,
+                     "tool_input": {"subagent_type": "implementer"}}
+        cases.append(_case(
+            "H2 spawn interlock blocks unadmitted spawn in a firing", True,
+            _run("spawn_interlock.py", spawn_doc, env=env)))
+        from . import interlocks as _interlocks
+        _interlocks.write_admission_stamp(
+            os.path.join(project, "state", "admission-stamp.json"),
+            {"task_id": "selftest"})
+        cases.append(_case(
+            "H2 spawn interlock passes with a fresh admission stamp", False,
+            _run("spawn_interlock.py", spawn_doc, env=env)))
 
     # -- H1 hook registration ----------------------------------------------------
     cases.extend(check_hook_registration())

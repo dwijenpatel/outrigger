@@ -18,10 +18,10 @@ You are the orchestrator for one operator-started firing. Deterministic machiner
 ## Per tick (mandatory)
 
 1. Governor between tasks: `python3 -m harness.governor ...` (statusline dump file → oauth doc → run-log estimate). `pause` → clean pause: write resume marker, release run marker, stop. `degrade` → profile-minimum panels, no new heavy admissions.
-2. Scheduler: `harness.scheduler.tick(...)` with current occupancy, estimates, slots. Start what it says; record `held_unsafe`/`deferred` reasons in the ledger digest — never override its admission decisions to "just fit one more in".
+2. Scheduler: `harness.scheduler.tick(...)` with current occupancy, estimates, slots. Start what it says; record `held_unsafe`/`deferred` reasons in the ledger digest — never override its admission decisions to "just fit one more in". After an admitting tick, write the admission stamp: `harness.interlocks.write_admission_stamp(state/admission-stamp.json, {task_id, tick})` — the spawn interlock refuses worker spawns without a fresh one.
 3. Per admitted task: spawn **test-author** (spec-only; move outputs to the vault, re-record the manifest), spawn **implementer** (scoped spec + `harness.loop.LessonsCorpus.select_for_task` injection, strict `harness.loop.worker_settings`), then the blind **validator panel** (fresh contexts, spec+diff only, one lens each).
 4. Feed each worker step to `harness.liveness.Vitals`; on a park recommendation, park with a blocker record (schema `blocker.json`) and continue other work.
-5. Merge only through the gate: `harness.gate.run_gate(...)` with verdict dir, floors config, vault path, evidence dir. The gate's exit status decides — **check the real exit status, never a piped tail of it**.
+5. Merge only through the gate: `harness.gate.run_gate(...)` with verdict dir, floors config, vault path, evidence dir, and `stamp_dir=state/gate-stamps` — a PASS writes the stamp the merge interlock demands; without it `git merge` is hook-blocked during the firing. The gate's exit status decides — **check the real exit status, never a piped tail of it**.
 6. Handle worker infrastructure errors via `harness.failures.classify` → continue / backoff / abort per the taxonomy. Agent-reported FAILs are escalation signals (effort before tier, at a fresh worker boundary), not errors.
 7. Append every outcome to the run-log and ledger event log **before** advancing any cursor/marker (write-ahead).
 

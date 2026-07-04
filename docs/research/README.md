@@ -7,16 +7,19 @@ confidence tags: `[official]` Anthropic docs, `[measured]` community/benchmark m
 data, `[contested]` conflicting evidence, `[folklore]` practitioner consensus; plus `[E]`
 established-in-source / `[I]` inference-synthesis for research-study claims.
 
-Compiled from three research efforts: a comparative state-of-the-art study and re-validation
+Compiled from four research efforts: a comparative state-of-the-art study and re-validation
 prior-art digest (**2026-07-03**), a targeted gap-filling deep-research pass on routing
 economics, burn forecasting, Claude Code/Max-plan mechanics, and vault isolation
-(**2026-07-04**), and a practitioner-stack survey + independent-confirmation pass
+(**2026-07-04**), a practitioner-stack survey + independent-confirmation pass
 (**2026-07-04**): four-agent survey of the github.com/kunchenguid repos (AXI, gnhf, firstmate,
 treehouse, no-mistakes, benchmark suite), three adversarial web-verification agents restricted
 to independent sources, and a local zero-quota tokenizer measurement on this harness's own
-data shapes. The gap-filling pass used a fan-out → fetch → 3-vote adversarial verification
-workflow (24 of 25 top claims confirmed, 1 refuted); its three most design-changing facts were
-re-verified by direct fetch of the official pages.
+data shapes — and a **critique-refresh pass (2026-07-04 evening)**: re-evaluation of the §4
+design critique against the as-built system (in-tree verification of hooks/gate/governor/vault
+state at 358 passing tests) plus targeted fetches on verifier precision (false FAILs) and
+cross-model error correlation. The gap-filling pass used a fan-out → fetch → 3-vote adversarial
+verification workflow (24 of 25 top claims confirmed, 1 refuted); its three most design-changing
+facts were re-verified by direct fetch of the official pages.
 
 ## The documents
 
@@ -147,6 +150,25 @@ and [harness-evaluation-prior-art.md](harness-evaluation-prior-art.md)):
   scale, model era. The harmful regime is exactly what the design's blind held-out vault removes.
 - **Agent self-reports unreliable ("claims, not evidence"):** `[measured, replicated]` (METR
   ≥16% cheating on successful 8h+ runs; Transluce o3 fabrication elicitation).
+
+**From the 2026-07-04 critique-refresh pass** (details in
+[correctness-and-verification-evidence.md §3 addendum, §7](correctness-and-verification-evidence.md)
+and [landscape-and-novelty.md §4](landscape-and-novelty.md)):
+
+- **Cross-model error correlation:** two independent academic sources (arXiv 2506.07962, 350+
+  models, ~60% same-wrong-answer agreement when both err, correlation rises with capability and
+  crosses providers; arXiv 2502.04313, judges favor similar models) — direction
+  `[measured, replicated]`.
+- **False-FAIL base rates:** Refute-or-Promote (arXiv 2604.19049) kill-rate magnitudes (~79–83%)
+  are `[measured, single-source]` — methodology paper, self-reported; the
+  unanimous-nonexistent-vuln incident is an existence claim `[E]`. Spec-alignment misjudgment
+  (arXiv 2603.25773) is single-author, **direction only** — do not import its numbers. The curl
+  bug-bounty closure is `[reported]`, cited for ecosystem framing only.
+- **In-tree verification (2026-07-04, 358 tests passing):** no hook registration anywhere;
+  closure gate lacked a Stop-hook stdin interface; `run_gate` passes absent inputs as "caller's
+  choice"; governor has no reading-staleness handling; gate spills full held-out output to
+  in-repo evidence dirs. These are working-tree facts, not external research — recorded here
+  because the §4 critique and design amendments lean on them.
 
 **Hype-tier, cite for framing only:** Ralph-loop cost anecdotes ($297 MVP); the "100k sessions →
 dumb zone" statistic; Palisade's o3-86% chess figure; vendor SWE-bench scaffold-jump percentages;

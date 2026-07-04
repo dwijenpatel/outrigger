@@ -7,7 +7,9 @@ switches, governed self-modification, and the calibration probe.
 
 **Provenance:** external comparative study 2026-07-03 (two adversarial fact-check passes);
 `[E]` = established in the cited primary source, `[I]` = inference/synthesis. Corrections in
-the consolidated ledger ([README.md](README.md)).
+the consolidated ledger ([README.md](README.md)). **Extended 2026-07-04 (evening):** a targeted
+verifier-precision and error-correlation pass (§3 addendum, §7) run during the critique-refresh
+exercise; sources fetched directly, magnitudes tagged single-source where applicable.
 
 ---
 
@@ -91,6 +93,28 @@ security") is the popularity-trap avoidance 2510.21513 demonstrates. Surviving a
 diversity *real* — distinct lenses **and** some model heterogeneity across a panel, not N copies
 of one model reading one diff.
 
+**Addendum 2026-07-04 — correlated errors cap what heterogeneity buys.** Two independent
+academic results sharpen (and partially deflate) the "model heterogeneity" advice above:
+
+- **LLM errors are strongly correlated, and most-capable models correlate most.** Across 350+
+  models and multiple leaderboards, when two models both err they agree on the *same wrong
+  answer* ~60% of the time; error correlation *rises* with capability and persists across
+  distinct architectures and **different providers**; downstream demos show LLM-as-judge and
+  hiring-pipeline monoculture effects. `[E]` https://arxiv.org/abs/2506.07962
+- **Judges favor models similar to themselves** (CAPA similarity metric); model mistakes
+  converge as capability grows, "pointing to risks from correlated failures" for AI oversight.
+  `[E]` https://arxiv.org/abs/2502.04313
+- `[I]` Consequences for the panel design: N same-family validators are **not N independent
+  draws** — and even cross-provider heterogeneity is weaker insurance than assumed. What
+  de-correlates is **leverage diversity** (held-out execution, clean-checkout reproduction,
+  distinct lenses inspecting distinct artifacts), which the design already holds as the §2
+  caveat ("it is the validator's *leverage*, not its *count*"). Model heterogeneity should be
+  demoted from diversity *mechanism* to weak *insurance*; marginal panel tokens buy a new lens
+  or new leverage, never another same-family opinion. Measurably: aggregating calibration-canary
+  results panel-wide (a planted defect missed by **all** lenses = a correlated blind spot,
+  caught by an instrument the design already ships) turns this from an assumption into
+  telemetry.
+
 ## 4. Plan-first has quantitative backing — and its key caveat justifies the human gate
 
 - Plan-then-code beats direct generation: **up to +25.4% relative Pass@1** (peer-reviewed, code
@@ -162,3 +186,39 @@ fail a task" rule (the `repro` lens) as the filter against hallucinated flaws.
 *reviewer* but never the *contract-test suite* — yet §1 shows ~31% of green patches can ride on
 weak tests. Mutation-testing the committed contract tests (per-task kill-rate) would quantify how
 much load the held-out layer silently carries.
+
+## 7. False FAILs — verifier precision is the symmetric, measured failure *(added 2026-07-04)*
+
+§1–§6 defend against false PASS (escapes, stale-green). The symmetric failure — hallucinated
+or wrong FAIL findings — has strong documented base rates and was previously unmodeled:
+
+- **Most raw multi-agent defect findings are wrong.** Refute-or-Promote — the published
+  methodology closest to this design's panel (adversarial kill-mandates at promotion gates,
+  cold-start reviewers, cross-model critics) — reports **~79% of candidate findings killed**
+  by adversarial refutation retrospectively (171 candidates, 7 targets) and **83%
+  prospectively** (n=30); its motivating framing is that "plausible-but-wrong reports overwhelm
+  maintainers." `[measured, single-source for the magnitudes]` https://arxiv.org/abs/2604.19049
+- **Consensus does not filter hallucinated findings:** in the same work, *ten dedicated
+  reviewers unanimously endorsed a non-existent Bleichenbacher padding oracle in OpenSSL's CMS
+  module — it was killed only by a single empirical test.* `[E]` Converges with §3's
+  correlated-errors addendum (unanimity ≠ independence) and with AXIOM's finding that judges
+  hallucinate flaws (§6).
+- **Spec-conformance judgment misfires too:** LLMs systematically misjudge whether code aligns
+  with natural-language requirements, and added reasoning/prompting *increases* misjudgment of
+  correct code as non-compliant. `[measured, single-author — direction only]`
+  https://arxiv.org/abs/2603.25773
+- Ecosystem-scale corroboration of the precision problem (reported, not independently audited
+  here): AI-generated vulnerability reports drove curl's bug-bounty confirmed-valid rate below
+  ~5% and the program closed. `[reported]`
+
+**`[I]` Design consequences (drove the 2026-07-04 §7 amendments and plan Phase H):**
+all-must-pass aggregation means **one hallucinated FAIL blocks a merge**; "durable FAIL" is the
+escalation signal, so false FAILs trigger paid tier/effort escalations and full re-runs, and
+they poison exactly the telemetry (>40% break-even trip-wire, catch-rate) the controller tunes
+on. The design's "verdicts quote reproduced behavior" rule is the right filter but is a
+*claimed* reproduction — and fabricated execution is a measured behavior
+([harness-evaluation-prior-art.md §5.3](harness-evaluation-prior-art.md)). The mechanization:
+error-severity findings carry a **machine-replayable repro** the gate re-executes in the clean
+checkout before a FAIL blocks ("killed only by a single empirical test", pointed at FAILs);
+non-replayable error findings downgrade to ask-user; the run-log counts unreproduced findings
+so false-FAIL rate becomes a tracked quantity instead of an invisible one.

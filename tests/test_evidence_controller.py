@@ -121,7 +121,8 @@ class ControllerTests(unittest.TestCase):
                         profile="routine", change="3 -> 2 lenses on routine",
                         cell_samples=214, cost_benefit="est. -9% weekly tokens",
                         pending_unresolved_proposals=0,
-                        canary_trials=TRIALS_OK, escapes=[])
+                        canary_trials=TRIALS_OK, escapes=[],
+                        discovery={"active": True, "why": "hunt 1 merge ago"})
         defaults.update(kw)
         return controller.propose(**defaults)
 

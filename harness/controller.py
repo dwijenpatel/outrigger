@@ -50,8 +50,11 @@ def propose(lever: str, direction: str, profile: str, change: str,
             cell_samples: int, cost_benefit: str,
             pending_unresolved_proposals: int,
             canary_trials: list, escapes: list,
-            min_samples: int = DEFAULT_MIN_SAMPLES) -> dict:
-    """Gate one lever proposal. Returns {"proposed": bool, "why", "card"?}."""
+            min_samples: int = DEFAULT_MIN_SAMPLES,
+            discovery: dict | None = None) -> dict:
+    """Gate one lever proposal. Returns {"proposed": bool, "why", "card"?}.
+    ``discovery`` is ``calibration.discovery_active(...)``'s result — H6:
+    downgrades additionally require an active escape-discovery channel."""
     if lever not in LEVERS:
         raise ControllerError(f"unknown lever {lever!r}; known: {LEVERS}")
     if direction not in DIRECTIONS:
@@ -73,7 +76,8 @@ def propose(lever: str, direction: str, profile: str, change: str,
             return {"proposed": False,
                     "why": f"profile {profile!r} is protected: strengthen-only "
                            f"(§8) — this code path cannot propose a downgrade"}
-        proof = downgrade_allowed(canary_trials, escapes)
+        proof = downgrade_allowed(canary_trials, escapes,
+                                  discovery=discovery)
         if not proof["allowed"]:
             return {"proposed": False,
                     "why": f"downgrade needs calibration proof: {proof['why']}"}

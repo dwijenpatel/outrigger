@@ -83,6 +83,82 @@ class EscapesLog(_JsonlLog):
         })
 
 
+def backfill_escape(log: EscapesLog, merged_task: str, description: str,
+                    severity: str, discovered_in: str,
+                    panel_lenses: list | None = None) -> dict:
+    """H6(a) — the deterministic backfill rule: a defect surfaced by a
+    *later* task/phase on a merged surface is an escape of the task that
+    merged it, attributed to the panel that passed it. Discovery is a
+    mechanism, not a hope."""
+    if not isinstance(discovered_in, str) or not discovered_in:
+        raise CalibrationError("backfill needs the discovering task/phase")
+    if discovered_in == merged_task:
+        raise CalibrationError(
+            f"defect discovered in {discovered_in!r} itself is not an escape "
+            f"— escapes are misses on already-merged work")
+    return log.record(task_id=merged_task, description=description,
+                      severity=severity,
+                      discovered_by=f"backfill:{discovered_in}",
+                      panel_lenses=panel_lenses)
+
+
+class HuntLog(_JsonlLog):
+    """H6(b) — sampled escape-hunts: a fresh high-tier panel re-audits a
+    deterministic sample of merged surface. This log is what makes
+    'discovery active' checkable instead of asserted."""
+
+    def record(self, hunt_id: str, sampled_tasks: list, lenses: list,
+               escapes_found: int) -> dict:
+        if not hunt_id:
+            raise CalibrationError("hunt needs an id")
+        if not isinstance(sampled_tasks, list) or not sampled_tasks:
+            raise CalibrationError("hunt needs a non-empty task sample")
+        if not isinstance(escapes_found, int) or escapes_found < 0:
+            raise CalibrationError("escapes_found must be a non-negative int")
+        return self._append({
+            "ts": _utcnow_iso(), "kind": "hunt", "hunt_id": hunt_id,
+            "sampled_tasks": list(sampled_tasks), "lenses": list(lenses or []),
+            "escapes_found": escapes_found,
+        })
+
+
+def hunt_sample(merged_task_ids: list, k: int = 3, seed: str = "") -> list:
+    """Deterministic hunt sample: rank by sha256(seed:id), take k. No RNG —
+    replayable, spread across the id space, seedable per hunt round."""
+    import hashlib as _hashlib
+    ranked = sorted(set(merged_task_ids),
+                    key=lambda t: _hashlib.sha256(
+                        f"{seed}:{t}".encode()).hexdigest())
+    return ranked[:max(0, k)]
+
+
+def discovery_active(merged_since_last_hunt: int | None,
+                     every_n_merges: int = 10) -> dict:
+    """H6(c) — is the escape-discovery channel actually running? 'escapes ≈ 0'
+    gates nothing while nothing could have discovered one. Active = an
+    escape-hunt has happened and its cadence hasn't lapsed. ``None`` = no hunt
+    has ever run (inactive)."""
+    if every_n_merges < 1:
+        raise CalibrationError(f"every_n_merges must be >= 1, "
+                               f"got {every_n_merges}")
+    if merged_since_last_hunt is None:
+        return {"active": False,
+                "why": "no escape-hunt has ever run — the escapes log is "
+                       "silence, not evidence"}
+    if not isinstance(merged_since_last_hunt, int) or \
+            merged_since_last_hunt < 0:
+        raise CalibrationError("merged_since_last_hunt must be None or a "
+                               "non-negative int")
+    if merged_since_last_hunt > every_n_merges:
+        return {"active": False,
+                "why": f"{merged_since_last_hunt} merge(s) since the last "
+                       f"hunt exceeds the {every_n_merges}-merge cadence — "
+                       f"overdue, channel lapsed"}
+    return {"active": True,
+            "why": f"last hunt {merged_since_last_hunt} merge(s) ago "
+                   f"(cadence {every_n_merges})"}
+
+
 class CanaryLog(_JsonlLog):
     """Planted-defect trials: a 'planted' record then a 'result' record."""
 
@@ -133,11 +209,15 @@ class CanaryLog(_JsonlLog):
 
 def downgrade_allowed(canary_trials: list, escapes: list,
                       min_trials: int = 3,
-                      recent_window: int = 5) -> dict:
+                      recent_window: int = 5,
+                      discovery: dict | None = None) -> dict:
     """The §7 rule for any rigor downgrade (panel shrink, tier drop, effort
     drop): allowed only when (a) enough canary trials exist, (b) every trial in
-    the recent window was caught, and (c) there is no unresolved escape newer
-    than the newest trial. A miss — or an escape — freezes the downgrade."""
+    the recent window was caught, (c) there is no unresolved escape newer
+    than the newest trial, and (d — H6) the **escape-discovery channel is
+    active** (``discovery_active``): zero escapes only means something when
+    something could have discovered one. ``discovery=None`` (unchecked) is
+    treated as inactive — unknown fails toward rigor, like the kill-rate."""
     if min_trials < 1 or recent_window < min_trials:
         raise CalibrationError(
             f"need 1 <= min_trials({min_trials}) <= recent_window"
@@ -160,9 +240,15 @@ def downgrade_allowed(canary_trials: list, escapes: list,
             return {"allowed": False,
                     "why": f"{len(late_escapes)} escape(s) newer than the last "
                            f"canary trial — recalibrate before any downgrade"}
+    if discovery is None or not discovery.get("active"):
+        why = (discovery or {}).get("why", "discovery unchecked")
+        return {"allowed": False,
+                "why": f"escape-discovery channel inactive ({why}) — "
+                       f"'escapes ≈ 0' gates nothing while nothing could "
+                       f"have discovered one (H6)"}
     return {"allowed": True,
             "why": f"last {len(recent)} canary trials all caught; no escape "
-                   f"since"}
+                   f"since; discovery active ({discovery['why']})"}
 
 
 def panel_correlation(trials: list) -> dict:

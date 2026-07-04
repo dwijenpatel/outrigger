@@ -58,8 +58,25 @@ class CanaryTests(unittest.TestCase):
     def test_downgrade_allowed_after_clean_trials(self):
         for i in range(3):
             self.plant_and_result(f"c{i}", True)
-        got = calibration.downgrade_allowed(self.log.trials(), escapes=[])
+        got = calibration.downgrade_allowed(
+            self.log.trials(), escapes=[],
+            discovery={"active": True, "why": "hunt 2 merges ago"})
         self.assertTrue(got["allowed"])
+        self.assertIn("discovery active", got["why"])
+
+    def test_downgrade_frozen_without_discovery_channel(self):
+        # H6: clean canaries + zero escapes still gate nothing when nothing
+        # could have discovered an escape
+        for i in range(3):
+            self.plant_and_result(f"c{i}", True)
+        unchecked = calibration.downgrade_allowed(self.log.trials(), escapes=[])
+        self.assertFalse(unchecked["allowed"])
+        self.assertIn("discovery channel inactive", unchecked["why"])
+        lapsed = calibration.downgrade_allowed(
+            self.log.trials(), escapes=[],
+            discovery=calibration.discovery_active(11, every_n_merges=10))
+        self.assertFalse(lapsed["allowed"])
+        self.assertIn("overdue", lapsed["why"])
 
     def test_a_miss_freezes_the_downgrade(self):
         for i in range(2):
@@ -73,8 +90,9 @@ class CanaryTests(unittest.TestCase):
         self.plant_and_result("old-miss", False)
         for i in range(5):
             self.plant_and_result(f"c{i}", True)
-        got = calibration.downgrade_allowed(self.log.trials(), escapes=[],
-                                            min_trials=3, recent_window=5)
+        got = calibration.downgrade_allowed(
+            self.log.trials(), escapes=[], min_trials=3, recent_window=5,
+            discovery={"active": True, "why": "hunt current"})
         self.assertTrue(got["allowed"])
 
     def test_escape_newer_than_trials_freezes(self):
@@ -233,3 +251,64 @@ class ReplayCountsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EscapeDiscoveryTests(unittest.TestCase):
+    """H6 — backfill rule, hunt log, deterministic sample, channel check."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.escapes = EscapesLog(os.path.join(self.dir.name, "escapes.jsonl"))
+        self.hunts = calibration.HuntLog(
+            os.path.join(self.dir.name, "hunts.jsonl"))
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_backfill_attributes_to_merging_task_and_panel(self):
+        rec = calibration.backfill_escape(
+            self.escapes, merged_task="t3",
+            description="pagination drops the last row",
+            severity="major", discovered_in="t9",
+            panel_lenses=["correctness", "regression"])
+        self.assertEqual(rec["task_id"], "t3")
+        self.assertEqual(rec["discovered_by"], "backfill:t9")
+        self.assertEqual(rec["panel_lenses"], ["correctness", "regression"])
+        self.assertEqual(len(self.escapes.read()), 1)
+
+    def test_self_discovery_is_not_an_escape(self):
+        with self.assertRaises(CalibrationError):
+            calibration.backfill_escape(
+                self.escapes, merged_task="t3", description="x",
+                severity="minor", discovered_in="t3")
+
+    def test_hunt_log_validates(self):
+        rec = self.hunts.record("hunt-1", ["t1", "t2"], ["correctness"], 0)
+        self.assertEqual(rec["kind"], "hunt")
+        with self.assertRaises(CalibrationError):
+            self.hunts.record("hunt-2", [], ["correctness"], 0)
+        with self.assertRaises(CalibrationError):
+            self.hunts.record("hunt-3", ["t1"], [], -1)
+
+    def test_hunt_sample_deterministic_and_seeded(self):
+        ids = [f"t{i}" for i in range(20)]
+        a = calibration.hunt_sample(ids, k=3, seed="round-1")
+        b = calibration.hunt_sample(ids, k=3, seed="round-1")
+        c = calibration.hunt_sample(ids, k=3, seed="round-2")
+        self.assertEqual(a, b)
+        self.assertEqual(len(a), 3)
+        self.assertNotEqual(a, c)  # different round samples differently
+        self.assertEqual(calibration.hunt_sample([], k=3), [])
+
+    def test_discovery_active_states(self):
+        never = calibration.discovery_active(None)
+        self.assertFalse(never["active"])
+        self.assertIn("never", never["why"].replace("has ever", "never"))
+        fresh = calibration.discovery_active(3, every_n_merges=10)
+        self.assertTrue(fresh["active"])
+        lapsed = calibration.discovery_active(11, every_n_merges=10)
+        self.assertFalse(lapsed["active"])
+        with self.assertRaises(CalibrationError):
+            calibration.discovery_active(-1)
+        with self.assertRaises(CalibrationError):
+            calibration.discovery_active(1, every_n_merges=0)

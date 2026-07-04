@@ -347,9 +347,12 @@ def run_gate(repo: str, branch: str, base: str = "main",
                 stamp_dir, branch, head, base, ok=True)
         if evidence_dir:
             os.makedirs(evidence_dir, exist_ok=True)
+            payload = json.dumps(report, indent=2, sort_keys=True) + "\n"
+            if vault_path:
+                # H7: in-repo evidence never names held-out content
+                payload = _vault.scrub_for_repo(payload, vault_path)
             with open(os.path.join(evidence_dir, "gate-report.json"), "w") as fh:
-                json.dump(report, fh, indent=2, sort_keys=True)
-                fh.write("\n")
+                fh.write(payload)
         return report
 
     # 0. required-steps manifest (H3): a required step whose input is absent
@@ -454,6 +457,9 @@ def run_gate(repo: str, branch: str, base: str = "main",
                 step("visible_tests", False, f"test command failed to run: {exc}")
                 return finish(False)
             output = (proc.stdout or "") + (proc.stderr or "")
+            if vault_path:
+                # H7: the in-repo spill never names held-out content
+                output = _vault.scrub_for_repo(output, vault_path)
             report["test_output_tail"] = output[-TAIL_CHARS:]
             if evidence_dir:
                 os.makedirs(evidence_dir, exist_ok=True)

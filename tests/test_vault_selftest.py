@@ -145,3 +145,69 @@ class SelfTestHarnessTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EvidenceLeakageTests(unittest.TestCase):
+    """H7 — held-out content must not exit via evidence artifacts."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.vault_dir = os.path.join(self.dir.name, ".vault")
+        vault.write_canary(self.vault_dir)
+        with open(os.path.join(self.vault_dir, "test_holdout_secret.py"),
+                  "w") as fh:
+            fh.write("def test_hidden(): assert True\n")
+        vault.save_manifest(self.vault_dir,
+                            vault.build_manifest(self.vault_dir))
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_evidence_dir_lives_inside_the_vault(self):
+        path = vault.heldout_evidence_dir(self.vault_dir)
+        self.assertTrue(path.startswith(self.vault_dir))
+        self.assertTrue(os.path.isdir(path))
+
+    def test_evidence_dir_excluded_from_manifest_and_drop_check(self):
+        recorded = vault.load_manifest(self.vault_dir)
+        evidence = vault.heldout_evidence_dir(self.vault_dir)
+        with open(os.path.join(evidence, "run-1.log"), "w") as fh:
+            fh.write("held-out execution output\n")
+        current = vault.build_manifest(self.vault_dir)
+        self.assertEqual(recorded, current)  # evidence never trips C4
+        self.assertTrue(vault.check_heldout_drop(recorded, current)["ok"])
+
+    def test_scrub_replaces_paths_basenames_and_stems(self):
+        entries = vault.load_manifest(self.vault_dir)
+        text = ("FAIL: test_hidden (test_holdout_secret.TestX) — see "
+                "test_holdout_secret.py; module test_holdout_secret leaked")
+        scrubbed = vault.scrub(text, entries)
+        self.assertNotIn("test_holdout_secret", scrubbed)
+        self.assertIn("vault:", scrubbed)
+        # behavior-level text survives
+        self.assertIn("FAIL: test_hidden", scrubbed)
+
+    def test_scrub_for_repo_tolerates_missing_manifest(self):
+        text = "nothing to scrub"
+        self.assertEqual(
+            vault.scrub_for_repo(text, os.path.join(self.dir.name, "ghost")),
+            text)
+
+    def test_verdict_verbosity_counts_identifier_mentions(self):
+        entries = vault.load_manifest(self.vault_dir)
+        verdicts = [
+            {"lens": "correctness", "verdict": "FAIL",
+             "evidence": ["test_holdout_secret.py failed on tenant B"],
+             "intent": "t"},
+            {"lens": "security", "verdict": "PASS",
+             "evidence": ["ran the abuse suite"], "intent": "t"},
+        ]
+        got = vault.verdict_verbosity(verdicts, entries)
+        self.assertEqual(got["mentions"], 1)
+        self.assertEqual(got["by_lens"]["correctness"], 1)
+        self.assertEqual(got["by_lens"]["security"], 0)
+        self.assertIn("scrub", got["why"])
+        clean = vault.verdict_verbosity(
+            [{"lens": "a", "verdict": "PASS", "evidence": ["ok"],
+              "intent": "t"}], entries)
+        self.assertEqual(clean["mentions"], 0)

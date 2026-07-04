@@ -31,6 +31,7 @@ import os
 CANARY_NAME = ".canary"
 CANARY_CONTENT = "vault-canary: if a worker can read this, isolation is broken\n"
 MANIFEST_NAME = "manifest.json"
+EVIDENCE_DIRNAME = "evidence"  # H7: vault-side evidence store
 
 REQUIRED_LAYERS = ("sandbox_deny_read", "file_tool_deny", "strict_flags",
                    "config_out_of_scope", "egress_control", "role_processes")
@@ -130,17 +131,89 @@ def _sha256(path: str) -> str:
 
 
 def build_manifest(vault_path: str) -> dict:
-    """relpath → sha256 for every vault file (canary + manifest excluded)."""
+    """relpath → sha256 for every vault file (canary, manifest, and the H7
+    evidence store excluded — evidence is execution *output*, not held-out
+    corpus, and must not trip the drop check when it changes)."""
     if not os.path.isdir(vault_path):
         raise VaultError(f"vault path {vault_path!r} is not a directory")
     entries = {}
-    for root, _dirs, files in os.walk(vault_path):
+    for root, dirs, files in os.walk(vault_path):
+        if root == vault_path and EVIDENCE_DIRNAME in dirs:
+            dirs.remove(EVIDENCE_DIRNAME)
         for name in files:
             rel = os.path.relpath(os.path.join(root, name), vault_path)
             if rel in (CANARY_NAME, MANIFEST_NAME):
                 continue
             entries[rel] = _sha256(os.path.join(root, name))
     return entries
+
+
+# -- H7: evidence leakage policy ----------------------------------------------------
+
+
+def heldout_evidence_dir(vault_path: str) -> str:
+    """The vault-side evidence store (§5.5 point 5): held-out execution
+    output (validator transcripts, held-out test logs) is written HERE —
+    covered by the same deny rules as the corpus — never to the in-repo
+    evidence directory a retry implementer can read."""
+    if not os.path.isdir(vault_path):
+        raise VaultError(f"vault path {vault_path!r} is not a directory")
+    path = os.path.join(vault_path, EVIDENCE_DIRNAME)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def scrub(text: str, entries: dict) -> str:
+    """Manifest-based scrubbing for in-repo artifacts (§5.5 point 5):
+    vault-relative paths and test-file identifiers are replaced with stable
+    ``vault:<hash>`` tokens, so gate reports and verdicts ride review without
+    naming held-out content. Behavior-level quotes are the accepted, budgeted
+    leak; identifiers are not."""
+    if not text or not entries:
+        return text
+    replacements: dict = {}
+    for rel in entries:
+        token = "vault:" + hashlib.sha256(rel.encode()).hexdigest()[:8]
+        replacements[rel] = token
+        base = os.path.basename(rel)
+        replacements.setdefault(base, token)
+        stem = os.path.splitext(base)[0]
+        if stem and stem != base:
+            replacements.setdefault(stem, token)
+    for needle in sorted(replacements, key=len, reverse=True):
+        text = text.replace(needle, replacements[needle])
+    return text
+
+
+def verdict_verbosity(verdicts: list, entries: dict) -> dict:
+    """H7 — the leakage budget's verdict-verbosity line: how many vault
+    identifiers appear in verdict text. Mentions are counted post-scrub (each
+    ``vault:`` token = one identifier occurrence), so nested path/basename
+    overlaps don't inflate the count. Non-zero means validator output is
+    carrying corpus identifiers toward in-repo surfaces."""
+    by_lens: dict = {}
+    total = 0
+    for verdict in verdicts:
+        lens = verdict.get("lens", "?")
+        raw = json.dumps(verdict, sort_keys=True)
+        mentions = scrub(raw, entries).count("vault:")
+        by_lens[lens] = by_lens.get(lens, 0) + mentions
+        total += mentions
+    why = ("verdicts name no vault identifiers" if total == 0 else
+           f"{total} vault-identifier mention(s) in verdict text — scrub "
+           f"before these ride review, and tighten validator verbosity")
+    return {"mentions": total, "by_lens": by_lens, "why": why}
+
+
+def scrub_for_repo(text: str, vault_path: str) -> str:
+    """Scrub with the vault's own manifest; a missing/corrupt manifest scrubs
+    nothing (the drop check already fails the merge in that state — this
+    layer is protective, not the enforcement point)."""
+    try:
+        entries = load_manifest(vault_path)
+    except VaultError:
+        return text
+    return scrub(text, entries)
 
 
 def save_manifest(vault_path: str, entries: dict) -> str:

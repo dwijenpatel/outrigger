@@ -389,6 +389,44 @@ class ReproReplayTests(unittest.TestCase):
         self.assertEqual(gate.false_fail_records({"false_fail": None}), [])
 
 
+class EvidenceScrubTests(unittest.TestCase):
+    """H7 — gate evidence artifacts never name held-out content."""
+
+    def test_full_log_and_report_scrubbed_against_vault_manifest(self):
+        with tempfile.TemporaryDirectory() as root:
+            fx = RepoFixture(root)
+            vault_dir = os.path.join(root, ".vault")
+            vault.write_canary(vault_dir)
+            with open(os.path.join(vault_dir, "test_holdout_secret.py"),
+                      "w") as fh:
+                fh.write("def test_hidden(): assert True\n")
+            vault.save_manifest(vault_dir, vault.build_manifest(vault_dir))
+            # the visible suite's output mentions a held-out identifier
+            fx.branch("task/leaky", {"test_app.py":
+                      "import unittest, app\n"
+                      "class T(unittest.TestCase):\n"
+                      "    def test_add(self):\n"
+                      "        print('invariant pinned by "
+                      "test_holdout_secret')\n"
+                      "        self.assertEqual(app.add(1, 2), 3)\n"
+                      "if __name__ == '__main__': unittest.main()\n"})
+            evidence_dir = os.path.join(root, "evidence")
+            report = gate.run_gate(
+                fx.repo, "task/leaky", base="main",
+                test_cmd=f"{sys.executable} -m unittest test_app -v",
+                vault_path=vault_dir, evidence_dir=evidence_dir,
+                verdict_dir=make_panel(root, [("correctness", "PASS")]))
+            self.assertTrue(report["ok"], report["steps"])
+            with open(os.path.join(evidence_dir,
+                                   "test-output-full.log")) as fh:
+                full_log = fh.read()
+            self.assertNotIn("test_holdout_secret", full_log)
+            self.assertIn("vault:", full_log)  # the identifier was tokenized
+            with open(os.path.join(evidence_dir, "gate-report.json")) as fh:
+                committed = fh.read()
+            self.assertNotIn("test_holdout_secret", committed)
+
+
 class RequiredStepsManifestTests(unittest.TestCase):
     """H3 — a required step whose input is absent fails closed, never
     'caller's choice'."""

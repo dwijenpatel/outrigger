@@ -100,22 +100,36 @@ memory, unscoped rules) → conversation.
   This is **server-side utilization, machine-readable in-session, zero extra tokens** — a real,
   official quota feed the design's §5.1 source ladder should adopt as its primary rung.
   `[official, re-fetched: code.claude.com/docs/en/statusline]`
-- **Gaps that remain:** issue #13585 (a dedicated `claude quota` CLI) is still **open, no
-  maintainer response**. Headless `claude -p` has **no official quota surface** (`--output-format
-  json` gives per-turn tokens/cost but no remaining-quota or reset fields); OTEL exports
-  consumption only, not a quota gauge; `anthropic-ratelimit-*` headers are API-key-only. An
-  **undocumented OAuth endpoint** (`GET api.anthropic.com/api/oauth/usage`, Bearer token +
-  header `anthropic-beta: oauth-2025-04-20`) reportedly returns five_hour / seven_day /
-  seven_day_sonnet / seven_day_opus utilization — an unattended-mode option at the cost of
-  depending on an unstable internal endpoint `[measured, community]`. A `StopFailure` hook
-  matcher for `rate_limit` / `overloaded` / `billing_error` is reported for *reactive* limit-hit
-  detection `[folklore/vendor blog — single source, verify before relying]`.
+- **Gaps that remain (re-verified 2026-07-04 evening, through changelog v2.1.201):** issue
+  #13585 (a dedicated `claude quota` CLI) is still **open — 22 comments, all community, zero
+  maintainer responses**; no new CLI command/flag and no rate-limit fields in
+  `--output-format json`/stream-json anywhere in the changelog. OTEL confirmed
+  **consumption-only** by exact metric list (`session.count`, `lines_of_code.count`,
+  `pull_request.count`, `commit.count`, `cost.usage`, `token.usage`,
+  `code_edit_tool.decision`, `active_time.total` — no utilization or reset gauge; the
+  `api_error` event's `status_code` detects 429s only after the fact); `anthropic-ratelimit-*`
+  headers are API-key-only. Statusline caveats now documented: `rate_limits` appears **only
+  for Pro/Max subscribers after the first API response**, and each window may be
+  **independently absent** — read defensively `[official]`. Headless options, ranked: a
+  **statusline-dump shim** (a statusline command on the operator's interactive session tees
+  its stdin JSON to a file — official data, unofficial acquisition, stales when the host
+  session idles); the **undocumented OAuth endpoint** (`GET api.anthropic.com/api/oauth/usage`,
+  Bearer token + header `anthropic-beta: oauth-2025-04-20`) `[measured, community]` — with the
+  probed caveat (2026-07-04, this dev machine) that **credentials may not be non-interactively
+  accessible** (no `~/.claude/.credentials.json`; no Claude Code Keychain item), so the rung
+  needs explicit per-environment operator wiring; then the run-log estimate. A `StopFailure`
+  hook matcher for `rate_limit` / `overloaded` / `billing_error` is reported for *reactive*
+  limit-hit detection `[folklore/vendor blog — single source, verify before relying]`.
 - **Cache-read subscription weighting — still officially unanswered `[contested]`.** Community
   telemetry points to near-full weight in the 5-hour window: issue #24016 (~70M attributed
   tokens in <2h, >99% cache) was **closed "not planned" with no answer**; issue #24147 (the
   provenance of the design's "1,310×" figure: one user, 30 days, 5.09B cache reads vs 3.89M
-  I/O) remains **open, unanswered**. → The conservative branch in design §10.2 stands; settle it
-  with the §12 controlled measurement — now the single highest-value experiment.
+  I/O) remains **open, unanswered** (re-verified 2026-07-04 via the issues API — no maintainer
+  comment). One new *indirect* official signal: the `/usage` plan-limits attribution
+  (v2.1.174+, costs docs) itemizes **cache misses** as a limit driver — implying cache *hits*
+  are weighted differently, weight still unstated `[official, indirect]`. → The conservative
+  branch in design §10.2 stands; settle it with the §12 controlled measurement — now the
+  single highest-value experiment.
 
 ## 5. Usage credits (the escape valve)
 

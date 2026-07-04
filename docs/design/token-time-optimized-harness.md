@@ -10,8 +10,10 @@
 > Compiled from the research corpus in [../research/](../research/) (see its
 > [README](../research/README.md) for the index and the design-section → research map): the
 > landscape/novelty study, the correctness-and-verification evidence, the re-validation reuse and
-> leakage prior-art, the token-economics and scheduling evidence, and the volatile Claude Code /
-> Max-plan and vault-isolation fact references. Facts carry confidence tags: `[official]`
+> leakage prior-art, the token-economics and scheduling evidence, the volatile Claude Code /
+> Max-plan and vault-isolation fact references, and the 2026-07-04 practitioner-stack pass —
+> tool-surface & format economics, unattended-operation prior art, and harness-evaluation
+> evidence, each run through an independent-confirmation exercise before import. Facts carry confidence tags: `[official]`
 > Anthropic docs, `[measured]` community measurement with data, `[contested]` conflicting
 > evidence, `[folklore]` practitioner consensus.
 
@@ -92,7 +94,15 @@ utilization degrades — the long-session regime — which is why the harness st
 4. **Disk is the memory.** Phase ledgers, the status index, the run-log, and the lessons corpus
    live on disk; any context can die at any moment and the loop resumes from files alone. This
    makes fresh-context workers (and orchestrator compaction) free in *correctness* terms, so
-   the token optimizer can use them aggressively.
+   the token optimizer can use them aggressively. Four mechanics keep that state trustworthy
+   under crashes and concurrency ([unattended-operation-prior-art.md §1](../research/unattended-operation-prior-art.md)):
+   ledgers and run-logs are **append-only event logs**; *current* state is always a **derived
+   reconciliation** whose authoritative inputs are gate/run artifacts and git — never the last
+   log line (after a resolved gate the tail still reads `needs-decision`); durable events are
+   written **before** the progress markers that suppress them advance (write-ahead — a crash at
+   any point recovers by draining the queue); and mutations of shared state carry a
+   **generation stamp** so a stale read fails loudly instead of silently clobbering (load-bearing
+   the moment concurrency exceeds 1, §6.2).
 5. **Measure, then move.** Every economy lever ships with its telemetry and a ground-truth
    check (the escapes log, calibration canaries). No downgrade without a catch-proof; one
    lever at a time; sample floors respected. Limits themselves are volatile (§10.3) — ceilings
@@ -103,9 +113,9 @@ utilization degrades — the long-session regime — which is why the harness st
 | Need | Built-in (how) | Residue we still build |
 |---|---|---|
 | Isolated worker contexts | **Subagents** (`.claude/agents/*.md`; per-agent `model`, `tools`; summary-only return) `[official]` | Spec-only shared-input discipline; verdict/handoff schemas |
-| Parallel file edits, zero conflicts | **Git worktrees** (`claude --worktree`, subagent `isolation: worktree`, `.worktreeinclude`, auto-cleanup) `[official]` | Per-task worktree naming + lifecycle policy (thin script) |
+| Parallel file edits, zero conflicts | **Git worktrees** (`claude --worktree`, subagent `isolation: worktree`, `.worktreeinclude`, auto-cleanup) `[official]` | Pooled lease-based lifecycle at Stage 2: warm pool with env-setup hooks, durable leases, fail-closed teardown with precise "landed" semantics (§6.2) |
 | Un-skippable enforcement, 0 tokens | **Hooks** (PreToolUse / PostToolUse / Stop / SubagentStop / SessionStart; deny>ask>allow; matchers) `[official]` | The merge-gate scripts the hooks invoke |
-| Reusable procedures, cheap until used | **Skills** with progressive disclosure (names at start, body on invoke) `[official]` | The skill content itself (planning, build loop, calibration, status) |
+| Reusable procedures, cheap until used | **Skills** with progressive disclosure (names at start, body on invoke) `[official]` | The skill content itself (planning, build loop, calibration, status); phase-gated invocation for load-bearing procedures — triggering is unreliable (§5.4 skills discipline) |
 | Interactive planning w/o edits | **Plan mode** `[official]` | The plan template, risk-classification table, human gate |
 | Completion gating | **Stop hooks** (script-based; model-evaluated goal hooks) `[official]` | Closure gate vs frozen plan snapshot + fresh-evidence rule |
 | Structured worker returns | **`--json-schema` / structured outputs** (server-side validation) `[official]` | The verdict/report schemas themselves |
@@ -113,13 +123,13 @@ utilization degrades — the long-session regime — which is why the harness st
 | Effort routing | Session `/effort`; per-agent `effort` on the Workflow/Agent spawn path (verified by direct probe) | Per-profile effort config + the spawn-path fallback ladder |
 | Cost/usage telemetry | Statusline `rate_limits.{five_hour,seven_day}` + `resets_at` + `current_usage` (in-session, server-side utilization); `/usage`, `--output-format json` (per-turn tokens/cost), OTEL consumption metrics, per-subagent token totals `[official]` | Per-role run-log aggregation + the budget governor's source ladder (§5.1) |
 | Prompt-cache economy | **Automatic prompt caching** (1h TTL auto on subscription, 5-min on credits/subagents; auto breakpoints; model+effort are cache-key components) `[official]` | The *discipline* (§5.2): freeze-prefix rules, escalate-at-boundary |
-| Tool-definition economy | **ToolSearch deferred loading** (names only at start; schema on use — default for MCP) `[official]` | Keep the MCP surface minimal; prefer CLI tools (`gh`) over MCP servers `[official]` |
+| Tool-definition economy | **ToolSearch deferred loading** (names only at start; schema on use — default for MCP) `[official]` | Keep the MCP surface minimal; prefer CLI tools (`gh`) over MCP servers `[official + replicated]`; pin each worker's hot set eagerly — defer only long-tail catalogs (§5.4 regime rule) |
 | Long-lived instructions | CLAUDE.md (<200 lines guidance), path-scoped rules, `@imports`, auto-memory `[official]` | Lessons corpus + orchestrator-curated injection at spawn |
 | Resume across deaths | Session persistence, `--resume`/`--continue`/`--fork-session` `[official]` | Ledgers + status index as the *canonical* resume state (disk > transcript — resuming a huge transcript reprocesses it at full cost `[measured]`) |
 | Undo | `/rewind` checkpoints (session-local) `[official]` | Git remains canonical history; checkpoints are convenience only |
 | Headless execution | `claude -p`, `--allowedTools`, `stream-json`, `--bare` `[official]` | The build-loop skill + an advisory single-run marker |
 | Background work | Background bash, background subagents, batched parallel tool calls `[official]` | Fan-out patterns (§6.1) |
-| Output filtering | PostToolUse hooks pre-filtering tool output (10k-line log → the failures) `[official example]` | Which filters to apply per gate command |
+| Output filtering | PostToolUse hooks pre-filtering tool output (10k-line log → the failures) `[official example]` | Which filters to apply per gate command; the standard filter shape is tail-biased truncation + full artifact spilled to disk with path and grep hint (§6.1) |
 
 **Deliberately not used:** auto-cron firing of the build loop (see Non-goals); agent teams for
 implementation (≈7× a standard session `[official]`, and Anthropic's own caveat: coding has few
@@ -162,7 +172,10 @@ best-source-first:
 
 (The former `quota-file` rung — operator-fed from `/usage` — is dropped: the statusline feed
 supersedes it. A dedicated quota CLI, anthropics/claude-code#13585, remains unshipped; the ladder
-upgrades in place if it lands.) The occupancy reading drives two thresholds:
+upgrades in place if it lands. For headless firings, a **statusline-dump shim** — a statusline
+command on the operator's interactive session that tees its stdin JSON to a file the governor
+reads — slots between the first two rungs: official data via unofficial acquisition, staling
+when the host session idles; see §12 Q1.) The occupancy reading drives two thresholds:
 
 - **degrade** (default 0.8 of a window): panels shrink to profile minimums (never below a risk
   floor), no new tasks start, in-flight work commits; the implementer starting tier steps down
@@ -172,6 +185,17 @@ upgrades in place if it lands.) The occupancy reading drives two thresholds:
 
 Thresholds ship **observe-only** first (log the crossing, don't act) so ceilings are tuned on
 real telemetry before they gate work — untuned hard caps stall the whole loop (§11).
+
+Two driver/accounting rules ride the ladder
+([unattended-operation-prior-art.md §3](../research/unattended-operation-prior-art.md)):
+
+- **Failure taxonomy.** Agent-*reported* task failures continue the loop (they are the §5.3
+  escalation signal); retryable infrastructure errors back off exponentially; permanent errors
+  (auth, credit exhaustion) abort the firing at once — a stderr-pattern table, not a judgment
+  call.
+- **Estimated readings are sticky.** Once any reading in a window came from the `estimate`
+  rung, every total derived from it is flagged estimated (`~`) downstream — measured and
+  guessed numbers are never silently blended.
 
 **Window-aware admission** (the scheduler input, §6.2): each candidate task carries a **quantile**
 cost forecast, never a point estimate — measured same-task token spend varies up to **30×** on
@@ -307,8 +331,42 @@ wasted cheap attempt `[measured]`).
   file dumps; heavy reading is delegated and dies with the subagent.
 - Workers receive **scoped specs** (the task's ledger entry + injected lessons), not the whole
   plan; specific file paths, not pasted file contents `[official guidance]`.
-- MCP surface minimal; ToolSearch deferral on (default); prefer CLI tools over MCP servers
-  `[official]`; `.claudeignore` tuned (measured up to ~85% context reduction `[measured]`).
+- **Tool surface: small, hot-set-pinned, ergonomic.** MCP surface minimal — the schema tax is
+  independently replicated at tens of K tokens per large server; prefer CLI/code paths over MCP
+  servers `[official + replicated]`. Deferred loading (ToolSearch) follows a **regime rule**,
+  not a blanket default: defer only when the catalog is large (≫10k tokens of definitions)
+  *and* the per-task hot set is a small fraction of it; the small set a worker certainly uses
+  is loaded eagerly / pinned non-deferred — deferral in the wrong regime measurably costs
+  discovery turns and success, and Anthropic's own docs state the boundary
+  ([tool-surface-and-format-economics.md §2–3](../research/tool-surface-and-format-economics.md)).
+  `.claudeignore` tuned (measured up to ~85% context reduction `[measured]`). The replicated
+  meta-finding governing all of this: **interface ergonomics — few, well-described, well-shaped
+  tools — dominates the transport choice** `[measured, replicated]`.
+- **Serialization-format policy** (verified incl. local measurements on this harness's own
+  shapes, [tool-surface-and-format-economics.md §4](../research/tool-surface-and-format-economics.md)):
+  never pretty-print into model context (+48–82% tokens for nothing); **compact JSON/JSONL** is
+  the format for persisted state (ledger, run-log — semi-uniform shapes where tabular formats
+  lose) and the *only* format models generate (schema-validated; TOON/CSV generation
+  reliability is independently negative). Digest views built *for* model reading (status
+  summaries, run-log projections) are **flattened first, then rendered as Markdown tables**
+  (~37% cheaper than compact JSON on our shapes, training-prior familiar, at the accuracy
+  Pareto frontier in the only independent multi-format test). TOON is reserved, if ever, for
+  large uniform tables consumed by deterministic scripts — its read-accuracy claims are
+  `[contested, leaning negative]`. Format conservatism is a cheap-tier *correctness* concern,
+  not just economy: format sensitivity concentrates in small models — exactly where §5.3
+  routes most turns.
+- **Skills discipline.** Skill *loading* is cheap (progressive disclosure) but *triggering* is
+  unreliable — direction independently corroborated: Anthropic's own trigger-quality
+  admissions, a ~15k-char skill-list budget that silently drops overflow, ~45–50% activation
+  in an independent probe
+  ([harness-evaluation-prior-art.md §1, §5.1](../research/harness-evaluation-prior-art.md)).
+  Rules: few skills with short, tested descriptions; the installed inventory is checked
+  against the list budget; **load-bearing procedures are invoked phase-gated in the
+  orchestration prompt (deterministic text, immune to trigger recall), never
+  trigger-reliant**; situational skills carry explicit trigger conditions ("when X and you
+  can't see why, run Y — don't guess-and-patch"); skill-routing canaries (fixture prompts
+  including negative controls where *no* skill should fire) sit in the self-test suite
+  alongside the §7 calibration canaries.
 - Compaction is a survivable event, not a stop — but the *economical* pattern is to make it
   rare by keeping the orchestrator lean, and to prefer clean session boundaries
   (`/clear`-equivalent + disk resume) over repeated `/compact` (compaction is itself a model
@@ -351,6 +409,15 @@ On a durable-FAIL re-validation, a naive loop re-authors held-out tests and re-r
   miss, a durable FAIL), never as open-ended synthesis (intrinsic self-correction *degrades*
   without external signal —
   [correctness-and-verification-evidence.md §2](../research/correctness-and-verification-evidence.md)).
+- **No implementer-side ceremony without paired proof.** Mandated process in worker prompts
+  (workflow scripts, test-first mandates, guideline prose) is a candidate net-negative until a
+  paired A/B clears it: mandated agent-authored TDD measured at +55% cost for null-to-negative
+  quality on hidden tests, guideline prose slightly hurting, instruction load degrading
+  compliance ([harness-evaluation-prior-art.md §2, §5.2](../research/harness-evaluation-prior-art.md)).
+  Validator-side rigor is exempt — governed by O0, never by this rule. The same evidence is
+  *why* the vault is panel-authored and hidden: an implementer iterating against self-authored
+  visible tests is the measured overfitting regime (21.8–33% visible-pass-hidden-fail,
+  refinement makes it worse).
 - **No spending-through a doomed trajectory.** Agents are measurably over-optimistic and keep
   spending on tasks unlikely to succeed rather than alerting early
   (r = 0.35 capability↔budget-awareness) `[measured]`; an external abort-on-predicted-failure
@@ -383,6 +450,17 @@ These cut elapsed time without buying tokens; they are always on:
    zero turn latency.
 5. **Structured outputs everywhere** (`--json-schema` / schema-forced subagent returns):
    eliminates parse-repair round-trips `[official]`.
+6. **Turn economy on every worker-read surface.** Each extra turn re-sends the whole growing
+   context, so follow-up-call elimination is a first-class accelerator — the decisive results
+   in the tool-surface benchmarks were all turn-count stories
+   ([tool-surface-and-format-economics.md §1–2](../research/tool-surface-and-format-economics.md)).
+   Every status/verdict/gate artifact carries **pre-computed aggregates** (`count: N of T`,
+   derived pass/fail roll-ups) so the obvious next question is pre-answered; empty results are
+   **definitive** (`runnable: 0 (3 blocked, 2 parked)`), never ambiguous blanks that force a
+   verification retry; act+observe steps are **fused** where a follow-up read is near-certain;
+   errors are structured, carry the fix inline (one-turn self-correction), and land on the
+   channel the worker reads; oversized output is **tail-truncated** (failures live at the end)
+   with the full artifact spilled to disk and its path + a grep hint returned.
 
 ### 6.2 Paid parallelism — admission-controlled by window headroom
 
@@ -413,6 +491,16 @@ underperform, raising the cost of a routing miss, §5.3). This harness buys para
 *validation* (independent lenses, cheap wall-clock) structurally, and for *implementation* only
 under the admission rule.
 
+**Worktree pooling (Stage 2):** per-pipeline *environment* cold-start is pooled away — a warm
+pool of lease-held worktrees (env-setup hooks run once per pool member; **durable leases**
+survive worker death, so a pipeline that dies mid-run keeps its home for the disk-resume;
+teardown is **fail-closed** behind precise "landed" semantics — patch-ID containment after
+squash merges, refusal when the remote is unreachable — and per-risk opt-in flags, never a
+blanket force) ([unattended-operation-prior-art.md §4](../research/unattended-operation-prior-art.md)).
+This is an **O2 win only**: a stable pool-slot cwd stabilizes the cache key, but each commit
+still cold-starts the next session's prefix (git snapshot in the system prompt), so the
+per-pipeline *cache* warmup above stays in the admission cost.
+
 **Window-phase scheduling:** heavy fan-out (big panels, multi-task bursts) schedules right
 after a window reset; the tail of a window runs cheap serial work. The 5-hour anchor-at-first-
 message behavior `[measured]` even allows deliberate window alignment to the operator's day
@@ -424,7 +512,7 @@ message behavior `[measured]` even allows deliberate window alignment to the ope
   human answer is never on the critical path of unrelated tasks.
 - **Batch ratifications** at phase close: machinery proposals, consequential plan revisions,
   and efficiency tunings queue and are ratified in one sitting; push notification on
-  queue-append.
+  queue-append. Each queued item is a **decision card** (format in §7).
 - An `assisted` autonomy level = a merge *queue* (work continues on task branches), not
   stop-the-world.
 - Blockers carry everything needed to decide (repro, options, recommendation) so one
@@ -462,8 +550,25 @@ differentiator ([landscape-and-novelty.md §2](../research/landscape-and-novelty
 - **Mechanized risk floors:** a path-glob → minimum-profile map enforced at the merge point by
   inspecting the *actual diff paths* (a mis-tagged security task cannot be validated cheaply
   and merged silently); a machinery-paths check (task branches cannot edit the loop's own
-  machinery); a held-out-test-drop check; a destructive-git blocker — all enforced by hooks,
-  all fail-open, all self-tested.
+  machinery); a held-out-test-drop check; a destructive-git blocker — all enforced by hooks, all
+  **fail-closed** (an enforcement gate that cannot run refuses the merge; only *advisory*
+  layers — triage annotations, suggestions — fail open), all self-tested.
+- **Typed gate findings — who may fix what:** gate steps emit findings as `severity
+  (error|warning|info)` × `action (auto-fix|ask-user|no-op)` with **per-step auto-fix budgets**
+  (review-class findings default to 0 — always human); safe mechanical fixes are applied by
+  the gate pipeline, never by the implementer being judged. **Executable gate/hook config
+  loads only from the ratified default branch at a freshly-fetched commit** — never from the
+  task branch under test (extends the isolation stack's layer 4 to config that *executes*;
+  fetch failure empties those fields rather than falling back to a stale copy). **Evidence
+  directories:** each gated task commits its validation evidence (transcripts, probe outputs,
+  gate captures) where it rides review — the durable input to the escapes log and
+  `docs/EVIDENCE.md` ([unattended-operation-prior-art.md §5](../research/unattended-operation-prior-art.md)).
+- **Self-reports are claims, not evidence** `[measured, replicated]`: agents cheat on ≥16% of
+  successful long-horizon runs and fabricate execution they never performed
+  ([harness-evaluation-prior-art.md §5.3](../research/harness-evaluation-prior-art.md)) — so no
+  status transition, verdict, or resume decision is made from a model's own summary. The loop
+  reconstructs from artifacts (git delta, gate outputs, ledger) before acting; "never
+  summarize a run from memory" is a standing orchestrator rule.
 - **Self-measuring verifier loop:** a committed **escapes log** (defects a panel missed —
   labeled ground truth) + **calibration canaries** (plant a known defect the panel should
   catch before trusting any "0 findings" downgrade; a miss freezes the downgrade) +
@@ -475,6 +580,15 @@ differentiator ([landscape-and-novelty.md §2](../research/landscape-and-novelty
   machinery (self-modifying loops can encode a bypass of their own safeguards without
   "deciding" to —
   [correctness-and-verification-evidence.md §5](../research/correctness-and-verification-evidence.md)).
+  Queue entries are **decision cards**
+  ([unattended-operation-prior-art.md §6](../research/unattended-operation-prior-art.md)):
+  deterministic *Situation* → advisory triage (**cached per content revision** — one triage
+  per revision, ever: spend control) → *Recommended action* → exactly-one-choice options; each
+  card carries a **content hash**, and a ratification is **refused if the proposal changed
+  after review** (stale-decision guard). Advisory triage fails open (a failed triage still
+  publishes the card); execution stays with deterministic code after human approval, and no
+  autonomy level relaxes the human carve-out for destructive/irreversible/security-sensitive
+  changes.
 
 ## 8. The controller — closing the loop on both objectives
 
@@ -489,7 +603,10 @@ explicitly:
 - **Discipline:** one lever at a time; minimum-sample floors; model-id/effort changes reset
   samples; every downgrade needs a fresh calibration PASS; protected profiles strengthen-only;
   all tunings queue to the ratification queue with a cost/benefit estimate — never
-  auto-applied.
+  auto-applied. Lever evaluations follow the **paired-arm template**: one lever = one arm,
+  continuous metric (never binarized), paired per-task comparison, difficulty stratification
+  defined out-of-sample, confirmatory-vs-exploratory labeling
+  ([harness-evaluation-prior-art.md §2](../research/harness-evaluation-prior-art.md)).
 - **Justification surface:** a committed evidence trail (`docs/EVIDENCE.md`, regenerated from
   telemetry) answers *is it catching real defects, is the cost justified, which features
   actually fire* — and drives subtraction: dormant non-insurance machinery gets flagged for
@@ -500,7 +617,7 @@ explicitly:
 
 | Failure mode | Mitigation |
 |---|---|
-| Stuck loop burning window budget | Liveness guard: multi-signal park (git-delta authoritative; repeated-error signature; slow-grind vs predicted duration bucket); a per-task step-count cap, since per-run token cost grows ~O(n²) in agent steps `[folklore]`, so a stuck retry loop is a multi-million-token event |
+| Stuck loop burning window budget | Liveness guard: multi-signal park (git-delta authoritative; repeated-error signature; slow-grind vs predicted duration bucket); a per-task step-count cap, since per-run token cost grows ~O(n²) in agent steps `[folklore]`, so a stuck retry loop is a multi-million-token event; a per-task **token** cap (from the §5.1 P95 forecast) checked mid-flight, not only between tasks; and a **no-op rule** — a turn with zero git delta and zero new artifacts counts as a *failure*, so the loop halts instead of spinning |
 | Doomed trajectory keeps spending | Abort-on-predicted-failure check inside long-running tasks (recovers 28–64% of failing-run tokens `[measured]`; agents won't self-throttle, r=0.35); observe-only until false-abort rate is proven against O0 (§5.6) |
 | Budget wall mid-panel (wasted panel) | Between-task budget-governor check; degrade→pause ladder; quantile window-aware admission (§5.1, §6.2) |
 | Cache thrash (the silent 10–20× event) | Frozen-prefix rules (model/effort/fast-mode/bare-tool-deny are the real busters) + prefix-edit warning hook; small CLAUDE.md; no huge-transcript resumes (§5.2) |
@@ -529,8 +646,11 @@ explicitly:
   2026-07-04]`.
 - **Live utilization is machine-readable in-session:** the statusline stdin JSON exposes
   `rate_limits.five_hour/seven_day.used_percentage` + `resets_at` and `context_window.current_usage`
-  cache counters `[official]` — the governor's primary source (§5.1). No dedicated quota CLI yet
-  (anthropics/claude-code#13585 open); headless firings have no official quota surface.
+  cache counters `[official]` — the governor's primary source (§5.1), with documented caveats:
+  subscriber-only, appears after the first API response, each window independently absent. No
+  dedicated quota CLI yet (anthropics/claude-code#13585 open — re-verified 2026-07-04 through
+  changelog v2.1.201, zero maintainer responses); headless firings have no official quota
+  surface (OTEL confirmed consumption-only by exact metric list).
 - **1-hour cache TTL is automatic on subscription auth** (drops to 5 min on usage credits);
   subagents get 5-min TTL and start cold; forks inherit the parent cache `[official]`.
 - Thinking tokens bill as output; effort is a depletion factor and a **soft** budget (overshoot
@@ -575,7 +695,12 @@ Cheapest proven lever first; each flip gated on the previous stage's telemetry.
   don't act — untuned hard caps stall the loop `[folklore]`), serial execution; per-profile
   starting-tier override; the vault-isolation strict-mode flags on every unattended firing;
   pipelining + pre-decompose; step-count caps; structured outputs on all worker returns;
-  `DISABLE_NON_ESSENTIAL_MODEL_CALLS` on headless firings.
+  `DISABLE_NON_ESSENTIAL_MODEL_CALLS` on headless firings; the **token-free loop test rig** —
+  a deterministic mock worker speaking the return schemas (synthetic usage counters, scripted
+  workspace effects, hold-open turns for cancellation paths) plus recorded-trace replay, so
+  the loop/governor/ledger are e2e-testable at zero quota; re-recording real fixtures spends
+  quota and is operator-gated
+  ([unattended-operation-prior-art.md §7](../research/unattended-operation-prior-art.md)).
 - **Stage 1 (after the minimum task sample):** flip governor thresholds from observe-only to
   enforcing; per-profile effort via the Workflow spawn path, effort recorded in the run-log; the
   duration predictor, gated on (a) the simple starting-tier lever showing escapes ~0 and $/task
@@ -584,42 +709,68 @@ Cheapest proven lever first; each flip gated on the previous stage's telemetry.
 - **Stage 2 (needs Stage-1 evidence):** held-out vault + safe-RTS replay (non-floored surfaces
   first, replay rate-limited); intra-task early-abort enforcing once the false-abort rate is
   proven against O0; concurrency cap 2 under the admission rule (including per-pipeline cache
-  warmup in the cost side), with the run-log attributing rework to concurrency.
+  warmup in the cost side), with the run-log attributing rework to concurrency; the pooled
+  lease-based worktree lifecycle (§6.2).
 - **Stage 3 (optional, evidence-gated):** the full bucket×profile starting-tier matrix;
   test-execution caching (bounded to non-security surfaces, mandatory cache-defeat on the
   changed surface — explicitly down-weighted by the objective).
 - **Standing:** recalibrate window ceilings after 2026-07-13 (promo expiry), re-check the paused
-  Agent-SDK regime change (§10.3), and after any entry lands in §10.3.
+  Agent-SDK regime change (§10.3), and after any entry lands in §10.3; re-run
+  `tools/budget-governor/probe-spawn-portability.js` on any new Claude Code build or
+  environment before trusting per-agent `(model, effort)` dispatch (§12 reclassified item).
 
 ## 12. Open questions
 
-1. **Dedicated quota CLI** (anthropics/claude-code#13585, still open): the statusline
-   `rate_limits` feed now covers in-session utilization (§5.1), but headless `-p` firings still
-   have no official surface — they fall back to the unstable OAuth-usage endpoint or the
-   optimistic local estimate until a headless-capable API ships.
+*Trimmed 2026-07-04:* the five founding questions are now **two**. The other three are
+reclassified below — they stopped being open *design* questions once the design absorbed
+their mitigations; what remains of each is scheduled work, not uncertainty.
+
+1. **Headless quota surface** (anthropics/claude-code#13585 — re-verified 2026-07-04: still
+   open, 22 comments all community, zero maintainer responses; changelog checked through
+   v2.1.201): there is still **no official machine-readable quota surface for `claude -p`** —
+   OTEL exports consumption metrics only (verified by exact metric list; no utilization or
+   reset gauge), and the statusline `rate_limits` feed is interactive-only with documented
+   caveats (§10.1). The question has therefore *narrowed* from "does a surface exist?"
+   (settled: no) to **which fallback to wire for unattended firings**, ranked:
+   (a) the **statusline-dump shim** (§5.1) — official data, unofficial acquisition, stales
+   when the host session idles; (b) the unofficial OAuth-usage endpoint — with the probed
+   caveat (2026-07-04, this dev machine) that credentials are **not non-interactively
+   accessible everywhere** (no credentials file, no Keychain item), so this rung requires
+   explicit per-environment operator wiring; (c) the run-log estimate (optimistic, sticky-`~`,
+   §5.1). The ladder upgrades in place if #13585 ships.
 2. **Cache-read quota weight** (§10.2) — *the highest-value experiment*: a matched-content
    cache-preserving vs cache-busting protocol is written and ready
    ([tools/budget-governor/cache-read-quota-weight-experiment.md](../../tools/budget-governor/cache-read-quota-weight-experiment.md)),
    with a working runner script, but **deliberately not yet executed** — it spends real Max-plan
    quota, so the operator decides when to run it (ideally right after a window reset).
-3. **Per-agent effort portability:** re-probed on Claude Code 2.1.45 (2026-07-04) — dispatch of
-   both axes is reconfirmed, but the probe also found the primitive does **not** reliably reject
-   invalid `(model, effort)` ids (see §5.3 correction and
-   [tools/budget-governor/probe-spawn-portability-2026-07-04.md](../../tools/budget-governor/probe-spawn-portability-2026-07-04.md)).
-   Remaining open: whether this holds on other builds/environments the harness might run on —
-   the parallel-`Agent`-calls fallback stays the default until re-probed there; re-run
-   `tools/budget-governor/probe-spawn-portability.js` on any new build before trusting it.
-4. **Window-occupancy forecasting:** the admission rule needs a per-task burn forecast; measured
-   spend varies up to 30× same-task and models can't self-predict it (§5.1), so start with
-   P95-quantile profile×tier estimates and only upgrade to duration buckets once the predictor's
-   features are validated against measured burn. The predictor, its calibration gate, and the
-   estimate table are built and self-tested (not yet fed real telemetry, since no tasks have run
-   through the loop): [tools/budget-governor/](../../tools/budget-governor/) — see its README for
-   how the two forecasts (admission vs tier-routing) share one bootstrap loop.
-5. **Headless quota regime:** track whether the paused Agent-SDK change (§10.3) un-pauses; if it
-   does, the governor's accounting swaps from window bin-packing to a monthly dollar budget for
-   headless firings, so the "which pool does this spend drain" abstraction must already exist.
+   Re-checked 2026-07-04: still no official statement (#24147 unanswered); one new *indirect*
+   official signal — the `/usage` plan-limits attribution itemizes **cache misses** as a limit
+   driver, implying hits are weighted differently, weight unstated. The conservative
+   configurable-weight assumption stands until the experiment runs.
 
-*Resolved since the founding draft:* **vault sandbox enforcement** (was open question #3) — the
-six-layer OS-enforced isolation stack, proven by a vault-canary read-attempt in the gate
-self-tests (§7; [isolation-and-sandboxing.md](../research/isolation-and-sandboxing.md)).
+*Reclassified 2026-07-04 — no longer open design questions:*
+
+- **Per-agent effort portability** (was #3): the design no longer depends on the answer —
+  spawn code validates `(model, effort)` against an explicit allowlist and null-checks results
+  (§5.3), so a primitive that silently accepts bad ids can no longer misroute silently.
+  Residual = a standing recheck: re-run
+  [tools/budget-governor/probe-spawn-portability.js](../../tools/budget-governor/probe-spawn-portability.js)
+  on any new build/environment (§11 Standing); the parallel-`Agent`-calls fallback remains the
+  default on unprobed builds.
+- **Window-occupancy forecasting** (was #4): the method is settled — P95-quantile
+  profile×tier estimates first (§5.1), duration-bucket upgrade gated on feature validation
+  (§11 Stage 1) — and the plumbing is now testable at zero quota via the token-free mock rig
+  (§11 Stage 0). Residual = feeding it real telemetry once tasks flow: a calibration gate,
+  not a design choice. Tools built and self-tested:
+  [tools/budget-governor/](../../tools/budget-governor/).
+- **Headless quota regime** (was #5): re-verified 2026-07-04 — the Agent-SDK/`claude -p`
+  billing change is **still paused** (official support article live; the only promised lead
+  time is "before anything takes effect"), so headless firings still drain the shared
+  windows. The "which pool does this spend drain" abstraction the question asked for is in
+  the governor's window model (§5.1). Residual = the volatility watch already scheduled in
+  §11 Standing / §10.3.
+
+*Resolved since the founding draft:* **vault sandbox enforcement** (the founding draft's open
+question #3) — the six-layer OS-enforced isolation stack, proven by a vault-canary
+read-attempt in the gate self-tests (§7;
+[isolation-and-sandboxing.md](../research/isolation-and-sandboxing.md)).

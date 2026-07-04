@@ -124,16 +124,16 @@ precision-aware**. All gates fail closed; interlocks are inert outside a live fi
 
 | ID | Increment | Design ref | Deps | Status |
 |---|---|---|---|---|
-| H1 | **Hook registration**: committed `.claude/settings.json` registering git-guard + prefix-edit-warn (PreToolUse) and the closure gate (Stop); `hooks/closure_gate.py` gains a **Stop-hook stdin mode** (config from a fixed path; **inert when no live run marker** — the gate guards firings, not operator sessions); selftest **fails when registration is absent** or points off the ratified scripts | §7 wiring amendment 1, §11 Stage 0 | C1–C5, E5 | not-started |
-| H2 | **Merge + spawn interlocks** (`harness/interlocks.py`, `hooks/merge_interlock.py`, `hooks/spawn_interlock.py`): during a live firing, `git merge`/`git push` to protected refs requires a **fresh PASS gate stamp bound to branch + HEAD SHA** (run_gate writes stamps on PASS); worker spawns require a **fresh admission stamp** (scheduler tick writes it); both inert outside firings, fail closed inside | §7 wiring amendments 2–3 | H1, D2, B2 | not-started |
-| H3 | **Gate mandatory-step manifest** (`harness/config/gate-required-steps.json`): per-profile required steps loaded from the ratified ref; a required input that is absent **fails closed** — "caller's choice" passes survive only where the manifest says so | §7 wiring amendment 4 | D2 | not-started |
-| H4 | **Executable-repro findings + false-FAIL telemetry**: verdict/finding schema gains a machine-replayable `repro` (command + expectation); the gate replays repro **in the clean checkout** before an error finding blocks; unreproduced findings **downgrade to ask-user** and are counted (per-lens/tier false-FAIL rate lands in the run-log; repro-required per profile) | §7 typed-findings amendment, §8 inputs | D2, E1, A1 | not-started |
-| H5 | **Panel-correlation telemetry + cross-provider card**: calibration aggregates canary trials panel-wide (all-lenses-missed = correlated blind spot, feeds the evidence roll-up); a decision-card factory for the opt-in cross-provider validator on critical profiles | §7 panel amendment, §8 | D4, E3, F1 | not-started |
-| H6 | **Escape-discovery protocol**: deterministic backfill (later-phase defect on a merged surface → escapes-log entry attributed to merging task + panel); sampled **escape-hunt due-check** (budget-governed); downgrade/flip guard requires **discovery channel active**, not just zero escapes | §7 self-measuring amendment | D4 | not-started |
-| H7 | **Evidence leakage policy**: held-out execution output routes to a **vault-side evidence store** covered by the same deny rules; in-repo gate reports **scrubbed against the vault manifest** (vault paths/test identifiers → stable hashes); verdict-verbosity line in the leakage budget | §5.5 point 5 | D1, D2 | not-started |
-| H8 | **Firing preflight + staleness-aware governor**: occupancy readings carry age (stale → margin widens with data age, rung falls through); `preflight()` probes the ladder at firing start — no live-utilization rung reachable → **conservative mode** (tightened thresholds, cheap-serial only) or operator ack | §5.1 amendment | A3, E2 | not-started |
-| H9 | **Spec-ambiguity blockers**: handoff schema gains `spec_ambiguities`; on high/critical profiles they become **blocker records parking the task before implementation spends tokens** (advisory `key_learnings` on lower profiles) | §6.3 amendment | E1, E3 | not-started |
-| H10 | **Worker-side unconditional machinery deny**: `worker_settings()` denies Edit/Write on machinery globs regardless of branch name, merged with the vault fragment — branch prefixes are a dev convenience, not a boundary a worker can adopt | §7 wiring amendment 5 | E2, D1 | not-started |
+| H1 | **Hook registration**: committed `.claude/settings.json` registering git-guard + prefix-edit-warn (PreToolUse) and the closure gate (Stop); `hooks/closure_gate.py` gains a **Stop-hook stdin mode** (config from a fixed path; **inert when no live run marker** — the gate guards firings, not operator sessions); selftest **fails when registration is absent** or points off the ratified scripts | §7 wiring amendment 1, §11 Stage 0 | C1–C5, E5 | done |
+| H2 | **Merge + spawn interlocks** (`harness/interlocks.py`, `hooks/merge_interlock.py`, `hooks/spawn_interlock.py`): during a live firing, `git merge`/`git push` to protected refs requires a **fresh PASS gate stamp bound to branch + HEAD SHA** (run_gate writes stamps on PASS); worker spawns require a **fresh admission stamp** (scheduler tick writes it); both inert outside firings, fail closed inside | §7 wiring amendments 2–3 | H1, D2, B2 | done |
+| H3 | **Gate mandatory-step manifest** (`harness/config/gate-required-steps.json`): per-profile required steps loaded from the ratified ref; a required input that is absent **fails closed** — "caller's choice" passes survive only where the manifest says so | §7 wiring amendment 4 | D2 | done |
+| H4 | **Executable-repro findings + false-FAIL telemetry**: verdict/finding schema gains a machine-replayable `repro` (command + expectation); the gate replays repro **in the clean checkout** before an error finding blocks; unreproduced findings **downgrade to ask-user** and are counted (per-lens/tier false-FAIL rate lands in the run-log; repro-required per profile) | §7 typed-findings amendment, §8 inputs | D2, E1, A1 | done |
+| H5 | **Panel-correlation telemetry + cross-provider card**: calibration aggregates canary trials panel-wide (all-lenses-missed = correlated blind spot, feeds the evidence roll-up); a decision-card factory for the opt-in cross-provider validator on critical profiles | §7 panel amendment, §8 | D4, E3, F1 | done |
+| H6 | **Escape-discovery protocol**: deterministic backfill (later-phase defect on a merged surface → escapes-log entry attributed to merging task + panel); sampled **escape-hunt due-check** (budget-governed); downgrade/flip guard requires **discovery channel active**, not just zero escapes | §7 self-measuring amendment | D4 | done |
+| H7 | **Evidence leakage policy**: held-out execution output routes to a **vault-side evidence store** covered by the same deny rules; in-repo gate reports **scrubbed against the vault manifest** (vault paths/test identifiers → stable hashes); verdict-verbosity line in the leakage budget | §5.5 point 5 | D1, D2 | done |
+| H8 | **Firing preflight + staleness-aware governor**: occupancy readings carry age (stale → margin widens with data age, rung falls through); `preflight()` probes the ladder at firing start — no live-utilization rung reachable → **conservative mode** (tightened thresholds, cheap-serial only) or operator ack | §5.1 amendment | A3, E2 | done |
+| H9 | **Spec-ambiguity blockers**: handoff schema gains `spec_ambiguities`; on high/critical profiles they become **blocker records parking the task before implementation spends tokens** (advisory `key_learnings` on lower profiles) | §6.3 amendment | E1, E3 | done |
+| H10 | **Worker-side unconditional machinery deny**: `worker_settings()` denies Edit/Write on machinery globs regardless of branch name, merged with the vault fragment — branch prefixes are a dev convenience, not a boundary a worker can adopt | §7 wiring amendment 5 | E2, D1 | done |
 
 ## Stage-gate flips (operational, evidence-gated — design §11)
 
@@ -166,11 +166,17 @@ prior stage's telemetry.
 
 ## Next up
 
+**The pilot firing** (Stage-0 exit criterion, design §11) — deliberately **not** a build
+increment. Phase H is complete; every increment in the plan is built and merged (450 tests,
+29/29 gate selftest cases). The next unit of work is a small real greenfield build at
+Stage-0 settings, producing the first real run-log/canary/calibration data and
+operator-gated recorded traces. **Operator-started** — the firing needs the operator to
+pick the pilot project and start it (`build-loop` skill). No further machinery before the
+pilot: the apparatus has outrun realized scale once already (design §11, landscape §4.1).
+
+<!-- superseded pointer kept for history: -->
 **H1 — hook registration** (settings artifact + closure Stop-hook stdin mode + registration
-selftest): first Phase-H increment; H2 depends on it. After Phase H, the next unit of work is
-**not machinery** — it is the **pilot firing** (Stage-0 exit criterion, design §11): a small
-real greenfield build producing the first real run-log/canary/calibration data and
-operator-gated recorded traces.
+selftest): first Phase-H increment; H2 depends on it.
 
 <!-- superseded pointer kept for history: -->
 **E1 — subagent definitions + verdict/handoff schemas** (`.claude/agents/*.md` + JSON
@@ -292,3 +298,25 @@ schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
   verifier-precision floor) and execution begun. Also logged: this file's own status table
   went stale mid-run-6 (F/G done while marked not-started) — a live instance of the
   claims-not-evidence rule; the reconciliation view, not this prose, is the resume authority.
+- **2026-07-04 (run 7, complete):** **Phase H complete — every increment in the plan is now
+  built.** 450 tests passing (was 358 at run-6 close); gate selftest 29/29 both-direction
+  cases. H1 (`.claude/settings.json` registration + closure Stop-hook stdin mode, inert
+  without a live run marker; registration selftest), H2 (`harness/interlocks.py` +
+  merge/spawn interlock hooks: PASS-only gate stamps bound to branch+HEAD, admission stamps,
+  inert outside firings, fail-closed inside), H3 (per-profile required-steps manifest from
+  the ratified ref — "caller's choice" omissions fail closed), H4 (executable-repro findings:
+  the gate replays repros in the clean checkout before a FAIL blocks; unreproduced findings
+  → ask-user adjudication, never escalation fuel; per-lens false-FAIL telemetry →
+  run-log `false_fail` events), H5 (`panel_correlation` over per-lens canary results;
+  EVIDENCE.md lines; `cross_provider_card`), H6 (`backfill_escape` + `HuntLog` +
+  deterministic `hunt_sample` + `discovery_active`; `downgrade_allowed` now freezes without
+  an active discovery channel), H7 (vault-side evidence store excluded from the manifest;
+  manifest-based scrubbing of gate reports/logs; `verdict_verbosity` leakage line), H8
+  (readings carry age → stale rungs fall through, thresholds tighten with data age;
+  `preflight()` — no live rung → conservative mode; CLI `--preflight` exit 3), H9
+  (`spec_ambiguities` in the handoff schema → blocker records parking high/critical tasks
+  pre-implementation), H10 (`machinery_deny_rules()` unconditional in `worker_settings`).
+  **Process deviation, logged per ground rules:** H2 was committed directly to `main`
+  (`ca8d707`) instead of via a feature branch — caught immediately after; content identical
+  to what the merge would have produced; not history-rewritten (destructive-git rule).
+  Next: **the pilot firing** (see Next up).

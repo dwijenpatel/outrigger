@@ -186,6 +186,21 @@ when the host session idles; see §12 Q1.) The occupancy reading drives two thre
 Thresholds ship **observe-only** first (log the crossing, don't act) so ceilings are tuned on
 real telemetry before they gate work — untuned hard caps stall the whole loop (§11).
 
+Two rules added 2026-07-04 (evening), because unattended firings otherwise run on the *weakest*
+quota telemetry precisely when it matters most (the statusline rung is interactive-only, the
+shim stales when the host session idles, the estimate rung is optimistic *and* blind to the
+operator's other usage, and agents measurably cannot self-throttle):
+
+- **Readings carry their age.** Every occupancy reading records when it was produced; the
+  governor treats a reading older than a configurable staleness ceiling as **degraded** — it
+  widens the admission margin with data age and falls through to the next rung rather than
+  consuming a six-hour-old number as live.
+- **Firing preflight.** At firing start the loop probes the source ladder; if **no
+  live-utilization rung is reachable**, the firing starts in **conservative mode** (tightened
+  degrade/pause thresholds, admission margin bumped, cheap-serial work only) or requires an
+  explicit operator acknowledgment. A firing never silently begins full-fan-out on
+  estimate-rung data alone.
+
 Two driver/accounting rules ride the ladder
 ([unattended-operation-prior-art.md §3](../research/unattended-operation-prior-art.md)):
 
@@ -400,6 +415,14 @@ On a durable-FAIL re-validation, a naive loop re-authors held-out tests and re-r
    [revalidation-reuse-and-leakage.md §5](../research/revalidation-reuse-and-leakage.md)):
    rate-limit replays, rotate/refresh the corpus, and keep **full fresh re-derivation on
    risk-floored surfaces** — exactly where a gamed frozen set is most dangerous.
+5. **Evidence artifacts are a leakage channel too** *(2026-07-04 evening amendment)*. The gate's
+   committed evidence directories and verbose verdicts can carry held-out content (test names,
+   assertion text, full execution logs) into paths a retry implementer can read — an adaptive-
+   reuse leak around the six-layer stack. Policy: **held-out execution output routes to a
+   vault-side evidence store** covered by the same deny rules; in-repo gate reports are
+   **scrubbed against the vault manifest** (vault-relative paths/test identifiers replaced with
+   stable hashes); behavior-level verdict quotes are the accepted, budgeted leak — full held-out
+   logs are not. Verdict verbosity gets its own line in the leakage budget.
 
 ### 5.6 What the harness deliberately does not spend on
 
@@ -517,6 +540,12 @@ message behavior `[measured]` even allows deliberate window alignment to the ope
   stop-the-world.
 - Blockers carry everything needed to decide (repro, options, recommendation) so one
   round-trip resolves them.
+- **Spec-ambiguity blockers** *(2026-07-04 evening amendment)*: the spec is the one shared
+  input blind validation cannot audit — spec↔intent divergence is validated-wrong-software.
+  The test-author already surfaces spec ambiguities in its handoff; on **high/critical
+  profiles those become blocker records that park the task before the implementer spends
+  tokens** on an ambiguous spec (one operator round-trip resolves them, same E3 machinery).
+  On lower profiles they stay advisory `key_learnings`.
 
 ## 7. The correctness floor (O0)
 
@@ -545,24 +574,69 @@ differentiator ([landscape-and-novelty.md §2](../research/landscape-and-novelty
   the gate self-tests: the isolation is verified by a failing read, never assumed.
 - **Diverse-lens panels, all-must-pass;** consensus voting only for redundant panels
   (popularity-trap evidence,
-  [correctness-and-verification-evidence.md §3](../research/correctness-and-verification-evidence.md));
-  model heterogeneity across a panel where possible.
+  [correctness-and-verification-evidence.md §3](../research/correctness-and-verification-evidence.md)).
+  *Amended 2026-07-04 evening:* model heterogeneity is **weak insurance, not a diversity
+  mechanism** — LLM errors correlate strongly (~60% same-wrong-answer agreement when two models
+  err, rising with capability, persisting across providers; judges favor similar models —
+  [§3 addendum](../research/correctness-and-verification-evidence.md)). N same-family validators
+  are not N independent draws. What de-correlates is **leverage diversity** (held-out execution,
+  clean-checkout reproduction, distinct lenses on distinct artifacts) — marginal panel tokens
+  buy a new lens or new leverage, never another same-family opinion. **Panel-correlation
+  telemetry:** calibration-canary results aggregate panel-wide — a planted defect missed by
+  *all* lenses is recorded as a correlated blind spot (feeds §8). For critical profiles a
+  **cross-provider validator** (API-billed, outside the Max windows) is available as a
+  decision-card option — operator-ratified, never a silent default.
 - **Mechanized risk floors:** a path-glob → minimum-profile map enforced at the merge point by
   inspecting the *actual diff paths* (a mis-tagged security task cannot be validated cheaply
   and merged silently); a machinery-paths check (task branches cannot edit the loop's own
   machinery); a held-out-test-drop check; a destructive-git blocker — all enforced by hooks, all
   **fail-closed** (an enforcement gate that cannot run refuses the merge; only *advisory*
   layers — triage annotations, suggestions — fail open), all self-tested.
+  *Amended 2026-07-04 evening — enforcement is only real once wired and triggered:*
+  1. **Hook registration is part of the floor.** A committed settings artifact registers every
+     enforcement hook (PreToolUse/Stop); registration lives in a scope workers cannot write
+     (isolation layer 4 extended from gate *config* to hook *registration*); the gate self-tests
+     **fail when registration is absent** or points off the ratified scripts. Unregistered
+     hooks are a library, not an enforcement layer.
+  2. **Merge interlock.** During a live firing, `git merge`/`git push` to protected refs is
+     hook-intercepted and requires a **fresh PASS gate stamp bound to that branch + HEAD SHA**
+     — "merge only through the gate" is machinery, not a skill sentence. Outside firings
+     (operator/machinery development) the interlock is inert.
+  3. **Spawn interlock.** Worker spawns during a firing require a **fresh admission decision
+     stamp** (governor + scheduler output) — the firstmate enforce-that-judgment-happened
+     pattern ([unattended-operation-prior-art.md §8](../research/unattended-operation-prior-art.md));
+     "governor between tasks" stops being prose.
+  4. **Mandatory-step manifest.** The gate loads a per-profile required-steps manifest from the
+     ratified ref; a required input that is absent **fails closed** — "caller's choice" passes
+     survive only where the profile's manifest says so.
+  5. **Workers deny machinery unconditionally.** Worker settings deny Edit/Write on machinery
+     paths regardless of branch name — the branch-prefix allowlist is a convenience for the
+     loop's own development, not a security boundary a worker can adopt.
 - **Typed gate findings — who may fix what:** gate steps emit findings as `severity
   (error|warning|info)` × `action (auto-fix|ask-user|no-op)` with **per-step auto-fix budgets**
   (review-class findings default to 0 — always human); safe mechanical fixes are applied by
-  the gate pipeline, never by the implementer being judged. **Executable gate/hook config
+  the gate pipeline, never by the implementer being judged.
+  *Amended 2026-07-04 evening — false FAILs are the symmetric, measured failure
+  ([correctness-and-verification-evidence.md §7](../research/correctness-and-verification-evidence.md):
+  ~79–83% of raw multi-agent findings killed by adversarial refutation; consensus endorsed a
+  non-existent vulnerability, killed only by one empirical test):* error-severity findings from
+  validator FAIL verdicts carry a **machine-replayable repro** (command + expectation) that the
+  **gate re-executes in the clean checkout before the FAIL blocks** — reproduction becomes
+  machinery, not a claimed quote (fabricated execution is a measured behavior). A finding whose
+  repro does not reproduce **downgrades to ask-user** (it cannot silently hard-block), and is
+  counted — the run-log tracks an **unreproduced-findings (false-FAIL) rate** per lens/tier so
+  the controller sees verifier precision, which otherwise poisons the escalation ladder and the
+  >40% break-even telemetry invisibly. Repro-required is per-profile config (floored/critical
+  profiles mandatory; judgment-only lenses on low profiles may stay ask-user by default). **Executable gate/hook config
   loads only from the ratified default branch at a freshly-fetched commit** — never from the
   task branch under test (extends the isolation stack's layer 4 to config that *executes*;
   fetch failure empties those fields rather than falling back to a stale copy). **Evidence
   directories:** each gated task commits its validation evidence (transcripts, probe outputs,
   gate captures) where it rides review — the durable input to the escapes log and
-  `docs/EVIDENCE.md` ([unattended-operation-prior-art.md §5](../research/unattended-operation-prior-art.md)).
+  `docs/EVIDENCE.md` ([unattended-operation-prior-art.md §5](../research/unattended-operation-prior-art.md));
+  held-out execution output is the exception — it routes to the vault-side store and in-repo
+  reports are manifest-scrubbed (§5.5 point 5), so evidence never becomes the leak around the
+  vault.
 - **Self-reports are claims, not evidence** `[measured, replicated]`: agents cheat on ≥16% of
   successful long-horizon runs and fabricate execution they never performed
   ([harness-evaluation-prior-art.md §5.3](../research/harness-evaluation-prior-art.md)) — so no
@@ -573,6 +647,16 @@ differentiator ([landscape-and-novelty.md §2](../research/landscape-and-novelty
   labeled ground truth) + **calibration canaries** (plant a known defect the panel should
   catch before trusting any "0 findings" downgrade; a miss freezes the downgrade) +
   contract-test kill-rate calibration (a weak visible oracle raises rigor, never lowers it).
+  *Amended 2026-07-04 evening — "escapes ≈ 0" needs a discovery channel or it is
+  unfalsifiable* (greenfield + solo operator + no production users ≈ nothing notices a
+  merged-but-wrong change; canaries only measure the planted-defect distribution, and ~27% of
+  real faults are uncoupled from standard mutants). Three mechanisms make the number mean
+  something: **(a) deterministic escape backfill** — any defect surfaced by a later task/phase
+  on a merged surface files an escapes-log entry attributed to the merging task *and* the panel
+  that passed it; **(b) sampled escape-hunts** — a scheduled, budget-governed re-audit of a
+  random sample of merged surface by a fresh high-tier panel; **(c) flip conditions read
+  "zero *discovered* escapes with the discovery channel active"** — a silent log with no active
+  discovery mechanism gates nothing.
 - **Closure gate** vs a plan snapshot frozen at build start, a fresh-evidence rule (only
   evidence newer than the last remediation can decide), bounded remediation rounds.
 - **Governed self-modification:** the loop proposes; a human ratifies machinery changes via a
@@ -597,7 +681,10 @@ explicitly:
 
 - **Inputs:** per-role token telemetry (+ effort), a $/MTok cost table per model, window
   telemetry from the budget governor, catch-rate vs the escapes log, calibration results,
-  concurrency-attributed rework, the evidence roll-up.
+  concurrency-attributed rework, the evidence roll-up; *(2026-07-04 evening)* the
+  **false-FAIL rate** (unreproduced error findings per lens/tier, §7) and **panel-correlation
+  telemetry** (all-lenses-missed canaries, §7) — verifier *precision* and panel *independence*
+  are tracked quantities, not assumptions.
 - **Levers:** implementer/test-author starting tier, validator tier/count/lens-set,
   per-profile effort, the concurrency cap, vault replay rate, window ceilings.
 - **Discipline:** one lever at a time; minimum-sample floors; model-id/effort changes reset
@@ -632,6 +719,11 @@ explicitly:
 | Limits change under the harness (they did, 7+ times) | No hard-coded magnitudes; empirical ceiling calibration; §10.3 changelog discipline; re-check after 2026-07-13 promo expiry and the paused Agent-SDK regime change |
 | Concurrent firings | Manual trigger + advisory run marker + operator arbitration |
 | Reward hacking / stale-green | The whole §7 floor; hooks un-skippable at merge/stop points |
+| Hallucinated FAIL blocks a merge / drives paid escalation | Executable-repro replay at the gate before an error finding blocks; unreproduced findings downgrade to ask-user; false-FAIL rate tracked per lens/tier (§7) |
+| Correlated panel blind spot (same-family validators agree on the same miss) | Leverage diversity over model-count redundancy; panel-wide canary aggregation as correlation telemetry; optional cross-provider validator card on critical profiles (§7) |
+| Merged-but-wrong change never discovered ("escapes ≈ 0" reads as safety) | Escape backfill rule + sampled escape-hunts; flips require an active discovery channel (§7) |
+| Unattended firing on stale/optimistic quota data | Readings carry age (stale → margin widens, rung falls through); firing preflight starts conservative when no live rung is reachable (§5.1) |
+| Orchestrator skips a mandatory step (gate, governor) | Merge + spawn interlocks demand fresh stamps during firings; mandatory-step manifest fails the gate closed on absent inputs; hook registration self-tested (§7) |
 
 ## 10. Appendix — Max-window facts the design depends on
 
@@ -701,6 +793,13 @@ Cheapest proven lever first; each flip gated on the previous stage's telemetry.
   the loop/governor/ledger are e2e-testable at zero quota; re-recording real fixtures spends
   quota and is operator-gated
   ([unattended-operation-prior-art.md §7](../research/unattended-operation-prior-art.md)).
+  *Added 2026-07-04 evening:* **hook registration + interlocks + gate step-manifest** (the §7
+  wiring amendments — enforcement is only real once registered and triggered) and the
+  **firing preflight / staleness-aware governor** (§5.1). **Stage-0 exit criterion: a real
+  pilot firing** — a small greenfield build at Stage-0 settings producing the first real
+  run-log/canary/calibration data and operator-gated recorded traces to replace the mock rig's
+  synthetic fixtures. No further machinery ships before the pilot; the apparatus has outrun
+  realized scale once already ([landscape-and-novelty.md §4.1](../research/landscape-and-novelty.md)).
 - **Stage 1 (after the minimum task sample):** flip governor thresholds from observe-only to
   enforcing; per-profile effort via the Workflow spawn path, effort recorded in the run-log; the
   duration predictor, gated on (a) the simple starting-tier lever showing escapes ~0 and $/task
@@ -717,7 +816,13 @@ Cheapest proven lever first; each flip gated on the previous stage's telemetry.
 - **Standing:** recalibrate window ceilings after 2026-07-13 (promo expiry), re-check the paused
   Agent-SDK regime change (§10.3), and after any entry lands in §10.3; re-run
   `tools/budget-governor/probe-spawn-portability.js` on any new Claude Code build or
-  environment before trusting per-agent `(model, effort)` dispatch (§12 reclassified item).
+  environment before trusting per-agent `(model, effort)` dispatch (§12 reclassified item);
+  *(2026-07-04 evening)* **re-audit the §4 leverage map on each Claude Code feature wave** —
+  custom residue a new built-in now covers gets migrated, not maintained (first candidate:
+  build-loop control flow as a Workflow script — deterministic tick order, schema-forced agent
+  returns, resume journal — with the skill reduced to judgment-only guidance; evaluate, don't
+  mandate: workflow scripts have no direct shell access, so deterministic modules stay
+  hook/gate-side regardless).
 
 ## 12. Open questions
 

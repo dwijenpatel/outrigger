@@ -170,6 +170,39 @@ def _rev_parse_head(repo: str, ref: str) -> str:
     return _git(repo, "rev-parse", ref).stdout.strip()
 
 
+# -- H3: required-steps manifest ---------------------------------------------------
+
+#: manifest step name → the run_gate input that must be supplied to enforce it
+REQUIRED_STEP_INPUTS = {
+    "visible_tests": "test_cmd",
+    "verdicts": "verdict_dir",
+    "risk_floor": "floor_config_path",
+    "heldout_drop": "vault_path",
+}
+
+
+def validate_required_steps(doc) -> dict:
+    """Manifest shape: ``{profile: [step, ...]}``. Unknown profiles or steps
+    are loud — a typo'd manifest must not silently require nothing."""
+    if not isinstance(doc, dict):
+        raise GateError("required-steps manifest must be a JSON object")
+    out = {}
+    for profile, step_list in doc.items():
+        if profile not in PROFILES:
+            raise GateError(f"required-steps manifest: unknown profile "
+                            f"{profile!r} (not in {PROFILES})")
+        if not isinstance(step_list, list):
+            raise GateError(f"required-steps manifest: {profile!r} must map "
+                            f"to a list of step names")
+        for name in step_list:
+            if name not in REQUIRED_STEP_INPUTS:
+                raise GateError(
+                    f"required-steps manifest: unknown step {name!r} for "
+                    f"{profile!r} (known: {sorted(REQUIRED_STEP_INPUTS)})")
+        out[profile] = list(step_list)
+    return out
+
+
 # -- the gate --------------------------------------------------------------------
 
 
@@ -185,12 +218,18 @@ def run_gate(repo: str, branch: str, base: str = "main",
              require_clean: bool = True,
              min_lenses: int = 1,
              test_timeout: int = 1800,
-             stamp_dir: str | None = None) -> dict:
+             stamp_dir: str | None = None,
+             required_steps_path: str | None = None) -> dict:
     """Run the full gate. Fail-fast on the first blocking step; every executed
     step is reported. Returns the report dict (see ``render_report``).
 
     With ``stamp_dir``, a PASS writes the H2 gate stamp (branch + HEAD sha)
-    the merge interlock demands during a live firing — and only a PASS does."""
+    the merge interlock demands during a live firing — and only a PASS does.
+
+    With ``required_steps_path`` (repo-relative, loaded from the **ratified
+    base ref**, never the branch under test), the H3 manifest turns
+    "caller's choice" omissions into fail-closed refusals for the task's
+    profile — an under-configured gate call cannot yield a green gate."""
     if task_profile not in PROFILES:
         raise GateError(f"unknown profile {task_profile!r}")
     steps: list = []
@@ -215,6 +254,36 @@ def run_gate(repo: str, branch: str, base: str = "main",
                 json.dump(report, fh, indent=2, sort_keys=True)
                 fh.write("\n")
         return report
+
+    # 0. required-steps manifest (H3): a required step whose input is absent
+    # is a fail-closed refusal, never a caller's-choice pass
+    if required_steps_path:
+        cfg = _hooks.load_ratified_config(repo, required_steps_path, ref=base)
+        if cfg is None:
+            step("required_steps", False,
+                 f"cannot load {required_steps_path} from {base} (fail-closed)")
+            return finish(False)
+        try:
+            manifest = validate_required_steps(cfg)
+        except GateError as exc:
+            step("required_steps", False, f"{exc} (fail-closed)")
+            return finish(False)
+        supplied = {"test_cmd": test_cmd, "verdict_dir": verdict_dir,
+                    "floor_config_path": floor_config_path,
+                    "vault_path": vault_path}
+        required = manifest.get(task_profile, [])
+        missing = [name for name in required
+                   if supplied[REQUIRED_STEP_INPUTS[name]] is None]
+        if missing:
+            step("required_steps", False,
+                 f"profile {task_profile!r} requires {missing} but the "
+                 f"corresponding input(s) were not supplied (fail-closed)")
+            return finish(False)
+        step("required_steps", True,
+             f"all {len(required)} required step input(s) supplied for "
+             f"{task_profile!r}")
+    else:
+        step("required_steps", True, "no manifest supplied (caller's choice)")
 
     # 1. require-clean
     dirty = _git(repo, "status", "--porcelain").stdout.strip()

@@ -179,7 +179,8 @@ class GateEndToEndTests(unittest.TestCase):
         self.fx.write("scratch.txt", "uncommitted")
         report = self.run_gate("task/good")
         self.assertFalse(report["ok"])
-        self.assertEqual(report["steps"][0]["step"], "require_clean")
+        blocked = next(s for s in report["steps"] if not s["ok"])
+        self.assertEqual(blocked["step"], "require_clean")
         os.unlink(os.path.join(self.fx.repo, "scratch.txt"))
 
     def test_mistagged_floored_diff_blocks_before_tests_run(self):
@@ -261,6 +262,105 @@ class GateEndToEndTests(unittest.TestCase):
         self.assertTrue(first.startswith("gate: FAIL"))
         self.assertIn("blocking step: visible_tests", text)
         self.assertIn("| step | ok | detail |", text)
+
+
+class RequiredStepsManifestTests(unittest.TestCase):
+    """H3 — a required step whose input is absent fails closed, never
+    'caller's choice'."""
+
+    MANIFEST = json.dumps({
+        "routine": ["visible_tests", "verdicts"],
+        "critical": ["visible_tests", "verdicts", "risk_floor",
+                     "heldout_drop"]})
+
+    def setUp(self):
+        self.root_ctx = tempfile.TemporaryDirectory()
+        self.root = self.root_ctx.name
+        self.fx = RepoFixture(self.root)
+        self.fx.write("gate-required.json", self.MANIFEST)
+        git(self.fx.repo, "add", "-A")
+        git(self.fx.repo, "commit", "-q", "-m", "manifest")
+        self.fx.branch("task/good", {"app.py":
+                       "def add(a, b):\n    return a + b\n\n"
+                       "def sub(a, b):\n    return a - b\n"})
+
+    def tearDown(self):
+        self.root_ctx.cleanup()
+
+    def gate_kw(self, **kw):
+        defaults = dict(repo=self.fx.repo, branch="task/good", base="main",
+                        task_profile="routine",
+                        required_steps_path="gate-required.json")
+        defaults.update(kw)
+        return defaults
+
+    def blocking_step(self, report):
+        return next(s for s in report["steps"] if not s["ok"])
+
+    def test_missing_required_input_fails_closed(self):
+        report = gate.run_gate(**self.gate_kw())  # no test_cmd, no verdicts
+        self.assertFalse(report["ok"])
+        blocked = self.blocking_step(report)
+        self.assertEqual(blocked["step"], "required_steps")
+        self.assertIn("visible_tests", blocked["detail"])
+        self.assertIn("fail-closed", blocked["detail"])
+
+    def test_supplied_required_inputs_proceed(self):
+        report = gate.run_gate(**self.gate_kw(
+            test_cmd=TEST_CMD,
+            verdict_dir=make_panel(self.root, [("correctness", "PASS")])))
+        self.assertTrue(report["ok"], report["steps"])
+        self.assertEqual(report["steps"][0]["step"], "required_steps")
+        self.assertTrue(report["steps"][0]["ok"])
+
+    def test_critical_profile_requires_vault_too(self):
+        report = gate.run_gate(**self.gate_kw(
+            task_profile="critical", test_cmd=TEST_CMD,
+            verdict_dir=make_panel(self.root, [("correctness", "PASS")]),
+            floor_config_path="floors.json"))
+        self.assertFalse(report["ok"])
+        self.assertIn("heldout_drop", self.blocking_step(report)["detail"])
+
+    def test_unreadable_manifest_fails_closed(self):
+        report = gate.run_gate(**self.gate_kw(
+            required_steps_path="ghost.json", test_cmd=TEST_CMD))
+        self.assertFalse(report["ok"])
+        self.assertIn("cannot load", self.blocking_step(report)["detail"])
+
+    def test_tampered_manifest_on_branch_is_ignored(self):
+        # the branch under test empties its own manifest — the gate must read
+        # the ratified base ref's copy and still require the steps
+        self.fx.branch("task/tamper", {"gate-required.json": "{}"})
+        report = gate.run_gate(**self.gate_kw(branch="task/tamper"))
+        self.assertFalse(report["ok"])
+        self.assertEqual(self.blocking_step(report)["step"], "required_steps")
+
+    def test_malformed_manifest_is_loud(self):
+        self.fx.write("bad.json", json.dumps({"routine": ["no_such_step"]}))
+        git(self.fx.repo, "add", "-A")
+        git(self.fx.repo, "commit", "-q", "-m", "bad manifest")
+        report = gate.run_gate(**self.gate_kw(
+            required_steps_path="bad.json", test_cmd=TEST_CMD))
+        self.assertFalse(report["ok"])
+        self.assertIn("unknown step", self.blocking_step(report)["detail"])
+
+    def test_validate_required_steps_rejects_bad_shapes(self):
+        for doc in (["routine"], {"ghost_profile": []},
+                    {"routine": "visible_tests"}):
+            with self.assertRaises(gate.GateError):
+                gate.validate_required_steps(doc)
+
+    def test_repo_default_manifest_is_valid_and_total(self):
+        cfg_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "harness", "config", "gate-required-steps.json")
+        with open(cfg_path) as fh:
+            manifest = gate.validate_required_steps(json.load(fh))
+        from harness.runlog import PROFILES
+        self.assertEqual(set(manifest), set(PROFILES))
+        for profile in PROFILES:
+            self.assertIn("visible_tests", manifest[profile])
+            self.assertIn("verdicts", manifest[profile])
 
 
 if __name__ == "__main__":

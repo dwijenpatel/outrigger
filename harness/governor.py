@@ -210,6 +210,38 @@ def log_decision(log_path: str, decision: dict) -> dict:
     return _runlog.RunLog(log_path).append(dict(decision))
 
 
+def summarize_decisions(decisions) -> dict:
+    """Roll up governor decisions with the **sticky estimated flag** (§5.1,
+    2026-07-04 amendment): if *any* reading in the set came from the optimistic
+    estimate rung, every derived total is flagged ``estimated`` — measured and
+    guessed numbers are never silently blended."""
+    decisions = [d for d in decisions if d.get("event") == GOVERNOR_EVENT]
+    estimated = any(d.get("optimistic") for d in decisions)
+    worst = {}
+    for d in decisions:
+        for window, frac in (d.get("windows") or {}).items():
+            if isinstance(frac, (int, float)) and not isinstance(frac, bool):
+                worst[window] = max(worst.get(window, 0.0), frac)
+    statuses = [d.get("status") for d in decisions]
+    return {
+        "readings": len(decisions),
+        "estimated": estimated,
+        "sources": sorted({d.get("source") for d in decisions if d.get("source")}),
+        "worst_windows": worst,
+        "any_degrade": any(s in ("degrade", "pause") for s in statuses),
+        "any_pause": "pause" in statuses,
+        "any_unknown": "unknown" in statuses,
+    }
+
+
+def fmt_estimated(value, estimated: bool) -> str:
+    """Render a number honestly: ``~`` prefix when any input was estimated.
+    Digest/report code must use this rather than printing raw totals."""
+    if isinstance(value, float) and value == int(value):
+        value = int(value)
+    return f"~{value}" if estimated else f"{value}"
+
+
 def _load_json_arg(value: str):
     if value == "-":
         return json.load(sys.stdin)

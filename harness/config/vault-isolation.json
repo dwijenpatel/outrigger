@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "purpose": "Six-layer vault isolation declaration (design §7, D1). Layers 1-3 generate worker settings (harness.vault.isolation_settings); layers 4-6 are structural commitments the operator/loop must keep true. validate_isolation() refuses a vault whose declaration is incomplete. The canary read-attempt in the gate self-tests is the proof; this file is only the claim.",
+    "vault_path_note": "vault_path is deployment config; the default below is for this repo's own build loop."
+  },
+  "vault_path": ".vault",
+  "worker_settings": {
+    "permissions": {
+      "deny": [
+        "Read(.vault/**)",
+        "Edit(.vault/**)",
+        "Write(.vault/**)",
+        "Grep(.vault/**)",
+        "Glob(.vault/**)"
+      ]
+    },
+    "sandbox": {
+      "enabled": true,
+      "denyRead": [".vault"],
+      "allowUnsandboxedCommands": false,
+      "failIfUnavailable": true
+    }
+  },
+  "structural_layers": {
+    "config_out_of_scope": "worker settings + deny rules live outside every worker-writable scope; the machinery-paths gate (C2) and ratified-branch config rule enforce it",
+    "egress_control": "no SSH-agent forwarding into workers; vault host unreachable with worker credentials; proxy allowlist on unattended firings",
+    "role_processes": "implementers and validators run as separate headless one-shot processes; subagents inherit the parent sandbox, so divergent policies require separate processes"
+  }
+}

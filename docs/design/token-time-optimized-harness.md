@@ -7,14 +7,13 @@
 > never traded. The governing design principle: **bind every mechanism to a built-in Claude Code
 > primitive first**; custom machinery is only the residue no built-in covers.
 >
-> Compiled 2026-07-04 from: the state-of-the-art survey
-> ([agent-harness-state-of-the-art.md](../research/agent-harness-state-of-the-art.md)), the
-> re-validation/scheduling prior-art digest
-> ([revalidation-and-scheduling-prior-art.md](../research/revalidation-and-scheduling-prior-art.md)),
-> a fresh official-docs inventory of Claude Code built-ins, and fresh web research on Max-plan
-> window mechanics (both 2026-07-03). Facts carry confidence tags: `[official]` Anthropic docs,
-> `[measured]` community measurement with data, `[contested]` conflicting evidence,
-> `[folklore]` practitioner consensus.
+> Compiled from the research corpus in [../research/](../research/) (see its
+> [README](../research/README.md) for the index and the design-section → research map): the
+> landscape/novelty study, the correctness-and-verification evidence, the re-validation reuse and
+> leakage prior-art, the token-economics and scheduling evidence, and the volatile Claude Code /
+> Max-plan and vault-isolation fact references. Facts carry confidence tags: `[official]`
+> Anthropic docs, `[measured]` community measurement with data, `[contested]` conflicting
+> evidence, `[folklore]` practitioner consensus.
 
 ---
 
@@ -31,7 +30,8 @@ dual-objective optimization layer this document specifies.
 
 **Non-goals.** Portability off Claude Code (accepted coupling; model/tier indirection is the
 seam if a fork ever needs one). Multi-operator teams. Large brownfield codebases (the
-phased-ledger model is greenfield-shaped, survey §7). Auto-scheduled firings — whether a prior
+phased-ledger model is greenfield-shaped,
+[landscape-and-novelty.md §5](../research/landscape-and-novelty.md)). Auto-scheduled firings — whether a prior
 firing is still alive cannot be judged reliably from a tool-call shell, so firings are
 operator-started and operator-stopped, removing the double-run failure mode entirely.
 
@@ -43,7 +43,9 @@ Lexicographic — never scalarized into one weighted score:
   not model virtue. This is not over-engineering: evaluator-patching and hardcoded-pass reward
   hacking are measured behaviors (METR o3, DebugML's 28+ instances), ~31% of SWE-bench-Verified
   passes ride on tests too weak to catch a wrong fix, and a false "done" is the RLHF-default
-  completion shape (survey §4a). **O0 is never traded for tokens or time.**
+  completion shape
+  ([correctness-and-verification-evidence.md §1](../research/correctness-and-verification-evidence.md)).
+  **O0 is never traded for tokens or time.**
 - **O1 — token spend against the Max windows.** The budget is not $/task; it is two rolling
   allowances — the 5-hour window and the weekly caps — shared account-wide. Consequences:
   - Spend that lands in a fresh window is *operationally cheaper* than spend near a wall:
@@ -64,9 +66,12 @@ Two rules are load-bearing enough to state up front:
 
 **The one real O1↔O2 exchange:** concurrent task pipelines. All parallel sessions and subagents
 drain **one shared account pool** `[official]` — parallelism buys wall-clock only, never budget.
-And at equal token budget, single-agent beats multi-agent on quality (arXiv 2604.02460
-`[measured]`) — so parallelism is purchased *only* out of window headroom (§6.2), never assumed
-free.
+And at equal thinking-token budget a single agent *matches or outperforms* multi-agent on
+multi-hop reasoning (arXiv 2604.02460 `[measured]`; scoped to reasoning benchmarks, not coding) —
+so parallelism is purchased *only* out of window headroom (§6.2), never assumed free. The same
+result predicts multi-agent becomes competitive precisely when a single agent's context
+utilization degrades — the long-session regime — which is why the harness still fans out for
+*context isolation* (§3 principle 3) rather than treating the citation as a blanket ban on decomposition.
 
 ## 3. Design principles
 
@@ -76,7 +81,8 @@ free.
    evidence trail (§8) or be pruned.
 2. **Zero-token enforcement.** Everything safety- or budget-load-bearing runs as a **hook or
    script** — deterministic, model-free, un-skippable, costs no context. Prose guards burn
-   tokens every turn *and* get skipped exactly when the loop is degraded (survey §6.1). Command
+   tokens every turn *and* get skipped exactly when the loop is degraded
+   ([landscape-and-novelty.md §4](../research/landscape-and-novelty.md)). Command
    hooks cost 0 tokens; prompt/agent hooks cost tokens and are reserved for rare gates
    `[official]`.
 3. **Context isolation is also compression.** Subagents exist for correctness (blind
@@ -105,8 +111,8 @@ free.
 | Structured worker returns | **`--json-schema` / structured outputs** (server-side validation) `[official]` | The verdict/report schemas themselves |
 | Model routing | Per-subagent `model` param; session `/model`; aliases `[official]` | Abstract tier indirection + per-task routing policy (§5.3) |
 | Effort routing | Session `/effort`; per-agent `effort` on the Workflow/Agent spawn path (verified by direct probe) | Per-profile effort config + the spawn-path fallback ladder |
-| Cost/usage telemetry | `/usage`, `/context`, `--output-format json` (`total_cost_usd`, per-model usage), OTEL enhanced telemetry, per-subagent token totals `[official]` | Per-role run-log aggregation + the budget governor (§5.1) |
-| Prompt-cache economy | **Automatic prompt caching** (5-min TTL; 1h TTL via env; auto breakpoints) `[official]` | The *discipline* (§5.2): freeze-prefix rules, boundary edits |
+| Cost/usage telemetry | Statusline `rate_limits.{five_hour,seven_day}` + `resets_at` + `current_usage` (in-session, server-side utilization); `/usage`, `--output-format json` (per-turn tokens/cost), OTEL consumption metrics, per-subagent token totals `[official]` | Per-role run-log aggregation + the budget governor's source ladder (§5.1) |
+| Prompt-cache economy | **Automatic prompt caching** (1h TTL auto on subscription, 5-min on credits/subagents; auto breakpoints; model+effort are cache-key components) `[official]` | The *discipline* (§5.2): freeze-prefix rules, escalate-at-boundary |
 | Tool-definition economy | **ToolSearch deferred loading** (names only at start; schema on use — default for MCP) `[official]` | Keep the MCP surface minimal; prefer CLI tools (`gh`) over MCP servers `[official]` |
 | Long-lived instructions | CLAUDE.md (<200 lines guidance), path-scoped rules, `@imports`, auto-memory `[official]` | Lessons corpus + orchestrator-curated injection at spawn |
 | Resume across deaths | Session persistence, `--resume`/`--continue`/`--fork-session` `[official]` | Ledgers + status index as the *canonical* resume state (disk > transcript — resuming a huge transcript reprocesses it at full cost `[measured]`) |
@@ -133,54 +139,94 @@ Facts the governor is built on (details + volatility log in §10):
 - **Everything shares one pool**: Claude app + every Claude Code session + every subagent
   `[official]`. Depletion factors: model, effort, thinking (billed as output), tools,
   attachments `[official]`.
-- No token quotas are published, and magnitudes changed ≥6 times in 12 months (§10.3) —
-  **ceilings must be runtime-calibrated, never hard-coded**.
+- No token quotas are published, and limits/accounting rules changed ≥7 times in 12 months
+  (§10.3) — **ceilings must be runtime-calibrated, never hard-coded**.
 
 The **budget governor** is a small deterministic script the loop consults **between** tasks
-("don't start what you can't finish"). It computes window occupancy from a source ladder —
-`estimate` (per-role token sums from the run-log over rolling windows; the only
-unattended-capable source today) → `quota-file` (operator-fed from `/usage`) →
-`quota-cmd`/OTEL when a programmatic quota API ships (anthropics/claude-code#13585) — and
-drives two thresholds:
+("don't start what you can't finish"). It reads window occupancy from a source ladder,
+best-source-first:
+
+- `statusline` — the officially-documented statusline stdin JSON exposes
+  `rate_limits.five_hour.used_percentage`, `rate_limits.seven_day.used_percentage`, and
+  `resets_at` (Unix epoch), plus `context_window.current_usage` cache counters. This is
+  **server-side utilization, machine-readable in-session, zero extra tokens** — the primary rung
+  `[official]`.
+- `oauth-usage` — for unattended/headless firings that lack a statusline surface, the
+  undocumented `GET api.anthropic.com/api/oauth/usage` (Bearer token + `anthropic-beta:
+  oauth-2025-04-20`) returns five_hour / seven_day / seven_day_sonnet utilization; an
+  **unstable internal endpoint**, used only as a fallback `[measured]`.
+- `estimate` — per-role token sums from the run-log over rolling windows; the last-resort
+  fallback, and **systematically optimistic**: it cannot see quota the operator's own
+  interactive Claude app / IDE use drains from the same shared pool `[official]`, so it
+  under-counts true occupancy. Never the sole source when a live-utilization rung is available.
+
+(The former `quota-file` rung — operator-fed from `/usage` — is dropped: the statusline feed
+supersedes it. A dedicated quota CLI, anthropics/claude-code#13585, remains unshipped; the ladder
+upgrades in place if it lands.) The occupancy reading drives two thresholds:
 
 - **degrade** (default 0.8 of a window): panels shrink to profile minimums (never below a risk
-  floor), no new tasks start, in-flight work commits.
+  floor), no new tasks start, in-flight work commits; the implementer starting tier steps down
+  where the profile allows (§5.3).
 - **pause** (default 0.95): clean pause — resume marker to the status index, worktrees
   reconciled, run marker released. The next firing after the window reset resumes from disk.
 
-**Window-aware admission** (the scheduler input, §6.2): each candidate task carries a cost
-forecast (its profile's panel size × tier + implementer tier; later the duration-bucket
-predictor, §5.3). A heavy critical-profile task is admitted early in a fresh window; near a
-wall only cheap routine tasks (or nothing) start. Escape valve: extra-usage credits at API
-rates exist (`/usage-credits`, $2k/day cap `[official]`) — surfaced to the operator as a
-*choice* at pause time, never auto-purchased.
+Thresholds ship **observe-only** first (log the crossing, don't act) so ceilings are tuned on
+real telemetry before they gate work — untuned hard caps stall the whole loop (§11).
+
+**Window-aware admission** (the scheduler input, §6.2): each candidate task carries a **quantile**
+cost forecast, never a point estimate — measured same-task token spend varies up to **30×** on
+identical agentic-coding tasks, and neither model self-estimates (r ≤ 0.39, systematically low)
+nor human difficulty ratings track burn well `[measured; arXiv 2604.22750]`. Forecast on a tail
+percentile (P95-of-rolling-window, ≈ 4× the mean in practice `[folklore]`), carry per-(tier,
+effort) overshoot variance since thinking budgets are soft targets not hard caps (§5.3), and
+admit against the degrade threshold **with the forecast added burn**. A heavy critical-profile
+task is admitted early in a fresh window; near a wall only cheap routine tasks (or nothing)
+start. Escape valve: extra-usage credits at API rates exist (`/usage-credits`, $2k/day cap
+`[official]`) — but they are **opt-in-in-advance with no silent spillover** `[official]`, so an
+unattended run halts cleanly at the wall unless credits were pre-enabled; surfaced to the operator
+as a *choice* at pause time, never auto-purchased.
 
 ### 5.2 Prompt-cache discipline (the #1 hidden lever)
 
 Measured reality: a session carries a 20–30k-token prefix (system prompt + CLAUDE.md + memory
-+ tool names) re-sent every turn `[measured]`; over 30 days of real use, cache-read volume ran
-**1,310× fresh I/O tokens** and scaled with CLAUDE.md size, not workload `[measured]`. Whether
-cache reads count against *subscription* limits at a discount or near-full weight is
-**`[contested]`** (§10.2) — under either reading, the design conclusion is identical:
-**cache-busting is the catastrophic spend event** (one client cache bug produced 10–20×
-inflation before it was fixed `[measured]`), and the prefix must be small and immutable.
++ tool names) re-sent every turn `[measured]`; in one 30-day single-user measurement, cache-read
+volume ran **1,310× fresh I/O tokens** and scaled with CLAUDE.md size, not workload
+`[measured; one user, anthropics/claude-code#24147]`. Whether cache reads count against
+*subscription* limits at a discount or near-full weight is **`[contested]`** (§10.2; community
+telemetry points to near-full window weight, still officially unanswered) — under either reading,
+the design conclusion is identical: **cache-busting is the catastrophic spend event** (one client
+cache bug produced 10–20× inflation before it was fixed `[measured]`), and the prefix must be
+small and immutable.
 
 Rules (mechanized where possible):
 
-1. **Frozen prefix per firing.** CLAUDE.md, the always-on constraints file, the hook set, MCP
-   server set, model, and skill inventory do not change mid-firing — edits batch at a clean
-   boundary. Mechanization: a PreToolUse hook warns on mid-firing edits to prefix files
-   (`Edit|Write` matcher on CLAUDE.md / constraints / settings).
+1. **Frozen prefix per firing.** The actual mid-firing cache-busters `[official]` are: a
+   `/model` switch, an `/effort` change, the first fast-mode toggle (all three are cache-key
+   components), a bare-tool deny rule (`Bash`, `WebFetch` — tool defs live in the system-prompt
+   layer), and a non-deferred MCP connect/disconnect. These do not change mid-firing — model,
+   effort, hook set, MCP set, and skill inventory are fixed at spawn; escalation happens at a
+   worker boundary, never mid-transcript (§5.3). Mechanization: a PreToolUse hook flags
+   mid-firing edits to prefix files (`Edit|Write` matcher on CLAUDE.md / constraints / settings)
+   — note that a mid-session CLAUDE.md edit does not actually bust the cache but **silently
+   fails to apply** until the next `/clear` or restart `[official]`, so the hook guards against
+   the silent no-op as much as the spend event.
 2. **Small prefix.** CLAUDE.md stays under ~200 lines `[official guidance]`; reference material
    lives in skills (progressive disclosure) and path-scoped rules; lessons are injected
    per-spawn by the orchestrator, not resident in the prefix.
-3. **TTL cadence.** The default cache TTL is 5 minutes `[official]`. The build loop's inner
-   cadence naturally turns over faster than that while working; a *planned* long gap (awaiting
+3. **TTL cadence.** On subscription auth Claude Code requests the **1-hour TTL automatically**
+   (no `ENABLE_PROMPT_CACHING_1H` — that env var is API-key-only), but it **silently drops to 5
+   minutes while drawing on usage credits** `[official]`. Subagents get the 5-minute TTL even on
+   subscription and start cold; forks inherit the parent cache `[official]`. The build loop's
+   inner cadence turns over faster than either TTL while working; a *planned* long gap (awaiting
    a human) is one cache miss, accepted. Long-idle sessions are ended cleanly rather than kept
-   warm artificially. (`ENABLE_PROMPT_CACHING_1H` exists if measurement shows idle-gap misses
-   matter `[official]`.)
+   warm artificially.
 4. **Never resume a huge transcript for a new task.** Fresh session + disk state beats
-   `--resume` of a long history (full reprocess) `[measured]`. Ledgers are the resume state.
+   `--resume` of a long history: resume reprocesses the full transcript **after a Claude Code
+   upgrade or once the TTL lapses** (within-TTL resume hits the warm cache) `[official]`, and a
+   resumed idle session attributes its whole accumulated cache context to the **new** rate
+   window — measured 15M tokens charged for ~20k of real work `[measured]`. Ledgers are the
+   resume state; treat any idle-session resume as a heavy admission (§9), not a free
+   continuation.
 5. **Workers are short-lived by construction.** Implementers/validators are subagents (or
    headless `-p` one-shots): they pay their prefix once, do one task, die. No compaction debt
    accumulates anywhere except the orchestrator, whose context is structured-state-only.
@@ -192,30 +238,57 @@ concrete model ids in one config table), and rigor is expressed as named **risk 
 (e.g. routine < elevated < high < critical), each specifying validator count, lenses, tier,
 and effort. On top of that:
 
+Start-cheap-escalate-on-proof is established prior art, not folklore: learned-scorer cascades
+match a top model at up to 98% lower cost (FrugalGPT), and effort routing cuts reasoning tokens
+35–53% at 0–2pt success loss (ARES) `[measured]`. But the savings band is task-dependent — ~73–98%
+on knowledge/chat/math benchmarks, **~56% best-case on code generation, ~30% out-of-distribution**
+`[measured]` — so the harness's coding domain sits at the low end, and a router trained on a
+mismatched distribution can perform *worse than random* `[measured]`. Two consequences: the
+design's escalation signal is a *verified durable FAIL* (higher-precision than a learned scorer,
+but it pays a full failed attempt per misroute — which is what the break-even guardrail is for),
+and a validated **upfront** router (the duration predictor) is worth more than a longer escalation
+chain (pre-generation routing beats pure escalate-on-failure on 4 of 5 benchmarks by avoiding the
+wasted cheap attempt `[measured]`).
+
 - **Tier axis — per-task starting tier.** Start the implementer as cheap as the task's risk
   allows and let an escalation ladder (N durable FAILs → bump one tier) walk it up; the gate +
-  validator panel remain the correctness net. Staged rollout: ship the simple per-profile
-  starting-tier override first; a deterministic **duration-bucket predictor** (scored from
-  spec size, file count, subsystem breadth, novelty — a script, not an LLM call) and the full
-  bucket×profile starting-tier matrix stay behind a flag until the simple lever's telemetry
-  proves escapes ~0 and $/task down. Guardrails, non-negotiable:
+  validator panel remain the correctness net. Keep the ladder **multi-rung** — the claim that a
+  two-tier cheap→capable pair captures all the value did not survive adversarial verification
+  (refuted 1-2), so it is not adopted. Staged rollout: ship the simple per-profile starting-tier
+  override first; a deterministic **duration-bucket predictor** (scored from spec size, file
+  count, subsystem breadth, novelty — a script, not an LLM call, since models cannot self-predict
+  their own token spend, r ≤ 0.39 `[measured]`) and the full bucket×profile starting-tier matrix
+  stay behind a flag until (a) the simple lever's telemetry proves escapes ~0 and $/task down and
+  (b) the predictor's features are validated against *measured* burn — human difficulty ratings
+  track cost only weakly `[measured]`, so the features are not assumed-good. Guardrails,
+  non-negotiable:
   1. *Safety is not a cost lever* — tasks on protected profiles or risk-floored surfaces never
      start cheap.
   2. *Nature beats difficulty* — recency-sensitive tasks (APIs newer than the cheap tier's
      training) route off cheap regardless of size.
   3. *Escalation churn has a break-even* — at roughly >40% cheap-tier failure on a bucket, the
      wasted attempt + re-run costs more than starting one tier up; the controller trips the
-     start tier back up when telemetry crosses it.
+     start tier back up when telemetry crosses it. (This threshold is exactly the >40%-failure
+     regime where published work says upfront routing should replace the cascade `[measured]`.)
 - **Effort axis.** Profiles carry `effort` alongside `model`. The Workflow-based spawn path
   threads per-agent `model` *and* `effort` (verified by direct probe: all five effort levels
   dispatch; model overrides are honored; invalid ids fail loud), with a batch of parallel
   `Agent` calls as the portable fallback (model-only; effort session-level). Effort lands in
   the run-log so the controller segments cost/catch-rate by `(tier, model_id, effort)`.
-  Downgrades require a fresh calibration PASS at the lower effort; protected profiles:
-  raise-only.
+  **Neither uniform default is safe:** always-low drops agent success ~20pts, always-high
+  overthinks trivial work (≈1,953% extra tokens on trivial inputs) `[measured]` — effort is
+  *routed*, never a static default. Effort is a **soft** target with an overshoot tail, not a
+  hard cap `[official]`, which is why the governor carries per-(tier, effort) variance (§5.1).
+  Downgrades require a fresh calibration PASS at the lower effort; protected profiles: raise-only.
+- **Escalation ordering — effort before tier, always at a worker boundary.** Both model and
+  effort are cache-key components `[official]`: a mid-session bump of either busts the full
+  cache (§5.2). So escalation never happens mid-transcript — it happens at the next fresh worker
+  spawn, where a cold cache is paid anyway. Given that, prefer an *effort* bump before a *tier*
+  bump: within one model, an escalated respawn can be cheaper to warm, and tier changes drain a
+  different weekly pool (below).
 - **Routing floor for grunt work:** mechanical fan-out (file moves, renames, log filtering,
-  status sweeps) always runs cheap-tier subagents — up to ~75% cost cut from deliberate
-  routing is the practitioner consensus `[measured]`, and the gate catches any miss.
+  status sweeps) always runs cheap-tier subagents — deliberate routing cuts cost substantially
+  (the published band above; the gate catches any miss).
 - **Weekly-pool awareness:** with the model-specific weekly cap now on **Sonnet** rather than
   Opus `[official]`, "route grunt work down-tier" is no longer automatically
   weekly-budget-safer. The controller tracks which pool each tier drains and re-checks the
@@ -237,24 +310,31 @@ and effort. On top of that:
 ### 5.5 Re-validation reuse — the vault (biggest O1 lever on retries)
 
 On a durable-FAIL re-validation, a naive loop re-authors held-out tests and re-reviews a
-~95%-unchanged diff — pure token redundancy. Design (evidence base: the prior-art digest):
+~95%-unchanged diff — pure token redundancy. Design (evidence base:
+[revalidation-reuse-and-leakage.md](../research/revalidation-reuse-and-leakage.md)):
 
 1. **Implementer-blind held-out vault.** Panel-authored held-out tests persist where the
-   implementer's context/worktree can never see them; isolation sandbox-enforced (hidden tests
-   have been exfiltrated from autograders via submitted code — digest §5), proven by a hook,
-   not by path convention.
+   implementer's context/worktree can never see them; isolation is the OS-enforced six-layer
+   stack in §7 (sandbox `denyRead` + Read/Edit deny rules + strict-mode flags + out-of-scope
+   config + egress control + separate-process roles), not path convention — hidden tests have
+   been exfiltrated from autograders via submitted code, and a Claude Code agent has
+   autonomously disabled its own sandbox
+   ([isolation-and-sandboxing.md](../research/isolation-and-sandboxing.md)). Proven by a
+   vault-canary read-attempt in the gate self-tests, not assumed.
 2. **Safe incremental re-validation.** On re-validation, **replay** the vault against the
    unchanged surface (zero re-authoring tokens) under the Ekstazi/TIA **safe-RTS property** —
    never skip a test the change could affect; full-run fallback for anything unanalyzable
-   (digest §2).
+   ([revalidation-reuse-and-leakage.md §2](../research/revalidation-reuse-and-leakage.md)).
 3. **Fresh authoring on the changed surface is mandatory.** A replayed corpus is a regression
    floor, structurally unable to find a new hole (frozen corpus = saturated corpus; ~27% of
-   real faults uncoupled from standard mutants — digest §4). The vault shrinks re-authoring;
-   it never eliminates it.
+   real faults uncoupled from standard mutants —
+   [revalidation-reuse-and-leakage.md §4](../research/revalidation-reuse-and-leakage.md)). The
+   vault shrinks re-authoring; it never eliminates it.
 4. **Leakage budget.** Reuse of a fixed hidden set across adaptive fix-iterations degrades it
-   (Ladder/Thresholdout, digest §6): rate-limit replays, rotate/refresh the corpus, and keep
-   **full fresh re-derivation on risk-floored surfaces** — exactly where a gamed frozen set is
-   most dangerous.
+   (Ladder/Thresholdout,
+   [revalidation-reuse-and-leakage.md §5](../research/revalidation-reuse-and-leakage.md)):
+   rate-limit replays, rotate/refresh the corpus, and keep **full fresh re-derivation on
+   risk-floored surfaces** — exactly where a gamed frozen set is most dangerous.
 
 ### 5.6 What the harness deliberately does not spend on
 
@@ -262,7 +342,14 @@ On a durable-FAIL re-validation, a naive loop re-authors held-out tests and re-r
   (provisional) ledgers — look-ahead is planning-only.
 - No free-running reflection: reflection triggers on ground-truth events (an escape, a canary
   miss, a durable FAIL), never as open-ended synthesis (intrinsic self-correction *degrades*
-  without external signal — survey §4b).
+  without external signal —
+  [correctness-and-verification-evidence.md §2](../research/correctness-and-verification-evidence.md)).
+- **No spending-through a doomed trajectory.** Agents are measurably over-optimistic and keep
+  spending on tasks unlikely to succeed rather than alerting early
+  (r = 0.35 capability↔budget-awareness) `[measured]`; an external abort-on-predicted-failure
+  check inside long-running tasks (§9 liveness guard) recovers 28–64% of the tokens a failing
+  trajectory would otherwise burn `[measured]`. Ships observe-only, with false-aborts counted
+  against the O0 floor before it gates.
 - Dormant opt-in controllers are pruned on evidence (§8); insurance controllers (risk floors,
   calibration, closure, budget) are exempt — there, silence is the desired state.
 - `DISABLE_NON_ESSENTIAL_MODEL_CALLS=1` on headless firings `[official]`.
@@ -296,18 +383,28 @@ A concurrency cap >1 (worktree-isolated implement→validate pipelines) is the o
 spends tokens to buy time. Admission rule, evaluated per tick:
 
 > Admit a second/third concurrent pipeline **only if** (a) window occupancy is below the
-> degrade threshold *and forecast to stay below it with the added burn*, (b) the runnable set
-> contains genuinely independent tasks (hard deps + `mayBeInvalidatedBy` clear), and (c) a
-> surface-contention cap (max concurrent surfaces) is respected.
+> degrade threshold *and forecast (on the P95 quantile, §5.1) to stay below it with the added
+> burn*, (b) the runnable set contains genuinely independent tasks (hard deps +
+> `mayBeInvalidatedBy` clear), and (c) a surface-contention cap (max concurrent surfaces) is
+> respected.
 
-Rationale: bursting a fresh 5-hour window empty in <1h then stalling 4h is a *wall-clock loss*,
-not a win — on subscriptions the binding constraint is often the window, not total tokens
-`[folklore, consistent]`. Practitioner consensus caps useful concurrency at 2–4 pipelines
-`[folklore]`; the run-log attributes rework/merge-conflict cost to concurrency so the
-controller can tune the cap on evidence. Anthropic's own frontier datapoint — up to 90% time
-reduction at ~15× tokens for research fan-out `[official]` — is the reminder that the exchange
-rate is steep: this harness buys parallelism for *validation* (independent lenses, cheap
-wall-clock) structurally, and for *implementation* only under the admission rule.
+The admission cost side must include a **per-pipeline cache warmup**: worktrees do *not* share
+prefix cache (the cache is scoped per machine+directory, and each worktree is a distinct cwd
+`[official]`), so every concurrent pipeline pays its own ~20–30k-token cold prefix; each commit
+likewise cold-starts the next fresh session's prefix (the git snapshot is part of the system
+prompt) `[official]`. Rationale: bursting a fresh 5-hour window empty in <1h then stalling 4h is a
+*wall-clock loss*, not a win — on subscriptions the binding constraint is often the window, not
+total tokens `[folklore, consistent]`. Practitioner consensus caps useful concurrency at 2–4
+pipelines `[folklore]`; the run-log attributes rework/merge-conflict cost to concurrency so the
+controller can tune the cap on evidence. Anthropic's frontier fan-out datapoints — a **90.2%**
+quality gain over single-agent on an internal research eval (at *unequal*, much larger budget),
+a separately-reported time reduction from parallelism, and a **~15× token multiplier vs a chat
+baseline** (single agents ~4×) `[official]` — are *three distinct measurements*, not one exchange
+rate; together they say the same thing: the exchange is steep, and token spend alone explains ~80%
+of agentic-research performance variance `[official]` (so cheap-tier runs systematically
+underperform, raising the cost of a routing miss, §5.3). This harness buys parallelism for
+*validation* (independent lenses, cheap wall-clock) structurally, and for *implementation* only
+under the admission rule.
 
 **Window-phase scheduling:** heavy fan-out (big panels, multi-task bursts) schedules right
 after a window reset; the tail of a window runs cheap serial work. The 5-hour anchor-at-first-
@@ -329,14 +426,32 @@ message behavior `[measured]` even allows deliberate window alignment to the ope
 ## 7. The correctness floor (O0)
 
 The optimizers above are only safe on top of this floor, and the research says it is the
-differentiator (survey §2):
+differentiator ([landscape-and-novelty.md §2](../research/landscape-and-novelty.md)):
 
 - **Blind adversarial validation:** fresh-context validators; the spec is the only shared
   input; implementer reasoning never crosses (self-recognition causes self-preference —
-  survey §4b); held-out adversarial tests; the merge gate reproduced from a clean checkout
+  [correctness-and-verification-evidence.md §2](../research/correctness-and-verification-evidence.md));
+  held-out adversarial tests; the merge gate reproduced from a clean checkout
   (a `--require-clean` mode refuses a dirty tree).
+- **Vault isolation is a six-layer stack, not a flag** (design open question #3 closed;
+  [isolation-and-sandboxing.md](../research/isolation-and-sandboxing.md)): (1) sandbox
+  `denyRead` on the vault path (OS-enforced for Bash + children, macOS Seatbelt / Linux
+  bubblewrap); (2) Read/Edit deny rules covering the built-in file tools (absolute precedence,
+  symlink-resolving) — since the sandbox covers only Bash and the built-in tools bypass it;
+  (3) strict-mode flags `allowUnsandboxedCommands: false` and `failIfUnavailable: true` on
+  unattended runs, without which the boundary is prompt-dependent (a Claude Code agent has
+  autonomously disabled its own sandbox and bypassed path denylists `[measured]`); (4) deny
+  rules and sandbox config in a scope the worker cannot write; (5) network egress control so the
+  vault is unreachable with any worker credential (no SSH-agent forwarding; proxy allowlist);
+  (6) per-role isolation via separate processes (subagents inherit the parent sandbox, so the
+  design's headless one-shot workers are what makes divergent implementer/validator policy
+  possible). Permission enforcement is harness-level, not model-level — a CLAUDE.md instruction
+  not to look is not access control `[official]`. Proven by a **vault-canary read-attempt** in
+  the gate self-tests: the isolation is verified by a failing read, never assumed.
 - **Diverse-lens panels, all-must-pass;** consensus voting only for redundant panels
-  (popularity-trap evidence, survey §4c); model heterogeneity across a panel where possible.
+  (popularity-trap evidence,
+  [correctness-and-verification-evidence.md §3](../research/correctness-and-verification-evidence.md));
+  model heterogeneity across a panel where possible.
 - **Mechanized risk floors:** a path-glob → minimum-profile map enforced at the merge point by
   inspecting the *actual diff paths* (a mis-tagged security task cannot be validated cheaply
   and merged silently); a machinery-paths check (task branches cannot edit the loop's own
@@ -351,7 +466,8 @@ differentiator (survey §2):
 - **Governed self-modification:** the loop proposes; a human ratifies machinery changes via a
   committed ratification queue (`docs/PROPOSALS.md`); headless runs cannot edit their own
   machinery (self-modifying loops can encode a bypass of their own safeguards without
-  "deciding" to — survey §4e).
+  "deciding" to —
+  [correctness-and-verification-evidence.md §5](../research/correctness-and-verification-evidence.md)).
 
 ## 8. The controller — closing the loop on both objectives
 
@@ -377,15 +493,19 @@ explicitly:
 
 | Failure mode | Mitigation |
 |---|---|
-| Stuck loop burning window budget | Liveness guard: multi-signal park (git-delta authoritative; repeated-error signature; slow-grind vs predicted duration bucket) |
-| Budget wall mid-panel (wasted panel) | Between-task budget-governor check; degrade→pause ladder; window-aware admission (§5.1, §6.2) |
-| Cache thrash (the silent 10–20× event) | Frozen-prefix rules + prefix-edit warning hook; small CLAUDE.md; no huge-transcript resumes (§5.2) |
+| Stuck loop burning window budget | Liveness guard: multi-signal park (git-delta authoritative; repeated-error signature; slow-grind vs predicted duration bucket); a per-task step-count cap, since per-run token cost grows ~O(n²) in agent steps `[folklore]`, so a stuck retry loop is a multi-million-token event |
+| Doomed trajectory keeps spending | Abort-on-predicted-failure check inside long-running tasks (recovers 28–64% of failing-run tokens `[measured]`; agents won't self-throttle, r=0.35); observe-only until false-abort rate is proven against O0 (§5.6) |
+| Budget wall mid-panel (wasted panel) | Between-task budget-governor check; degrade→pause ladder; quantile window-aware admission (§5.1, §6.2) |
+| Cache thrash (the silent 10–20× event) | Frozen-prefix rules (model/effort/fast-mode/bare-tool-deny are the real busters) + prefix-edit warning hook; small CLAUDE.md; no huge-transcript resumes (§5.2) |
+| Idle-session resume pre-consumes a fresh window | Treat any idle resume as a heavy admission (charges full accumulated cache context to the new window — 15M tokens for ~20k real work `[measured]`); prefer fresh session + disk resume over `--resume` (§5.2 rule 4) |
 | Weak visible tests (green-but-wrong; the ~31% problem) | Held-out layer + contract-test kill-rate calibration + held-out-drop check at merge |
 | Vault goes stale / gets gamed | Mandatory fresh authoring on changed surface; leakage budget; rotation; no replay on risk-floored surfaces (§5.5) |
+| Vault read by the implementer | Six-layer OS-enforced isolation stack + vault-canary read-attempt in gate self-tests (§7); strict-mode flags mandatory on unattended runs |
 | Pulled-forward task gets invalidated (wasted tokens) | `start-early-safe` predicate (`mayBeInvalidatedBy`); conservative default |
-| Parallel burst empties the window, then stalls | Admission rule forecast; window-phase scheduling (§6.2) |
-| Subpar plan (worse than no plan — survey §4d) | Human approval gate on the plan document; phase-close reflection re-scopes remaining phases |
-| Limits change under the harness (they did, 6+ times) | No hard-coded magnitudes; empirical ceiling calibration; §10.3 changelog discipline; re-check after 2026-07-13 promo expiry |
+| Parallel burst empties the window, then stalls | Admission rule forecast (P95 quantile, includes per-pipeline cache warmup); window-phase scheduling (§6.2) |
+| Router misroutes (worse than random on unfamiliar distribution) | Verified-FAIL escalation signal (not a learned scorer); >40% break-even trip-up; validate predictor features vs measured burn before flag-flip (§5.3) |
+| Subpar plan (worse than no plan) | Human approval gate on the plan document ([correctness-and-verification-evidence.md §4](../research/correctness-and-verification-evidence.md)); phase-close reflection re-scopes remaining phases |
+| Limits change under the harness (they did, 7+ times) | No hard-coded magnitudes; empirical ceiling calibration; §10.3 changelog discipline; re-check after 2026-07-13 promo expiry and the paused Agent-SDK regime change |
 | Concurrent firings | Manual trigger + advisory run marker + operator arbitration |
 | Reward hacking / stale-green | The whole §7 floor; hooks un-skippable at merge/stop points |
 
@@ -397,22 +517,33 @@ explicitly:
   `[measured; official docs deliberately don't specify mechanics]`.
 - Weekly: one overall cap + one **Sonnet-only** cap since 2025-11-24 (Opus cap removed);
   fixed per-account weekly reset `[official]`.
-- One shared pool across Claude app, all sessions, all subagents; subagent/skill/MCP usage is
-  attributed in `/usage` `[official]`.
-- Thinking tokens bill as output; effort level is an official depletion factor `[official]`.
-- Extra usage at API rates via `/usage-credits`; `$2k/day` redemption cap `[official]`.
-- Session prefix floor ≈ 20–30k tokens; multipliers: agents ~4× chat, multi-agent ~15×,
-  agent teams ~7× `[official/measured]`.
+- One shared pool across Claude app, all Claude Code sessions, IDE, and (currently) the Agent
+  SDK / headless `-p`; the operator's own interactive use drains it too `[official, re-verified
+  2026-07-04]`.
+- **Live utilization is machine-readable in-session:** the statusline stdin JSON exposes
+  `rate_limits.five_hour/seven_day.used_percentage` + `resets_at` and `context_window.current_usage`
+  cache counters `[official]` — the governor's primary source (§5.1). No dedicated quota CLI yet
+  (anthropics/claude-code#13585 open); headless firings have no official quota surface.
+- **1-hour cache TTL is automatic on subscription auth** (drops to 5 min on usage credits);
+  subagents get 5-min TTL and start cold; forks inherit the parent cache `[official]`.
+- Thinking tokens bill as output; effort is a depletion factor and a **soft** budget (overshoot
+  tail), not a hard cap `[official]`.
+- Extra usage at API rates via `/usage-credits`; `$2k/day` redemption cap; **opt-in-in-advance,
+  no silent spillover** `[official]`.
+- Session prefix floor ≈ 20–30k tokens; multipliers vs a chat baseline: agents ~4×, multi-agent
+  ~15× `[official/measured]`; agent-teams ~7× `[official/measured; not re-verified 2026-07-04]`.
 
 ### 10.2 Contested — design takes the conservative branch
 
-**Do cache reads count against subscription limits?** API-side, cache reads are ~10% price and
-exempt from ITPM rate limits `[official]`. Subscription-side: one measured report (1,310:1
-cache-read:I/O ratio) argues near-full quota weight; other sources assume the ~10% discount
-`[contested]`. Design assumption: **cache reads are cheap but not free; a cache-busted turn is
-catastrophic either way** — so the discipline in §5.2 is unconditional, and the budget
-governor's estimate mode counts cache reads at a configurable weight (default conservative)
-until Anthropic documents the truth.
+**Do cache reads count against subscription limits?** API-side, cache reads bill at ~10% price
+and are exempt from ITPM rate limits `[official]`. Subscription-side: still officially
+**unanswered**, and community telemetry now points toward **near-full window weight** — one
+report attributed ~70M tokens (>99% cache) in <2h and was closed "not planned" with no answer;
+the 1,310:1 single-user ratio is the other datapoint `[contested]`. Design assumption:
+**cache reads are cheap but not free; a cache-busted turn is catastrophic either way** — so the
+discipline in §5.2 is unconditional, and the budget governor counts cache reads at a configurable
+weight (default conservative) until Anthropic documents the truth. This is the single
+highest-value controlled measurement to run (§12 open question 2).
 
 ### 10.3 Volatility log (why nothing is hard-coded)
 
@@ -425,40 +556,53 @@ until Anthropic documents the truth.
 | 2026-04-23 | Cache bug fixed + limit resets `[measured]` |
 | 2026-05-06 | 5-hour limits doubled; peak throttling removed `[official]` |
 | 2026-05-13 → **2026-07-13** | +50% weekly promo — **current headroom is inflated; recalibrate ceilings after expiry** `[measured]` |
+| 2026-06-15 announced → **PAUSED** | Agent SDK / `claude -p` / third-party usage would move **off** the rate windows onto a monthly dollar credit (Pro $20 / Max 5x $100 / Max 20x $200; interactive terminal/IDE carved out). Currently paused — all usage still draws the windows. **If un-paused, headless firings stop draining windows and O1 becomes dollar-budget management** — abstract "which pool does this spend drain" now `[official, re-verified 2026-07-04]` |
 
 ## 11. Rollout — staged, measured flips
 
 Cheapest proven lever first; each flip gated on the previous stage's telemetry.
 
-- **Stage 0 (day one):** frozen-prefix cache discipline + prefix-edit warning hook;
-  budget governor in estimate mode with serial execution; per-profile starting-tier override;
-  pipelining + pre-decompose; structured outputs on all worker returns;
+- **Stage 0 (day one):** frozen-prefix cache discipline + prefix-edit warning hook; budget
+  governor reading the statusline `rate_limits` feed, thresholds **observe-only** (log crossings,
+  don't act — untuned hard caps stall the loop `[folklore]`), serial execution; per-profile
+  starting-tier override; the vault-isolation strict-mode flags on every unattended firing;
+  pipelining + pre-decompose; step-count caps; structured outputs on all worker returns;
   `DISABLE_NON_ESSENTIAL_MODEL_CALLS` on headless firings.
-- **Stage 1 (after the minimum task sample):** per-profile effort via the Workflow spawn path,
-  effort recorded in the run-log; the duration predictor, if the simple starting-tier lever
-  shows escapes ~0 and $/task down; cross-phase DAG scheduling behind a conservative
-  `start-early-safe` predicate.
+- **Stage 1 (after the minimum task sample):** flip governor thresholds from observe-only to
+  enforcing; per-profile effort via the Workflow spawn path, effort recorded in the run-log; the
+  duration predictor, gated on (a) the simple starting-tier lever showing escapes ~0 and $/task
+  down **and** (b) its features validated against measured burn; intra-task early-abort in
+  observe-only; cross-phase DAG scheduling behind a conservative `start-early-safe` predicate.
 - **Stage 2 (needs Stage-1 evidence):** held-out vault + safe-RTS replay (non-floored surfaces
-  first, replay rate-limited); concurrency cap 2 under the admission rule, with the run-log
-  attributing rework to concurrency.
+  first, replay rate-limited); intra-task early-abort enforcing once the false-abort rate is
+  proven against O0; concurrency cap 2 under the admission rule (including per-pipeline cache
+  warmup in the cost side), with the run-log attributing rework to concurrency.
 - **Stage 3 (optional, evidence-gated):** the full bucket×profile starting-tier matrix;
   test-execution caching (bounded to non-security surfaces, mandatory cache-defeat on the
-  changed surface — explicitly down-weighted by the objective); `ENABLE_PROMPT_CACHING_1H` if
-  idle-gap misses measurably matter.
-- **Standing:** recalibrate window ceilings after 2026-07-13 (promo expiry) and after any
-  entry lands in §10.3.
+  changed surface — explicitly down-weighted by the objective).
+- **Standing:** recalibrate window ceilings after 2026-07-13 (promo expiry), re-check the paused
+  Agent-SDK regime change (§10.3), and after any entry lands in §10.3.
 
 ## 12. Open questions
 
-1. **Programmatic quota API** (anthropics/claude-code#13585): until it ships, unattended runs
-   budget on the token-proxy estimate; the source ladder upgrades in place when it lands.
-2. **Cache-read quota weight** (§10.2): worth a controlled measurement (one firing with
-   deliberate cache-busting vs one without, same work, compare `/usage` movement) before
-   tuning the budget governor's cache-read weight away from conservative.
-3. **Vault sandbox enforcement:** the concrete mechanism proving the implementer *cannot* read
-   the vault (separate repo + credential? OS-level sandbox rule? hook-verified path audit?).
-4. **Per-agent effort portability:** the Workflow spawn path is probe-verified on the current
+1. **Dedicated quota CLI** (anthropics/claude-code#13585, still open): the statusline
+   `rate_limits` feed now covers in-session utilization (§5.1), but headless `-p` firings still
+   have no official surface — they fall back to the unstable OAuth-usage endpoint or the
+   optimistic local estimate until a headless-capable API ships.
+2. **Cache-read quota weight** (§10.2) — *the highest-value experiment*: one firing with
+   deliberate cache-busting vs one without, same work, compare the statusline `used_percentage`
+   movement, before tuning the governor's cache-read weight away from conservative.
+3. **Per-agent effort portability:** the Workflow spawn path is probe-verified on the current
    Claude Code build; the parallel-`Agent`-calls fallback stays the default until the
    primitive is verified wherever the harness runs.
-5. **Window-occupancy forecasting:** the admission rule needs a per-task burn forecast; start
-   with profile×tier static estimates, upgrade to duration buckets once the predictor is live.
+4. **Window-occupancy forecasting:** the admission rule needs a per-task burn forecast; measured
+   spend varies up to 30× same-task and models can't self-predict it (§5.1), so start with
+   P95-quantile profile×tier estimates and only upgrade to duration buckets once the predictor's
+   features are validated against measured burn.
+5. **Headless quota regime:** track whether the paused Agent-SDK change (§10.3) un-pauses; if it
+   does, the governor's accounting swaps from window bin-packing to a monthly dollar budget for
+   headless firings, so the "which pool does this spend drain" abstraction must already exist.
+
+*Resolved since the founding draft:* **vault sandbox enforcement** (was open question #3) — the
+six-layer OS-enforced isolation stack, proven by a vault-canary read-attempt in the gate
+self-tests (§7; [isolation-and-sandboxing.md](../research/isolation-and-sandboxing.md)).

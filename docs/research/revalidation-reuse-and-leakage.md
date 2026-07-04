@@ -1,10 +1,14 @@
-# Prior-art digest — re-validation reuse & cross-phase scheduling
+# Re-validation reuse & leakage — prior art behind the held-out vault's economics
 
-Compact, cited digest of the research behind two decisions in the
-[design doc](../design/token-time-optimized-harness.md): the held-out test vault + safe
-incremental re-validation, and global cross-phase DAG scheduling. Load-bearing facts only —
-each theme lists the transferable pattern and its named tradeoff. `[E]` = established in the cited
-primary source; `[I]` = inference/synthesis.
+The research behind the design's re-validation reuse decisions
+([../design/token-time-optimized-harness.md](../design/token-time-optimized-harness.md) §5.5):
+safe incremental re-validation, corpus persistence and freshness, and the leakage budget for
+adaptive reuse of a hidden set. Load-bearing facts only — each theme lists the transferable
+pattern and its named tradeoff. *How* the vault is kept unreadable is a separate question,
+covered in [isolation-and-sandboxing.md](isolation-and-sandboxing.md).
+
+**Provenance:** prior-art digest, 2026-07-03. `[E]` = established in the cited primary source;
+`[I]` = inference/synthesis. Fidelity note in the consolidated ledger ([README.md](README.md)).
 
 ---
 
@@ -90,23 +94,7 @@ Replay = regression floor; it CANNOT find a NEW hole. Find-power is in newly-gen
 - **Takeaway:** the vault is a **regression floor, never a correctness proof**; always author FRESH
   adversarial tests on the CHANGED surface.
 
-## 5. Isolation, leakage, and rate-limit-as-budget (hidden-test discipline)
-
-- **Hidden tests get exfiltrated** — a Gradescope autograder's hidden tests were exfiltrated via a
-  **reverse shell from submitted code** (2020). Isolation must be **sandbox-enforced**, not just
-  path-separated. `[E]` — https://saligrama.io/blog/post/gradescope-autograder-security/
-- **Codeforces** — visible **pretests** deliberately weak; the strong **system tests stay hidden** until
-  after submission; the **hacking phase grows the hidden set** with adversarial inputs from independent
-  parties; a **failed hack costs points** (rate-limit). `[E]` — https://codeforces.com/blog/entry/133094
-- **Kaggle** — fixed unknown **public/private split**; a **daily submission cap** exists explicitly "to
-  reduce the likelihood that competitors overfit the test set"; the private-LB "shake-up" exposes public-LB
-  overfitters. `[E]` — https://www.kaggle.com/docs/competitions
-- **Gradescope** per-test `visibility` (`hidden`/`after_due_date`/…). `[E]` — https://gradescope-autograders.readthedocs.io/en/latest/specs/
-- **ML held-out discipline** — keep the test set physically separate (Google Rules of ML #33/#37);
-  BIG-bench's **canary string** (`26b5c67b-…`) is a leakage tripwire. `[E]` —
-  https://developers.google.com/machine-learning/guides/rules-of-ml
-
-## 6. Reusing a fixed hidden set across adaptive iterations degrades it (and the fix)
+## 5. Reusing a fixed hidden set across adaptive iterations degrades it (and the fix)
 
 The theory for "how many times can a held-out set be reused before it's gamed," and the mechanism.
 
@@ -131,9 +119,3 @@ The theory for "how many times can a held-out set be reused before it's gamed," 
 - **Takeaways for the vault:** (a) **rate-limit reuse** as a leakage budget; (b) **rotate/refresh** the
   corpus; (c) for **security-critical surfaces keep FULL fresh re-derivation** — that's where a gamed
   frozen set is most dangerous.
-
----
-
-_Fidelity notes: a few exact figures (GSM1k drop, Ladder constants, some ICSE/FSE coefficients) were
-cross-confirmed from secondary summaries where the primary PDF didn't parse — re-verify before quoting a
-specific number in shipped code/docs. Themes and mechanisms above are primary-sourced._

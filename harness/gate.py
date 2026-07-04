@@ -69,9 +69,101 @@ def validate_finding(doc: dict, i: int = 0) -> dict:
                         f"not in {ACTIONS}")
     if not isinstance(doc.get("summary"), str) or not doc["summary"]:
         raise GateError(f"finding {i}: needs a non-empty summary")
+    repro = doc.get("repro")
+    if repro is not None:
+        if not isinstance(repro, dict) or \
+                not isinstance(repro.get("command"), str) or \
+                not repro["command"].strip():
+            raise GateError(f"finding {i}: repro must be an object with a "
+                            f"non-empty 'command'")
+        if repro.get("expect_exit", "nonzero") not in ("nonzero", "zero"):
+            raise GateError(f"finding {i}: repro.expect_exit must be "
+                            f"'nonzero' or 'zero'")
     out = dict(doc)
     out.setdefault("step", "unknown")
     return out
+
+
+# -- H4: repro replay — a FAIL must demonstrate itself before it blocks -------------
+
+
+def replay_repro(finding: dict, cwd: str, timeout: int = 300) -> dict:
+    """Execute a finding's repro in the clean checkout. ``reproduced`` means
+    the command demonstrated the claimed failure (default expectation:
+    nonzero exit; optional expect_substring on combined output)."""
+    repro = finding.get("repro")
+    if not isinstance(repro, dict) or \
+            not isinstance(repro.get("command"), str) or \
+            not repro["command"].strip():
+        return {"replayed": False, "reproduced": None,
+                "why": "no executable repro on the finding"}
+    try:
+        proc = subprocess.run(shlex.split(repro["command"]), cwd=cwd,
+                              capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+        return {"replayed": True, "reproduced": False,
+                "why": f"repro command failed to run: {exc}"}
+    output = (proc.stdout or "") + (proc.stderr or "")
+    expect_exit = repro.get("expect_exit", "nonzero")
+    exit_ok = ((proc.returncode != 0) if expect_exit == "nonzero"
+               else (proc.returncode == 0))
+    sub = repro.get("expect_substring")
+    sub_ok = (sub in output) if isinstance(sub, str) and sub else True
+    why = f"exit {proc.returncode} (expected {expect_exit})"
+    if isinstance(sub, str) and sub:
+        why += f"; expected substring {'found' if sub_ok else 'MISSING'}"
+    return {"replayed": True, "reproduced": exit_ok and sub_ok, "why": why,
+            "exit": proc.returncode}
+
+
+def replay_failing_verdicts(verdicts: list, cwd: str, strict: bool = False,
+                            timeout: int = 300) -> dict:
+    """Adjudicate the error findings of FAIL verdicts by replaying their
+    repros. Reproduced findings confirm the block; unreproduced findings are
+    downgraded to ask-user (false-FAIL candidates — human adjudication, not
+    escalation fuel); findings with no repro block conservatively unless
+    ``strict``, where they downgrade too. Telemetry feeds the run-log (§8)."""
+    confirmed, downgraded, no_repro = [], [], []
+    telemetry = {"error_findings": 0, "replayed": 0, "reproduced": 0,
+                 "unreproduced": 0, "no_repro": 0, "by_lens": {}}
+
+    def lens_bucket(lens):
+        return telemetry["by_lens"].setdefault(
+            lens, {"reproduced": 0, "unreproduced": 0, "no_repro": 0})
+
+    for verdict in verdicts:
+        if verdict.get("verdict") == "PASS":
+            continue
+        lens = verdict.get("lens", "unknown")
+        for i, raw in enumerate(verdict.get("findings") or []):
+            finding = validate_finding(raw, i)
+            if finding["severity"] != "error":
+                continue
+            telemetry["error_findings"] += 1
+            result = replay_repro(finding, cwd, timeout)
+            if not result["replayed"]:
+                telemetry["no_repro"] += 1
+                lens_bucket(lens)["no_repro"] += 1
+                if strict:
+                    downgraded.append(dict(finding, action="ask-user",
+                                           unreplayable=True, lens=lens))
+                else:
+                    no_repro.append(dict(finding, lens=lens))
+                continue
+            telemetry["replayed"] += 1
+            if result["reproduced"]:
+                telemetry["reproduced"] += 1
+                lens_bucket(lens)["reproduced"] += 1
+                confirmed.append(dict(finding, lens=lens,
+                                      replay=result["why"]))
+            else:
+                telemetry["unreproduced"] += 1
+                lens_bucket(lens)["unreproduced"] += 1
+                downgraded.append(dict(finding, action="ask-user",
+                                       unreproduced=True, lens=lens,
+                                       replay=result["why"]))
+    return {"confirmed": confirmed, "downgraded": downgraded,
+            "unreplayable_block": bool(no_repro), "telemetry": telemetry}
 
 
 def triage_findings(findings: list, budgets: dict | None = None) -> dict:
@@ -219,7 +311,9 @@ def run_gate(repo: str, branch: str, base: str = "main",
              min_lenses: int = 1,
              test_timeout: int = 1800,
              stamp_dir: str | None = None,
-             required_steps_path: str | None = None) -> dict:
+             required_steps_path: str | None = None,
+             repro_mode: str = "off",
+             repro_timeout: int = 300) -> dict:
     """Run the full gate. Fail-fast on the first blocking step; every executed
     step is reported. Returns the report dict (see ``render_report``).
 
@@ -232,6 +326,9 @@ def run_gate(repo: str, branch: str, base: str = "main",
     profile — an under-configured gate call cannot yield a green gate."""
     if task_profile not in PROFILES:
         raise GateError(f"unknown profile {task_profile!r}")
+    if repro_mode not in ("off", "replay", "strict"):
+        raise GateError(f"unknown repro_mode {repro_mode!r} "
+                        f"(off | replay | strict)")
     steps: list = []
     report = {"ok": False, "branch": branch, "base": base, "steps": steps,
               "findings": None, "evidence_dir": evidence_dir,
@@ -329,16 +426,26 @@ def run_gate(repo: str, branch: str, base: str = "main",
     else:
         step("risk_floor", True, "no floor config supplied (caller's choice)")
 
-    # 5. clean checkout + visible tests
-    if test_cmd:
-        with tempfile.TemporaryDirectory(prefix="gate-checkout-") as scratch:
-            dest = os.path.join(scratch, "co")
-            try:
-                clean_checkout(repo, branch, dest)
-            except GateError as exc:
-                step("clean_checkout", False, str(exc))
+    # 5–7 share one clean checkout (visible tests + H4 repro replay)
+    with tempfile.TemporaryDirectory(prefix="gate-checkout-") as scratch:
+        dest = os.path.join(scratch, "co")
+        checkout = {"ready": False, "error": None}
+
+        def ensure_checkout():
+            if not checkout["ready"] and not checkout["error"]:
+                try:
+                    clean_checkout(repo, branch, dest)
+                    checkout["ready"] = True
+                    step("clean_checkout", True, f"reproduced {branch}")
+                except GateError as exc:
+                    checkout["error"] = str(exc)
+                    step("clean_checkout", False, str(exc))
+            return checkout
+
+        # 5. visible tests
+        if test_cmd:
+            if ensure_checkout()["error"]:
                 return finish(False)
-            step("clean_checkout", True, f"reproduced {branch}")
             try:
                 proc = subprocess.run(
                     shlex.split(test_cmd), cwd=dest, capture_output=True,
@@ -360,34 +467,73 @@ def run_gate(repo: str, branch: str, base: str = "main",
                            f"earlier context)" if report["full_log"] and
                            proc.returncode != 0 else "")):
                 return finish(False)
-    else:
-        step("visible_tests", True, "no test command supplied (caller's choice)")
+        else:
+            step("visible_tests", True,
+                 "no test command supplied (caller's choice)")
 
-    # 6. held-out drop
-    if vault_path:
-        try:
-            drop = _vault.check_heldout_drop(_vault.load_manifest(vault_path),
-                                             _vault.build_manifest(vault_path))
-        except _vault.VaultError as exc:
-            step("heldout_drop", False, f"{exc} (fail-closed)")
-            return finish(False)
-        if not step("heldout_drop", drop["ok"], drop["why"]):
-            return finish(False)
-    else:
-        step("heldout_drop", True, "no vault supplied (caller's choice)")
+        # 6. held-out drop
+        if vault_path:
+            try:
+                drop = _vault.check_heldout_drop(
+                    _vault.load_manifest(vault_path),
+                    _vault.build_manifest(vault_path))
+            except _vault.VaultError as exc:
+                step("heldout_drop", False, f"{exc} (fail-closed)")
+                return finish(False)
+            if not step("heldout_drop", drop["ok"], drop["why"]):
+                return finish(False)
+        else:
+            step("heldout_drop", True, "no vault supplied (caller's choice)")
 
-    # 7. verdicts, all-must-pass
-    if verdict_dir is not None:
-        try:
-            verdicts = read_verdicts(verdict_dir)
-        except GateError as exc:
-            step("verdicts", False, f"{exc} (fail-closed)")
-            return finish(False)
-        panel = check_verdicts(verdicts, min_lenses=min_lenses)
-        if not step("verdicts", panel["ok"], panel["why"]):
-            return finish(False)
-    else:
-        step("verdicts", True, "no panel dir supplied (caller's choice)")
+        # 7. verdicts, all-must-pass — with H4 repro replay before a FAIL
+        # blocks: a hallucinated FAIL must not drive the escalation ladder
+        if verdict_dir is not None:
+            try:
+                verdicts = read_verdicts(verdict_dir)
+            except GateError as exc:
+                step("verdicts", False, f"{exc} (fail-closed)")
+                return finish(False)
+            panel = check_verdicts(verdicts, min_lenses=min_lenses)
+            if panel["ok"]:
+                step("verdicts", True, panel["why"])
+            elif repro_mode == "off" or not panel.get("failing"):
+                # replay disabled, or the panel itself is inadequate
+                step("verdicts", False, panel["why"])
+                return finish(False)
+            else:
+                if ensure_checkout()["error"]:
+                    return finish(False)
+                try:
+                    adjudication = replay_failing_verdicts(
+                        verdicts, dest, strict=(repro_mode == "strict"),
+                        timeout=repro_timeout)
+                except GateError as exc:
+                    step("verdicts", False,
+                         f"replay adjudication failed: {exc} (fail-closed)")
+                    return finish(False)
+                report["false_fail"] = adjudication["telemetry"]
+                report["downgraded_findings"] = adjudication["downgraded"]
+                if adjudication["confirmed"]:
+                    step("verdicts", False,
+                         f"{panel['why']} — {len(adjudication['confirmed'])} "
+                         f"error finding(s) CONFIRMED by replay")
+                    return finish(False)
+                if adjudication["unreplayable_block"]:
+                    step("verdicts", False,
+                         f"{panel['why']} — error finding(s) without an "
+                         f"executable repro block (repro_mode='replay' is "
+                         f"conservative; 'strict' downgrades them)")
+                    return finish(False)
+                report["needs_adjudication"] = True
+                step("verdicts", False,
+                     f"FAIL verdict(s) present but 0 of "
+                     f"{adjudication['telemetry']['error_findings']} error "
+                     f"finding(s) reproduced on replay — route to human "
+                     f"adjudication (false-FAIL candidates), NOT the "
+                     f"escalation ladder")
+                return finish(False)
+        else:
+            step("verdicts", True, "no panel dir supplied (caller's choice)")
 
     # 8. findings triage
     triage = triage_findings(findings or [], autofix_budgets)
@@ -401,6 +547,22 @@ def run_gate(repo: str, branch: str, base: str = "main",
          f"{len(triage['needs_human'])} for a human, "
          f"{len(triage['info'])} informational")
     return finish(True)
+
+
+def false_fail_records(report: dict, task_id: str | None = None) -> list:
+    """Run-log records (event=false_fail) from a gate report's replay
+    telemetry — one per lens, so the controller segments verifier precision
+    by lens (§8). Empty when no replay ran."""
+    telemetry = report.get("false_fail")
+    if not telemetry:
+        return []
+    out = []
+    for lens, counts in (telemetry.get("by_lens") or {}).items():
+        rec = {"event": "false_fail", "lens": lens, **counts}
+        if task_id:
+            rec["task_id"] = task_id
+        out.append(rec)
+    return out
 
 
 def render_report(report: dict) -> str:

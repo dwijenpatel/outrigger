@@ -264,6 +264,131 @@ class GateEndToEndTests(unittest.TestCase):
         self.assertIn("| step | ok | detail |", text)
 
 
+class ReproReplayTests(unittest.TestCase):
+    """H4 — a FAIL must demonstrate itself before it blocks; unreproduced
+    findings are false-FAIL candidates routed to humans, not escalation."""
+
+    REPRODUCES = f"{sys.executable} -c \"import sys; sys.exit(1)\""
+    DOES_NOT = f"{sys.executable} -c \"import sys; sys.exit(0)\""
+
+    def setUp(self):
+        self.root_ctx = tempfile.TemporaryDirectory()
+        self.root = self.root_ctx.name
+        self.fx = RepoFixture(self.root)
+        self.fx.branch("task/good", {"app.py":
+                       "def add(a, b):\n    return a + b\n\n"
+                       "def sub(a, b):\n    return a - b\n"})
+
+    def tearDown(self):
+        self.root_ctx.cleanup()
+
+    def fail_panel(self, findings):
+        vdir = os.path.join(self.root, "verdicts-fail")
+        os.makedirs(vdir, exist_ok=True)
+        with open(os.path.join(vdir, "correctness.json"), "w") as fh:
+            json.dump({"lens": "correctness", "verdict": "FAIL",
+                       "evidence": ["observed X"], "intent": "t",
+                       "findings": findings}, fh)
+        return vdir
+
+    def run_gate(self, findings, repro_mode="replay", **kw):
+        defaults = dict(repo=self.fx.repo, branch="task/good", base="main",
+                        test_cmd=TEST_CMD, task_profile="routine",
+                        verdict_dir=self.fail_panel(findings),
+                        repro_mode=repro_mode)
+        defaults.update(kw)
+        return gate.run_gate(**defaults)
+
+    def finding(self, **kw):
+        base = {"severity": "error", "action": "ask-user",
+                "summary": "claimed defect"}
+        base.update(kw)
+        return base
+
+    def verdict_step(self, report):
+        return next(s for s in report["steps"] if s["step"] == "verdicts")
+
+    def test_reproduced_fail_blocks_confirmed(self):
+        report = self.run_gate(
+            [self.finding(repro={"command": self.REPRODUCES})])
+        self.assertFalse(report["ok"])
+        self.assertIn("CONFIRMED by replay", self.verdict_step(report)["detail"])
+        self.assertNotIn("needs_adjudication", report)
+        self.assertEqual(report["false_fail"]["reproduced"], 1)
+
+    def test_unreproduced_fail_downgrades_to_adjudication(self):
+        report = self.run_gate(
+            [self.finding(repro={"command": self.DOES_NOT})])
+        self.assertFalse(report["ok"])  # still no auto-merge — human decides
+        self.assertTrue(report["needs_adjudication"])
+        self.assertIn("NOT the", self.verdict_step(report)["detail"])
+        self.assertEqual(report["false_fail"]["unreproduced"], 1)
+        downgraded = report["downgraded_findings"]
+        self.assertEqual(downgraded[0]["action"], "ask-user")
+        self.assertTrue(downgraded[0]["unreproduced"])
+        self.assertEqual(
+            report["false_fail"]["by_lens"]["correctness"]["unreproduced"], 1)
+
+    def test_expect_substring_checked(self):
+        cmd = (f"{sys.executable} -c \"print('tenant B saw tenant A rows'); "
+               f"import sys; sys.exit(1)\"")
+        reproduced = self.run_gate([self.finding(repro={
+            "command": cmd, "expect_substring": "tenant B saw tenant A"})])
+        self.assertIn("CONFIRMED", self.verdict_step(reproduced)["detail"])
+        missing = self.run_gate([self.finding(repro={
+            "command": cmd, "expect_substring": "no such output"})])
+        self.assertTrue(missing["needs_adjudication"])
+
+    def test_no_repro_error_blocks_in_replay_mode(self):
+        report = self.run_gate([self.finding()])
+        self.assertFalse(report["ok"])
+        self.assertIn("without an executable repro",
+                      self.verdict_step(report)["detail"])
+        self.assertNotIn("needs_adjudication", report)
+
+    def test_no_repro_error_downgrades_in_strict_mode(self):
+        report = self.run_gate([self.finding()], repro_mode="strict")
+        self.assertFalse(report["ok"])
+        self.assertTrue(report["needs_adjudication"])
+        self.assertTrue(report["downgraded_findings"][0]["unreplayable"])
+
+    def test_off_mode_keeps_legacy_behavior(self):
+        report = self.run_gate([self.finding()], repro_mode="off")
+        self.assertFalse(report["ok"])
+        self.assertIn("all-must-pass violated",
+                      self.verdict_step(report)["detail"])
+        self.assertNotIn("false_fail", report)
+
+    def test_warning_findings_not_replayed(self):
+        report = self.run_gate(
+            [self.finding(severity="warning", repro={"command":
+                                                     self.REPRODUCES})])
+        self.assertTrue(report["needs_adjudication"])
+        self.assertEqual(report["false_fail"]["error_findings"], 0)
+
+    def test_malformed_repro_fails_closed(self):
+        report = self.run_gate([self.finding(repro={"command": ""})])
+        self.assertFalse(report["ok"])
+        self.assertIn("fail-closed", self.verdict_step(report)["detail"])
+
+    def test_unknown_repro_mode_is_loud(self):
+        with self.assertRaises(gate.GateError):
+            self.run_gate([self.finding()], repro_mode="maybe")
+
+    def test_false_fail_records_bridge(self):
+        report = self.run_gate(
+            [self.finding(repro={"command": self.DOES_NOT})])
+        records = gate.false_fail_records(report, task_id="t1")
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["event"], "false_fail")
+        self.assertEqual(records[0]["lens"], "correctness")
+        self.assertEqual(records[0]["unreproduced"], 1)
+        self.assertEqual(records[0]["task_id"], "t1")
+        from harness import runlog
+        runlog.validate_record(records[0])  # accepted by the run-log schema
+        self.assertEqual(gate.false_fail_records({"false_fail": None}), [])
+
+
 class RequiredStepsManifestTests(unittest.TestCase):
     """H3 — a required step whose input is absent fails closed, never
     'caller's choice'."""

@@ -30,6 +30,7 @@ ROLES = ("implementer", "validator", "test_author", "orchestrator", "other")
 
 #: Event type for a completed task attempt — the record shape most consumers care about.
 TASK_COMPLETE = "task_complete"
+FALSE_FAIL = "false_fail"  # H4: per-lens verifier-precision telemetry (§8)
 
 _TOKEN_COMPONENTS = (
     "input_tokens",
@@ -113,6 +114,9 @@ def validate_record(rec: dict) -> dict:
             ws = out["wall_secs"]
             if isinstance(ws, bool) or not isinstance(ws, (int, float)) or ws < 0:
                 raise RunLogError(f"wall_secs={ws!r} must be a non-negative number")
+    elif out["event"] == FALSE_FAIL:
+        for field in ("reproduced", "unreproduced", "no_repro"):
+            _require_nonneg_int(out, field)
     return out
 
 

@@ -24,7 +24,17 @@
           "summary": {"type": "string", "minLength": 1},
           "file": {"type": "string"},
           "line": {"type": "integer"},
-          "step": {"type": "string"}
+          "step": {"type": "string"},
+          "repro": {
+            "type": "object",
+            "required": ["command"],
+            "description": "Machine-replayable proof (H4): the gate re-executes this in the clean checkout before the FAIL blocks; an unreproduced finding downgrades to ask-user",
+            "properties": {
+              "command": {"type": "string", "minLength": 1},
+              "expect_exit": {"enum": ["nonzero", "zero"], "default": "nonzero"},
+              "expect_substring": {"type": "string"}
+            }
+          }
         }
       }
     }

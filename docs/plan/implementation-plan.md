@@ -62,8 +62,8 @@ Layout: harness library modules in `harness/` (config in `harness/config/`), tes
 | A2 | **Tier table + spawn allowlist validation** (`harness/config/tiers.json`, `harness/spawncheck.py`): abstract tier → model-id table; explicit `(model, effort)` allowlist validation before any spawn; `require_result` null-check (probe-verified §5.3 correction) | §5.3, §12 Q3 | — | done (pre-amendment) |
 | A3 | **Budget governor** (`harness/governor.py`): source ladder statusline → oauth-usage → run-log estimate; occupancy model per window; degrade(0.8)/pause(0.95) thresholds **observe-only by default**; JSONL decision log | §5.1, §11 Stage 0 | A1 | done (pre-amendment) |
 | A4 | **Window-aware admission rule** (`harness/admission.py`): P95-quantile forecast; admit/defer against degrade threshold with forecast added burn; conservative margin path when forecast or ceiling unknown | §5.1, §6.2 | A2, A3 | done (pre-amendment) |
-| A5 | **Governor driver rules** (amends A3/A1): three-way **failure taxonomy** (agent-reported → continue; retryable → exponential backoff; permanent (auth/credit stderr patterns) → abort firing) as a config-driven pattern table; **sticky `~` estimated-accounting flag** — any window total derived from an `estimate`-rung reading is flagged estimated end-to-end, never silently blended | §5.1 (2026-07-04 amendment) | A1, A3 | not-started |
-| A6 | **Token-free loop test rig**: deterministic mock worker speaking the E1 return schemas — synthetic usage counters (static + cumulative modes), scripted workspace side effects (post-success file mutations), hold-open turns for cancellation paths; recorded-trace replay (normalized JSONL); fixtures committed; **re-recording from real agents is operator-gated** (spends quota) | §11 Stage 0 (2026-07-04 amendment) | A1 (schemas); E1 verdict shape may iterate it | not-started |
+| A5 | **Governor driver rules** (amends A3/A1): three-way **failure taxonomy** (agent-reported → continue; retryable → exponential backoff; permanent (auth/credit stderr patterns) → abort firing) as a config-driven pattern table; **sticky `~` estimated-accounting flag** — any window total derived from an `estimate`-rung reading is flagged estimated end-to-end, never silently blended | §5.1 (2026-07-04 amendment) | A1, A3 | done |
+| A6 | **Token-free loop test rig**: deterministic mock worker speaking the E1 return schemas — synthetic usage counters (static + cumulative modes), scripted workspace side effects (post-success file mutations), hold-open turns for cancellation paths; recorded-trace replay (normalized JSONL); fixtures committed; **re-recording from real agents is operator-gated** (spends quota) | §11 Stage 0 (2026-07-04 amendment) | A1 (schemas); E1 verdict shape may iterate it | done |
 
 ### Phase B — Disk-is-the-memory state
 
@@ -71,8 +71,8 @@ Layout: harness library modules in `harness/` (config in `harness/config/`), tes
 |---|---|---|---|---|
 | B1 | **Task/ledger schema + status index** (`harness/ledger.py`): task records (id, phase, risk profile, hard deps, `mayBeInvalidatedBy`, status), validated transitions, atomic writes, pause/resume marker, `runnable`/`summary` views | §3 p4, §9 | — | done (pre-amendment) |
 | B4 | **State-architecture rework of B1** (event-log/reconciliation split): status index becomes an **append-only event log** plus a **derived reconciliation view** whose authoritative inputs are gate/run artifacts and git state (never the last event line); **write-ahead event queue** (durable event recorded before any suppression/progress marker advances; recovery = drain queue); **generation-stamped mutations** (stale expected-generation fails loudly). `runnable()`/`summary()` become reconciliation reads. Digest output rendered per format policy (flattened Markdown table + aggregate header: `tasks: 12 of 47 done, 3 FAIL, 2 blocked`) | §3 p4, §5.4 format policy (2026-07-04 amendments) | B1 | done |
-| B2 | **Preflight DAG check + scheduler tick** (`harness/scheduler.py`): cross-phase DAG validation (cycle detection), runnable-set computation over the B4 reconciliation view, `start-early-safe` predicate, critical-path-then-risk priority; concurrency admission calls A4 (incl. per-pipeline cold-prefix warmup cost, §6.2); **window-phase awareness** — heavy fan-out slots early in a fresh window, the tail runs cheap serial work | §6.1, §6.2 | B4, A4 | not-started |
-| B3 | **Liveness guard (observe-only)** (`harness/liveness.py`): per-task step-count cap; **per-task token cap from the §5.1 P95 forecast, checked mid-flight**; repeated-error-signature detection; slow-grind vs predicted bucket; **no-op rule** (zero git delta + zero new artifacts = failed turn, halts the spin); observe-only until false-abort rate proven (§5.6) | §9 (2026-07-04 amendment) | B4 | not-started |
+| B2 | **Preflight DAG check + scheduler tick** (`harness/scheduler.py`): cross-phase DAG validation (cycle detection), runnable-set computation over the B4 reconciliation view, `start-early-safe` predicate, critical-path-then-risk priority; concurrency admission calls A4 (incl. per-pipeline cold-prefix warmup cost, §6.2); **window-phase awareness** — heavy fan-out slots early in a fresh window, the tail runs cheap serial work | §6.1, §6.2 | B4, A4 | done |
+| B3 | **Liveness guard (observe-only)** (`harness/liveness.py`): per-task step-count cap; **per-task token cap from the §5.1 P95 forecast, checked mid-flight**; repeated-error-signature detection; slow-grind vs predicted bucket; **no-op rule** (zero git delta + zero new artifacts = failed turn, halts the spin); observe-only until false-abort rate proven (§5.6) | §9 (2026-07-04 amendment) | B4 | done |
 
 ### Phase C — Zero-token enforcement hooks (all gates fail-closed; advisory layers fail open — design §7)
 
@@ -212,3 +212,12 @@ everything in Phases B–E.
   events or rewind; `digest()` renders the §5.4 aggregate-header + Markdown-table view with
   definitive empty states. Docs from the amendment/finalization session committed and merged
   the same run. Next: **B2**.
+- **2026-07-04 (run 5, in progress):** Phases A and B **complete** — A5
+  (`harness/failures.py` taxonomy + governor sticky-`~` rollup), A6
+  (`harness/mockworker.py` + zero-quota loop integration test: ledger → governor →
+  admission → mock worker → run-log), B2 (`harness/scheduler.py`: preflight cycle reporting,
+  critical-path-then-risk tick over the reconcile view, start-early-safe hold, per-pipeline
+  warmup charged on concurrent slots, window-phase tail = cheap serial), B3
+  (`harness/liveness.py`: step/token/wall caps, collapsed error signatures, no-op rule,
+  observe-only). 185 tests passing. Each increment on its own feature branch, merged green.
+  Continuing into Phase C (hooks) and Phase D (vault + gate).

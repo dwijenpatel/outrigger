@@ -1,7 +1,8 @@
-# State-of-the-art survey — this harness vs. the field (2024–2026)
+# State-of-the-art survey — the target design vs. the field (2024–2026)
 
-Compiled synthesis of an external comparative study (2026-07-03): the cc-agentloop-template
-design — plan-first, context-isolated implement/validate loop with blind validation, durable
+Compiled synthesis of an external comparative study (2026-07-03): the target harness design
+(now specified in [../design/token-time-optimized-harness.md](../design/token-time-optimized-harness.md))
+— plan-first, context-isolated implement/validate loop with blind validation, durable
 ledgers, and governed self-modification — measured against **20+ contemporary coding agents,
 multi-agent frameworks, the spec-driven movement, and the verification literature.**
 
@@ -15,21 +16,21 @@ inference/synthesis. A rendered companion artifact (matrix + verdict) exists; th
 durable, in-repo record.
 
 Related: [revalidation-and-scheduling-prior-art.md](revalidation-and-scheduling-prior-art.md)
-(narrower digest behind the 2026-07-04 META proposals). Actionable outcomes of this study were
-filed as two `proposed` entries in the saas repo's `docs/META_PROPOSALS.md` (2026-07-03):
-mechanize the prose gates; extend `/calibrate` to contract-test mutation calibration.
+(narrower digest behind the re-validation and scheduling decisions). This study's actionable
+outcomes are folded into the design doc: mechanize the prose gates; extend the calibration
+probe to contract-test mutation calibration.
 
 ---
 
 ## Verdict (one paragraph)
 
-This harness is best understood as **Anthropic's own recommended agentic-coding workflow,
+This design is best understood as **Anthropic's own recommended agentic-coding workflow,
 hardened into a governed, self-measuring harness.** Its durable novelty is *not* plan-first or
 separate-evaluator — both are now vendor territory (Kiro, Spec Kit, Claude Code plan mode /
 `/goal` / Stop hooks) — but the **governance and verifier-calibration layer** almost nothing
 else builds: (1) a **blind adversarial validator** (fresh context, never sees the implementer's
 reasoning, authors held-out tests, reproduces the gate from a clean checkout), and (2) a
-**self-measuring verifier loop** (`escapes.jsonl` as labeled ground truth + `/calibrate`
+**self-measuring verifier loop** (the escapes log as labeled ground truth + calibration-probe
 known-defect canaries — the latter verified as *ahead of the published literature*), plus (3)
 **human-ratified self-modification** with mechanized, diff-inspecting risk floors. Durable
 resumable state and structural context isolation are real strengths with mature prior art
@@ -41,11 +42,11 @@ that has outrun its single-worker realized scale.
 
 ## 1. Landscape — the comparison matrix
 
-Every row checked against primary sources. Lens = the harness's four load-bearing ideas.
+Every row checked against primary sources. Lens = the design's four load-bearing ideas.
 
 | Effort | Plan/execute split | Blind impl↔verifier | Verification model | Durable/resumable state | Governed self-mod |
 |---|---|---|---|---|---|
-| **This harness** | Explicit 2-mode, phased ledgers + risk table | **Yes** — separate context, held-out tests | Clean-checkout gate + adversarial panel + **frozen closure gate** | Disk ledgers = **spec-contract & resume state in one** | Propose → **human ratifies**; mechanized risk floors |
+| **This design** | Explicit 2-mode, phased ledgers + risk table | **Yes** — separate context, held-out tests | Clean-checkout gate + adversarial panel + **frozen closure gate** | Disk ledgers = **spec-contract & resume state in one** | Propose → **human ratifies**; mechanized risk floors |
 | Kiro (AWS) | Strong: requirements→design→tasks (EARS) + approval gates | No — author = executor | Hooks; **no doc'd closure gate** vs original goal | `.kiro/specs/*` files | Steering files |
 | GitHub Spec Kit | Strong: spec→plan→tasks→implement + constitution | No | Checklists/analyze; **no automated final gate** | Spec files in repo | Constitution |
 | Claude Code (Anthropic) | Plan mode + SPEC.md → fresh session | Two-Claude writer/reviewer *suggested*, not enforced | Stop hooks + `/goal` (separate evaluator per turn) | Progress/plan files + git | Auto-mode classifier (not human-ratified) |
@@ -100,11 +101,11 @@ non-deterministic, JS-only; company pivoted to "Agent Enablement" ~2026-01).
   ChatDev reviewer, OpenHands QA, same-thread AutoGen critics). Anthropic's evaluator-optimizer
   (https://www.anthropic.com/engineering/building-effective-agents) and the two-Claude
   writer/reviewer suggestion are the nearest endorsements — *suggested, not enforced*. `[E]`
-- **Self-measuring verifier** — `escapes.jsonl` (a committed, labeled set of defects the panel
-  missed = exactly how you'd empirically calibrate a checker) + `/calibrate` canaries (§5). `[E]`
+- **Self-measuring verifier** — the escapes log (a committed, labeled set of defects the panel
+  missed = exactly how you'd empirically calibrate a checker) + calibration canaries (§5). `[E]`
   for the components; `[I]`+verified-absence for the composition (§5).
-- **Human-ratified self-modification + mechanized risk floors.** `META_PROPOSALS.md` propose/
-  dispose + `gate.sh --check-riskfloor`/`--check-machinery` inspecting the **actual diff paths**
+- **Human-ratified self-modification + mechanized risk floors.** A propose/dispose ratification
+  queue + merge-gate risk-floor and machinery checks inspecting the **actual diff paths**
   at the merge point. No framework provides this governance layer; Claude Code's auto-mode
   classifier is the closest and is not human-ratified. `[E]` (absence-of-feature confirmations)
 
@@ -130,7 +131,7 @@ non-deterministic, JS-only; company pivoted to "Agent Enablement" ~2026-01).
   whole-build completion gate judged against a snapshot frozen at build start. Neither Kiro nor
   Spec Kit has any doc-confirmed final "did we build what we specified" check. `[E]` (absence)
 
-**The most concise honest framing `[I]`:** this harness is the disciplined, institutional version
+**The most concise honest framing `[I]`:** this design is the disciplined, institutional version
 of the folk "Ralph loop" (persisted plan, one task per iteration, subagent fan-out —
 https://ghuntley.com/ralph/) plus the blind validator, mechanized gates, and governance that folk
 loops lack — equivalently, Anthropic's reference workflow with every honor-system suggestion
@@ -244,13 +245,13 @@ of one model reading one diff.
   benchmarks). `[E]` https://arxiv.org/abs/2303.06689
 - **"A subpar plan hurts performance even more than no plan at all"** (SWE-style tasks). `[E]`
   https://arxiv.org/html/2604.12147v1 — **`[I]` this is the empirical justification for the
-  human-approval gate on TECHNICAL_PLAN.md**: the gate defends against the one thing worse than
+  human-approval gate on the technical plan**: the gate defends against the one thing worse than
   not planning. (Also grounds the phase-retro re-scoping: Tessl's independent critiques flag
   waterfall risk from big up-front specs — the retro is the mitigation.)
-- Terminology note `[I]`: this repo's "contract tests" = the acceptance-TDD / tests-as-spec sense
+- Terminology note `[I]`: this design's "contract tests" = the acceptance-TDD / tests-as-spec sense
   (Beck; Anthropic's commit-tests-first), **not** Pact/consumer-driven contract testing
   (https://docs.pact.io/) despite the shared word. Worth one clarifying line in
-  DEVELOPMENT_PROCESS.md.
+  the process docs.
 
 ### 4e. Durable file state + external kill switches (practitioner/vendor convergence)
 
@@ -270,7 +271,7 @@ of one model reading one diff.
   "deciding" to (fitness-driven safety-filter removal; meta-level takeover) — the academic
   backing for propose/human-ratify. `[E]` (as threat model) https://arxiv.org/pdf/2410.04444
   (Gödel Agent) + self-evolving-agent-safety literature.
-- The Ralph loop (folk baseline this harness institutionalizes): greenfield-only, "~90% done,"
+- The Ralph loop (folk baseline this design institutionalizes): greenfield-only, "~90% done,"
   "you'll wake up to a broken codebase … from time to time"; one task per loop; write down *why*
   because "future loops will not have the reasoning in their context window." `[E]` (self-reported)
   https://ghuntley.com/ralph/ — cost/output anecdotes ($297 MVP) are hype-tier.
@@ -280,7 +281,7 @@ of one model reading one diff.
 ## 5. The genuinely novel piece — mutation testing aimed at the reviewer
 
 **Verified novelty claim (adversarial search, 2026-07-03):** using seeded known-defect canaries as
-**live gates on trust in a specific "0 findings" verdict** — i.e., `/calibrate` — has **no located
+**live gates on trust in a specific "0 findings" verdict** — i.e., the calibration probe — has **no located
 published prior art.** The ingredients all exist separately:
 
 - Mutation testing itself is textbook (mutation score = fraction of seeded mutants killed = checker
@@ -298,13 +299,13 @@ published prior art.** The ingredients all exist separately:
   benchmark, not an operational pre-screen gating a specific downgrade decision at decision
   time.** `[E]`
 
-**`[I]` Positioning line for the docs:** `/calibrate` extends rule-based-perturbation LLM-judge
+**`[I]` Positioning line for the docs:** the calibration probe extends rule-based-perturbation LLM-judge
 evaluation from a static benchmark into an operational pre-screen — plant a defect the panel
 *should* catch; a miss freezes the downgrade and strengthens the blind panel. AXIOM's
 judges-hallucinate finding also *reinforces* the existing "only confirmed, reproducible findings
 fail a task" rule (the `repro` lens) as the filter against hallucinated flaws.
 
-**`[I]` The identified gap this enables (filed as a META proposal):** the harness calibrates the
+**`[I]` The identified gap this enables:** the design calibrates the
 *reviewer* but never the *contract-test suite* — yet §4a shows ~31% of green patches can ride on
 weak tests. Mutation-testing the committed contract tests (per-task kill-rate) would quantify how
 much load the held-out layer silently carries.
@@ -313,25 +314,23 @@ much load the held-out layer silently carries.
 
 ## 6. Design critique — risks that survived all evidence
 
-1. **Safety logic as prose (high).** ~80% of the design is mechanized; the un-mechanized remainder
-   includes safety-relevant behaviors living only as ROUTINE.md instructions: anti-spin liveness
+1. **Safety logic as prose (high).** Most of the design is mechanizable; the un-mechanized remainder
+   includes safety-relevant behaviors living only as orchestrator-prompt prose: anti-spin liveness
    counting, budget math, machinery-strip-and-retry, **held-out-test-drop detection**, the closure
    workflow, evidence-timeline appends. `[I]` This reintroduces "the agent said it did X" one
    level up, at the orchestrator — inside the loop, exactly where §4e says the kill switch must
-   not live. Fix: scripts + a native Stop hook (META proposal 2026-07-03 #1; the held-out-drop
-   check is the highest-value, lowest-risk first step — it is the one structural backstop against
-   §4a-style oracle attacks *within the app's own test infra*, which `machineryPaths` does not
-   cover).
-2. **Apparatus vs. realized scale (med).** 258-line policy config + encyclopedic Routine +
-   efficiency controller + tiered reflection + evidence trail, driving a single-worker,
-   manual-trigger loop that has produced one SaaS template. `[I]` Make `$layers` ("minimal core,
-   opt-in rigor") a real config split rather than a comment nothing reads; let EVIDENCE.md kill
-   dormant controllers.
+   not live. Fix: scripts + a native Stop hook (the held-out-drop check is the highest-value,
+   lowest-risk first step — it is the one structural backstop against §4a-style oracle attacks
+   *within the app's own test infra*, which a machinery-paths check does not cover).
+2. **Apparatus vs. realized scale (med).** An elaborate policy config + efficiency controller +
+   tiered reflection + evidence trail can outrun the realized scale of a single-worker,
+   manual-trigger loop. `[I]` Make "minimal core, opt-in rigor" a real config split rather than
+   a comment nothing reads; let the evidence trail kill dormant controllers.
 3. **Reflection can go ungrounded (med).** P2–P4 are specified-not-built (fine); §4b's
    self-correction result is the caution — keep reflection gated on ground-truth events (a real
    escape, a failed canary, a durable FAIL), not free-running synthesis. `[I]`
-4. **Provider coupling (accepted).** Claude-Code-native by design; PORTABILITY.md + tier
-   indirection is the seam. Not a portable framework — a harness *for Claude Code*. `[E]`
+4. **Provider coupling (accepted).** Claude-Code-native by design; tier indirection is the
+   seam a fork would remap. Not a portable framework — a harness *for Claude Code*. `[E]`
 
 **Retracted:** "the validator panel over-buys" — see §4c.
 
@@ -341,7 +340,7 @@ much load the held-out layer silently carries.
 
 **Strong fit:** solo devs/small teams building **security-sensitive greenfield** (multi-tenant
 SaaS, auth, billing, isolation) where a blind adversarial validator earns its cost; **people
-building their own harness** (as a reference design/pattern library, DEVELOPMENT_PROCESS.md may
+building their own harness** (as a reference design/pattern library, the process spec may
 be worth more than the runnable tool); any work where a false "done" is expensive.
 
 **Poor fit:** exploratory/prototype "vibe coding" (plan-first ceremony is pure overhead — Aider/

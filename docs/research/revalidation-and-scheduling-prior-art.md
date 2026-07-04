@@ -1,16 +1,17 @@
 # Prior-art digest — re-validation reuse & cross-phase scheduling
 
-Compact, cited digest of the research behind the 2026-07-04 META proposals (held-out vault +
-safe incremental re-validation; global cross-phase DAG scheduling). Load-bearing facts only —
+Compact, cited digest of the research behind two decisions in the
+[design doc](../design/token-time-optimized-harness.md): the held-out test vault + safe
+incremental re-validation, and global cross-phase DAG scheduling. Load-bearing facts only —
 each theme lists the transferable pattern and its named tradeoff. `[E]` = established in the cited
 primary source; `[I]` = inference/synthesis.
 
 ---
 
-## 1. The agentic-coding architecture (validates our design)
+## 1. The agentic-coding architecture (validates the design)
 
 The published pattern is **a cheap, scoped self-check in the agent's inner loop + a full clean-room
-gate with tests HIDDEN from the agent** — exactly the harness's implementer-vs-blind-validator split.
+gate with tests HIDDEN from the agent** — exactly the design's implementer-vs-blind-validator split.
 
 - **SWE-bench** — per instance: clean base commit in a **sandboxed Docker image**, apply the model's
   patch, apply a **withheld test patch**, run it. Two hidden sets: `FAIL_TO_PASS` (proves the fix) +
@@ -25,7 +26,7 @@ gate with tests HIDDEN from the agent** — exactly the harness's implementer-vs
   https://engineering.fb.com/2018/09/13/developer-tools/finding-and-fixing-software-bugs-automatically-with-sapfix-and-sapienz/
   · https://arxiv.org/abs/2303.11366
 - `[I]` **No published system combines *safe RTS on the inner loop* with a *full hidden gate*** — that is
-  the novel, defensible spot the held-out-vault proposal occupies.
+  the novel, defensible spot the held-out-vault design occupies.
 
 ## 2. Safe incremental re-validation (Regression Test Selection / Test Impact Analysis)
 

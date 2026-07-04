@@ -7,11 +7,10 @@
 > never traded. The governing design principle: **bind every mechanism to a built-in Claude Code
 > primitive first**; custom machinery is only the residue no built-in covers.
 >
-> Compiled 2026-07-03 from: the state-of-the-art survey
+> Compiled 2026-07-04 from: the state-of-the-art survey
 > ([agent-harness-state-of-the-art.md](../research/agent-harness-state-of-the-art.md)), the
 > re-validation/scheduling prior-art digest
 > ([revalidation-and-scheduling-prior-art.md](../research/revalidation-and-scheduling-prior-art.md)),
-> the four pending META proposals of 2026-07-03/04 (`cc-agentloop-template/docs/META_PROPOSALS.md`),
 > a fresh official-docs inventory of Claude Code built-ins, and fresh web research on Max-plan
 > window mechanics (both 2026-07-03). Facts carry confidence tags: `[official]` Anthropic docs,
 > `[measured]` community measurement with data, `[contested]` conflicting evidence,
@@ -19,23 +18,22 @@
 
 ---
 
-## 1. Scope and lineage
+## 1. Scope
 
-This is the consolidation design for the **next iteration of cc-agentloop-template**: the v1
-plan/execute/reflect loop (blind validation, durable ledgers, governed self-modification —
-independently assessed as ahead of the field on its verifier-calibration and governance layer,
-survey §2) **plus** an explicit dual-objective optimization layer. It absorbs, as one coherent
-system, the four proposals currently queued for ratification:
+This document is the founding design for the harness this repository will implement. The system
+in one paragraph: a human and the orchestrator produce an approved technical plan; a manual,
+operator-started **build loop** then grinds the plan task-by-task through context-isolated
+**implementer** and **validator** subagents (the spec is their only shared context), merging
+only through an objective gate; durable state lives on disk so any context can die and the loop
+resumes from files alone; a reflection layer tunes cost and quality from telemetry, proposing —
+never self-applying — changes to its own machinery. On top of that spine sits the explicit
+dual-objective optimization layer this document specifies.
 
-1. the explicit lexicographic **objective** (2026-07-04),
-2. **global cross-phase DAG scheduling** (2026-07-04),
-3. the **held-out test vault + safe incremental re-validation** (2026-07-04),
-4. **per-profile effort at spawn** / effort as a cost lever (2026-07-03).
-
-**Non-goals.** Portability off Claude Code (accepted coupling; see
-`cc-agentloop-template/docs/PORTABILITY.md`). Multi-operator teams. Large brownfield codebases (the
-phased-ledger model is greenfield-shaped, survey §7). Auto-scheduled firings (reintroduces the
-concurrent-firing liveness problem v1 already solved by going manual).
+**Non-goals.** Portability off Claude Code (accepted coupling; model/tier indirection is the
+seam if a fork ever needs one). Multi-operator teams. Large brownfield codebases (the
+phased-ledger model is greenfield-shaped, survey §7). Auto-scheduled firings — whether a prior
+firing is still alive cannot be judged reliably from a tool-call shell, so firings are
+operator-started and operator-stopped, removing the double-run failure mode entirely.
 
 ## 2. The objective function
 
@@ -55,14 +53,14 @@ Lexicographic — never scalarized into one weighted score:
 - **O2 — wall-clock to correct completion.** Includes human latency (ratification round-trips,
   parked-blocker waits), not just compute time.
 
-Two rules from the objective proposal are load-bearing enough to restate:
+Two rules are load-bearing enough to state up front:
 
 - **Parallel lens breadth is not a wall-clock cost.** N diverse validator lenses run
   concurrently ≈ the slowest lens. Panel breadth is governed by O0 (risk) and O1 (tokens),
   and is **never** shrunk to save wall-clock.
 - Controllers may economize on **token redundancy** (re-authoring, re-reasoning, prefix
   re-reads) and on **serialization idle** (empty concurrency slots). They may not economize on
-  rigor where O0 applies (`protectedProfiles`, risk floors: strengthen-only).
+  rigor where O0 applies (protected risk profiles: strengthen-only).
 
 **The one real O1↔O2 exchange:** concurrent task pipelines. All parallel sessions and subagents
 drain **one shared account pool** `[official]` — parallelism buys wall-clock only, never budget.
@@ -74,8 +72,8 @@ free.
 
 1. **Built-in before custom** (§4 is the map). If Claude Code ships it — subagents, worktrees,
    hooks, skills, caching, structured output, telemetry — the harness configures it rather than
-   rebuilding it. Custom shell scripts are the residue, and each must justify itself in
-   `cc-agentloop-template/docs/EVIDENCE.md` or be pruned.
+   rebuilding it. Custom shell scripts are the residue, and each must justify itself in the
+   evidence trail (§8) or be pruned.
 2. **Zero-token enforcement.** Everything safety- or budget-load-bearing runs as a **hook or
    script** — deterministic, model-free, un-skippable, costs no context. Prose guards burn
    tokens every turn *and* get skipped exactly when the loop is degraded (survey §6.1). Command
@@ -85,12 +83,12 @@ free.
    validation) *and* economy: a worker's exploration tokens die with its context; only the
    structured return crosses to the orchestrator. This is the token-efficient fan-out pattern
    Anthropic itself uses (multi-agent research system `[official]`).
-4. **Disk is the memory.** Ledgers, STATUS, run-log, lessons live on disk; any context can die
-   at any moment and the loop resumes from files alone. This makes fresh-context workers (and
-   orchestrator compaction) free in *correctness* terms, so the token optimizer can use them
-   aggressively.
+4. **Disk is the memory.** Phase ledgers, the status index, the run-log, and the lessons corpus
+   live on disk; any context can die at any moment and the loop resumes from files alone. This
+   makes fresh-context workers (and orchestrator compaction) free in *correctness* terms, so
+   the token optimizer can use them aggressively.
 5. **Measure, then move.** Every economy lever ships with its telemetry and a ground-truth
-   check (escapes denominator, calibration canaries). No downgrade without a catch-proof; one
+   check (the escapes log, calibration canaries). No downgrade without a catch-proof; one
    lever at a time; sample floors respected. Limits themselves are volatile (§10.3) — ceilings
    are calibrated empirically, never hard-coded.
 
@@ -99,29 +97,28 @@ free.
 | Need | Built-in (how) | Residue we still build |
 |---|---|---|
 | Isolated worker contexts | **Subagents** (`.claude/agents/*.md`; per-agent `model`, `tools`; summary-only return) `[official]` | Spec-only shared-input discipline; verdict/handoff schemas |
-| Parallel file edits, zero conflicts | **Git worktrees** (`claude --worktree`, subagent `isolation: worktree`, `.worktreeinclude`, auto-cleanup) `[official]` | Per-task naming + lifecycle policy (`scripts/worktree.sh`) |
-| Un-skippable enforcement, 0 tokens | **Hooks** (PreToolUse / PostToolUse / Stop / SubagentStop / SessionStart; deny>ask>allow; matchers) `[official]` | The specific gate scripts hooks invoke (`gate.sh --check-*`) |
-| Reusable procedures, cheap until used | **Skills** with progressive disclosure (names at start, body on invoke) `[official]` | Skill content (`/plan`, `/routine`, `/calibrate`, …) |
+| Parallel file edits, zero conflicts | **Git worktrees** (`claude --worktree`, subagent `isolation: worktree`, `.worktreeinclude`, auto-cleanup) `[official]` | Per-task worktree naming + lifecycle policy (thin script) |
+| Un-skippable enforcement, 0 tokens | **Hooks** (PreToolUse / PostToolUse / Stop / SubagentStop / SessionStart; deny>ask>allow; matchers) `[official]` | The merge-gate scripts the hooks invoke |
+| Reusable procedures, cheap until used | **Skills** with progressive disclosure (names at start, body on invoke) `[official]` | The skill content itself (planning, build loop, calibration, status) |
 | Interactive planning w/o edits | **Plan mode** `[official]` | The plan template, risk-classification table, human gate |
-| Completion gating | **Stop hooks** (script-based; `/goal`-style model-evaluated) `[official]` | Closure gate vs frozen snapshot + fresh-evidence rule |
-| Structured worker returns | **`--json-schema` / structured outputs** (server-side validation) `[official]` | The verdict/AAR schemas themselves |
-| Model routing | Per-subagent `model` param; session `/model`; aliases `[official]` | Tier indirection (`modelTiers`) + routing policy (`taskRouting`) |
-| Effort routing | Session `/effort`; per-agent `effort` on the Workflow/Agent spawn path (probe-verified 2026-07-03) | Per-profile effort config + the spawn-path fallback ladder |
-| Cost/usage telemetry | `/usage`, `/context`, `--output-format json` (`total_cost_usd`, per-model usage), OTEL enhanced telemetry, per-subagent token totals `[official]` | Run-log aggregation (`tokens_by_role`), `budget.sh` windows |
-| Prompt-cache economy | **Automatic prompt caching** (5-min TTL; 1h TTL via env; auto breakpoints in CC/SDK) `[official]` | The *discipline* (§5.2): freeze-prefix rules, boundary edits |
+| Completion gating | **Stop hooks** (script-based; model-evaluated goal hooks) `[official]` | Closure gate vs frozen plan snapshot + fresh-evidence rule |
+| Structured worker returns | **`--json-schema` / structured outputs** (server-side validation) `[official]` | The verdict/report schemas themselves |
+| Model routing | Per-subagent `model` param; session `/model`; aliases `[official]` | Abstract tier indirection + per-task routing policy (§5.3) |
+| Effort routing | Session `/effort`; per-agent `effort` on the Workflow/Agent spawn path (verified by direct probe) | Per-profile effort config + the spawn-path fallback ladder |
+| Cost/usage telemetry | `/usage`, `/context`, `--output-format json` (`total_cost_usd`, per-model usage), OTEL enhanced telemetry, per-subagent token totals `[official]` | Per-role run-log aggregation + the budget governor (§5.1) |
+| Prompt-cache economy | **Automatic prompt caching** (5-min TTL; 1h TTL via env; auto breakpoints) `[official]` | The *discipline* (§5.2): freeze-prefix rules, boundary edits |
 | Tool-definition economy | **ToolSearch deferred loading** (names only at start; schema on use — default for MCP) `[official]` | Keep the MCP surface minimal; prefer CLI tools (`gh`) over MCP servers `[official]` |
-| Long-lived instructions | CLAUDE.md (<200 lines guidance), path-scoped rules, `@imports`, auto-memory `[official]` | Lessons corpus + orchestrator-curated injection |
-| Resume across deaths | Session persistence, `--resume`/`--continue`/`--fork-session` `[official]` | Ledgers/STATUS as the *canonical* resume state (disk > transcript — resuming a huge transcript reprocesses it at full cost `[measured]`) |
+| Long-lived instructions | CLAUDE.md (<200 lines guidance), path-scoped rules, `@imports`, auto-memory `[official]` | Lessons corpus + orchestrator-curated injection at spawn |
+| Resume across deaths | Session persistence, `--resume`/`--continue`/`--fork-session` `[official]` | Ledgers + status index as the *canonical* resume state (disk > transcript — resuming a huge transcript reprocesses it at full cost `[measured]`) |
 | Undo | `/rewind` checkpoints (session-local) `[official]` | Git remains canonical history; checkpoints are convenience only |
-| Headless execution | `claude -p`, `--allowedTools`, `stream-json`, `--bare` `[official]` | The Routine (rendered skill) + advisory run marker |
+| Headless execution | `claude -p`, `--allowedTools`, `stream-json`, `--bare` `[official]` | The build-loop skill + an advisory single-run marker |
 | Background work | Background bash, background subagents, batched parallel tool calls `[official]` | Fan-out patterns (§6.1) |
 | Output filtering | PostToolUse hooks pre-filtering tool output (10k-line log → the failures) `[official example]` | Which filters to apply per gate command |
 
-**Deliberately not used:** auto-cron firing of the Routine (concurrent-firing liveness is
-unsolvable from a tool-call shell — v1 decision stands); agent teams for implementation
-(≈7× a standard session `[official]`, and Anthropic's own caveat: coding has few truly
-parallelizable interdependent tasks `[official]` — the parallel-friendly part of this loop is
-validation, which subagent fan-out already covers); `ANTHROPIC_API_KEY` in the environment
+**Deliberately not used:** auto-cron firing of the build loop (see Non-goals); agent teams for
+implementation (≈7× a standard session `[official]`, and Anthropic's own caveat: coding has few
+truly parallelizable interdependent tasks `[official]` — the parallel-friendly part of this loop
+is validation, which subagent fan-out already covers); `ANTHROPIC_API_KEY` in the environment
 (silently bills API instead of the subscription `[official]`).
 
 ## 5. The token-economy layer (O1)
@@ -139,23 +136,24 @@ Facts the governor is built on (details + volatility log in §10):
 - No token quotas are published, and magnitudes changed ≥6 times in 12 months (§10.3) —
   **ceilings must be runtime-calibrated, never hard-coded**.
 
-Governor (extends v1 `budget`): `scripts/budget.sh` computes window occupancy from the source
-ladder — `estimate` (run-log rolling sums; the only unattended-capable source today) →
-`quota-file` (operator-fed from `/usage`) → `quota-cmd`/OTEL when a programmatic quota API
-ships (anthropics/claude-code#13585). Two thresholds, checked **between** tasks ("don't start
-what you can't finish"):
+The **budget governor** is a small deterministic script the loop consults **between** tasks
+("don't start what you can't finish"). It computes window occupancy from a source ladder —
+`estimate` (per-role token sums from the run-log over rolling windows; the only
+unattended-capable source today) → `quota-file` (operator-fed from `/usage`) →
+`quota-cmd`/OTEL when a programmatic quota API ships (anthropics/claude-code#13585) — and
+drives two thresholds:
 
-- `degradeAtFraction` (0.8): panels shrink to profile minimums (never below a risk floor), no
-  new tasks start, in-flight work commits.
-- `pauseAtFraction` (0.95): clean pause — resume marker to STATUS, worktrees reconciled,
-  marker released. The next firing after the window reset resumes from disk.
+- **degrade** (default 0.8 of a window): panels shrink to profile minimums (never below a risk
+  floor), no new tasks start, in-flight work commits.
+- **pause** (default 0.95): clean pause — resume marker to the status index, worktrees
+  reconciled, run marker released. The next firing after the window reset resumes from disk.
 
-New in this design — **window-aware admission** (the scheduler input, §6.2): each candidate
-task carries a cost forecast (its profile's panel size × tier + implementer tier; later the
-`predict-duration` bucket). A heavy `critical`-profile task is admitted early in a fresh
-window; near a wall only cheap `routine` tasks (or nothing) start. Escape valve: extra-usage
-credits at API rates exist (`/usage-credits`, $2k/day cap `[official]`) — surfaced to the
-operator as a *choice* at pause time, never auto-purchased.
+**Window-aware admission** (the scheduler input, §6.2): each candidate task carries a cost
+forecast (its profile's panel size × tier + implementer tier; later the duration-bucket
+predictor, §5.3). A heavy critical-profile task is admitted early in a fresh window; near a
+wall only cheap routine tasks (or nothing) start. Escape valve: extra-usage credits at API
+rates exist (`/usage-credits`, $2k/day cap `[official]`) — surfaced to the operator as a
+*choice* at pause time, never auto-purchased.
 
 ### 5.2 Prompt-cache discipline (the #1 hidden lever)
 
@@ -164,22 +162,22 @@ Measured reality: a session carries a 20–30k-token prefix (system prompt + CLA
 **1,310× fresh I/O tokens** and scaled with CLAUDE.md size, not workload `[measured]`. Whether
 cache reads count against *subscription* limits at a discount or near-full weight is
 **`[contested]`** (§10.2) — under either reading, the design conclusion is identical:
-**cache-busting is the catastrophic spend event** (the v2.1.76 cache-bug era produced 10–20×
-inflation `[measured]`), and the prefix must be small and immutable.
+**cache-busting is the catastrophic spend event** (one client cache bug produced 10–20×
+inflation before it was fixed `[measured]`), and the prefix must be small and immutable.
 
 Rules (mechanized where possible):
 
-1. **Frozen prefix per firing.** CLAUDE.md, CONSTRAINTS.md, hook set, MCP server set, model,
-   and skill inventory do not change mid-firing — edits batch at clean-stop/boundary. Residue
-   mechanization: a PreToolUse hook warns on mid-firing edits to prefix files (`Edit|Write`
-   matcher on CLAUDE.md/CONSTRAINTS.md/settings).
+1. **Frozen prefix per firing.** CLAUDE.md, the always-on constraints file, the hook set, MCP
+   server set, model, and skill inventory do not change mid-firing — edits batch at a clean
+   boundary. Mechanization: a PreToolUse hook warns on mid-firing edits to prefix files
+   (`Edit|Write` matcher on CLAUDE.md / constraints / settings).
 2. **Small prefix.** CLAUDE.md stays under ~200 lines `[official guidance]`; reference material
    lives in skills (progressive disclosure) and path-scoped rules; lessons are injected
    per-spawn by the orchestrator, not resident in the prefix.
-3. **TTL cadence.** The default cache TTL is 5 minutes `[official]`. The Routine's inner loop
-   naturally turns over faster than that while working; a *planned* long gap (awaiting a human)
-   is one cache miss, accepted. Long-idle sessions are ended cleanly rather than kept warm
-   artificially. (`ENABLE_PROMPT_CACHING_1H` exists if measurement shows idle-gap misses
+3. **TTL cadence.** The default cache TTL is 5 minutes `[official]`. The build loop's inner
+   cadence naturally turns over faster than that while working; a *planned* long gap (awaiting
+   a human) is one cache miss, accepted. Long-idle sessions are ended cleanly rather than kept
+   warm artificially. (`ENABLE_PROMPT_CACHING_1H` exists if measurement shows idle-gap misses
    matter `[official]`.)
 4. **Never resume a huge transcript for a new task.** Fresh session + disk state beats
    `--resume` of a long history (full reprocess) `[measured]`. Ledgers are the resume state.
@@ -189,24 +187,37 @@ Rules (mechanized where possible):
 
 ### 5.3 Model + effort routing (two axes, start low, escalate on proof)
 
-Unchanged v1 spine, now with both cost axes live:
+Model selection is indirected through abstract tiers (cheap / standard / capable / max →
+concrete model ids in one config table), and rigor is expressed as named **risk profiles**
+(e.g. routine < elevated < high < critical), each specifying validator count, lenses, tier,
+and effort. On top of that:
 
-- **Tier axis** (`taskRouting`, staged P1→P3): start the implementer as cheap as risk allows
-  (`startTier` per profile; predictor + bucket matrix behind the measured
-  `predictDuration` flag), let the escalation ladder walk it up on durable FAIL. Guardrails
-  stand: `protectedNeverStartCheap` (safety is not a cost lever), `recencyOverride` (cheap
-  tiers are a knowledge generation behind — nature beats difficulty), escalation-churn
-  break-even (~40% failure rate flips the economics; the retro trips the start tier back up).
-- **Effort axis** (META 2026-07-03): profiles already carry `effort`; the Workflow-based spawn
-  path threads `profile.effort` per agent (probe-verified), with parallel `Agent`-call batches
-  as the portable fallback (model-only). Effort joins the run-log (`tokens_by_role[].effort`)
-  so the controller can segment cost/catch-rate by `(tier, model_id, effort)`. Downgrades
-  require a fresh calibration PASS at the lower effort; protected profiles: raise-only.
+- **Tier axis — per-task starting tier.** Start the implementer as cheap as the task's risk
+  allows and let an escalation ladder (N durable FAILs → bump one tier) walk it up; the gate +
+  validator panel remain the correctness net. Staged rollout: ship the simple per-profile
+  starting-tier override first; a deterministic **duration-bucket predictor** (scored from
+  spec size, file count, subsystem breadth, novelty — a script, not an LLM call) and the full
+  bucket×profile starting-tier matrix stay behind a flag until the simple lever's telemetry
+  proves escapes ~0 and $/task down. Guardrails, non-negotiable:
+  1. *Safety is not a cost lever* — tasks on protected profiles or risk-floored surfaces never
+     start cheap.
+  2. *Nature beats difficulty* — recency-sensitive tasks (APIs newer than the cheap tier's
+     training) route off cheap regardless of size.
+  3. *Escalation churn has a break-even* — at roughly >40% cheap-tier failure on a bucket, the
+     wasted attempt + re-run costs more than starting one tier up; the controller trips the
+     start tier back up when telemetry crosses it.
+- **Effort axis.** Profiles carry `effort` alongside `model`. The Workflow-based spawn path
+  threads per-agent `model` *and* `effort` (verified by direct probe: all five effort levels
+  dispatch; model overrides are honored; invalid ids fail loud), with a batch of parallel
+  `Agent` calls as the portable fallback (model-only; effort session-level). Effort lands in
+  the run-log so the controller segments cost/catch-rate by `(tier, model_id, effort)`.
+  Downgrades require a fresh calibration PASS at the lower effort; protected profiles:
+  raise-only.
 - **Routing floor for grunt work:** mechanical fan-out (file moves, renames, log filtering,
-  status sweeps) always runs `cheap` subagents — up to ~75% cost cut from deliberate routing
-  is the practitioner consensus `[measured]`, and the gate catches any miss.
-- **Weekly-pool awareness (new):** with the model-specific weekly cap now on **Sonnet** rather
-  than Opus `[official]`, "route grunt work down-tier" is no longer automatically
+  status sweeps) always runs cheap-tier subagents — up to ~75% cost cut from deliberate
+  routing is the practitioner consensus `[measured]`, and the gate catches any miss.
+- **Weekly-pool awareness:** with the model-specific weekly cap now on **Sonnet** rather than
+  Opus `[official]`, "route grunt work down-tier" is no longer automatically
   weekly-budget-safer. The controller tracks which pool each tier drains and re-checks the
   mapping after every Anthropic limit change (§10.3).
 
@@ -218,16 +229,15 @@ Unchanged v1 spine, now with both cost axes live:
   plan; specific file paths, not pasted file contents `[official guidance]`.
 - MCP surface minimal; ToolSearch deferral on (default); prefer CLI tools over MCP servers
   `[official]`; `.claudeignore` tuned (measured up to ~85% context reduction `[measured]`).
-- Compaction is a survivable event, not a stop (v1 rule) — but the *economical* pattern is to
-  make it rare by keeping the orchestrator lean, and to prefer clean session boundaries
+- Compaction is a survivable event, not a stop — but the *economical* pattern is to make it
+  rare by keeping the orchestrator lean, and to prefer clean session boundaries
   (`/clear`-equivalent + disk resume) over repeated `/compact` (compaction is itself a model
   call over the history `[official]`).
 
 ### 5.5 Re-validation reuse — the vault (biggest O1 lever on retries)
 
-Adopted from META 2026-07-04 (prior-art digest is the evidence base). On a durable-FAIL
-re-validation today, the panel re-authors held-out tests and re-reviews a ~95%-unchanged diff —
-pure token redundancy. Design:
+On a durable-FAIL re-validation, a naive loop re-authors held-out tests and re-reviews a
+~95%-unchanged diff — pure token redundancy. Design (evidence base: the prior-art digest):
 
 1. **Implementer-blind held-out vault.** Panel-authored held-out tests persist where the
    implementer's context/worktree can never see them; isolation sandbox-enforced (hidden tests
@@ -248,13 +258,13 @@ pure token redundancy. Design:
 
 ### 5.6 What the harness deliberately does not spend on
 
-- No auto-cron; no idle-warm sessions; no speculative implementation of provisional ledgers
-  (look-ahead is planning-only).
+- No auto-cron; no idle-warm sessions; no speculative implementation of pre-decomposed
+  (provisional) ledgers — look-ahead is planning-only.
 - No free-running reflection: reflection triggers on ground-truth events (an escape, a canary
   miss, a durable FAIL), never as open-ended synthesis (intrinsic self-correction *degrades*
   without external signal — survey §4b).
-- Dormant opt-in controllers are pruned on evidence (`prune-advisor`); insurance controllers
-  (risk floors, calibration, closure, budget) are exempt — there, silence is the desired state.
+- Dormant opt-in controllers are pruned on evidence (§8); insurance controllers (risk floors,
+  calibration, closure, budget) are exempt — there, silence is the desired state.
 - `DISABLE_NON_ESSENTIAL_MODEL_CALLS=1` on headless firings `[official]`.
 
 ## 6. The wall-clock layer (O2)
@@ -263,15 +273,15 @@ pure token redundancy. Design:
 
 These cut elapsed time without buying tokens; they are always on:
 
-1. **Pipelining** (v1 `lookahead`): task N+1's spec + contract tests are authored while task N
-   validates; the next phase pre-decomposes (provisional, planning-only) while the current
-   phase's last task runs.
-2. **Global cross-phase DAG scheduling** (META 2026-07-04): each tick, candidates = every
-   not-started task whose hard deps are complete, **any phase**; fill idle slots prioritized by
-   critical-path, then risk; gated by the `start-early-safe` predicate (`mayBeInvalidatedBy`
-   soft edges) so pulled-forward work is never likely rework — wall-clock bought without
-   wasted-token risk. Phase tags stay for human legibility; `doctor.sh`'s DAG check goes
-   cross-phase.
+1. **Pipelining:** task N+1's spec + contract tests are authored while task N validates; the
+   next phase pre-decomposes into a provisional (planning-only, not runnable) ledger while the
+   current phase's last task runs.
+2. **Global cross-phase DAG scheduling:** each tick, candidates = every not-started task whose
+   hard deps are complete, **any phase**; fill idle slots prioritized by critical-path, then
+   risk; gated by a `start-early-safe` predicate (soft `mayBeInvalidatedBy` edges in the task
+   schema) so pulled-forward work is never likely rework — wall-clock bought without
+   wasted-token risk. Phase tags stay for human legibility; the read-only preflight check
+   verifies the cross-phase dependency graph is a DAG.
 3. **Panels are always batched-parallel.** One turn, N `Agent` calls (or one Workflow
    `parallel()`): wall-clock ≈ slowest lens. This is why lens breadth is O0/O1-governed only.
 4. **Hooks over prose.** Every deterministic check that would otherwise be an orchestrator
@@ -282,22 +292,22 @@ These cut elapsed time without buying tokens; they are always on:
 
 ### 6.2 Paid parallelism — admission-controlled by window headroom
 
-`maxConcurrentTasks > 1` (worktree-isolated implement→validate pipelines) is the one lever
-that spends tokens to buy time. Admission rule, evaluated per tick:
+A concurrency cap >1 (worktree-isolated implement→validate pipelines) is the one lever that
+spends tokens to buy time. Admission rule, evaluated per tick:
 
 > Admit a second/third concurrent pipeline **only if** (a) window occupancy is below the
 > degrade threshold *and forecast to stay below it with the added burn*, (b) the runnable set
-> contains genuinely independent tasks (hard deps + `mayBeInvalidatedBy` clear), and (c) the
-> surface-contention cap (`maxConcurrentSurfaces`) is respected.
+> contains genuinely independent tasks (hard deps + `mayBeInvalidatedBy` clear), and (c) a
+> surface-contention cap (max concurrent surfaces) is respected.
 
 Rationale: bursting a fresh 5-hour window empty in <1h then stalling 4h is a *wall-clock loss*,
 not a win — on subscriptions the binding constraint is often the window, not total tokens
 `[folklore, consistent]`. Practitioner consensus caps useful concurrency at 2–4 pipelines
-`[folklore]`; the run-log attributes rework/merge-conflict cost to concurrency so the retro can
-tune the cap on evidence. Anthropic's own frontier datapoint — up to 90% time reduction at
-~15× tokens for research fan-out `[official]` — is the reminder that the exchange rate is
-steep: this harness buys parallelism for *validation* (independent lenses, cheap wall-clock)
-structurally, and for *implementation* only under the admission rule.
+`[folklore]`; the run-log attributes rework/merge-conflict cost to concurrency so the
+controller can tune the cap on evidence. Anthropic's own frontier datapoint — up to 90% time
+reduction at ~15× tokens for research fan-out `[official]` — is the reminder that the exchange
+rate is steep: this harness buys parallelism for *validation* (independent lenses, cheap
+wall-clock) structurally, and for *implementation* only under the admission rule.
 
 **Window-phase scheduling:** heavy fan-out (big panels, multi-task bursts) schedules right
 after a window reset; the tail of a window runs cheap serial work. The 5-hour anchor-at-first-
@@ -306,65 +316,77 @@ message behavior `[measured]` even allows deliberate window alignment to the ope
 
 ### 6.3 Human latency
 
-- **Park-and-continue** (v1 stance): a blocked task parks; the loop continues other runnable
-  work — a human answer is never on the critical path of unrelated tasks.
-- **Batch ratifications** at phase close: META proposals, consequential plan revisions, and
-  efficiency tunings queue and are ratified in one sitting; push notification on queue-append.
-- `assisted` autonomy = a merge *queue* (work continues on task branches), not stop-the-world.
-- Blockers carry everything needed to decide (`repro`, options, recommendation) so one
+- **Park-and-continue:** a blocked task parks; the loop continues other runnable work — a
+  human answer is never on the critical path of unrelated tasks.
+- **Batch ratifications** at phase close: machinery proposals, consequential plan revisions,
+  and efficiency tunings queue and are ratified in one sitting; push notification on
+  queue-append.
+- An `assisted` autonomy level = a merge *queue* (work continues on task branches), not
+  stop-the-world.
+- Blockers carry everything needed to decide (repro, options, recommendation) so one
   round-trip resolves them.
 
-## 7. The correctness floor (O0) — retained v1 machinery
+## 7. The correctness floor (O0)
 
-Unchanged, because the research says it is the differentiator (survey §2) and the optimizers
-above are only safe on top of it:
+The optimizers above are only safe on top of this floor, and the research says it is the
+differentiator (survey §2):
 
 - **Blind adversarial validation:** fresh-context validators; the spec is the only shared
   input; implementer reasoning never crosses (self-recognition causes self-preference —
-  survey §4b); held-out tests; clean-checkout gate (`gate.sh --require-clean`).
-- **Diverse-lens panels, all-must-pass;** `consensus` voting only for redundant panels
+  survey §4b); held-out adversarial tests; the merge gate reproduced from a clean checkout
+  (a `--require-clean` mode refuses a dirty tree).
+- **Diverse-lens panels, all-must-pass;** consensus voting only for redundant panels
   (popularity-trap evidence, survey §4c); model heterogeneity across a panel where possible.
-- **Mechanized risk floors** (`--check-riskfloor` on actual diff paths), machinery gate
-  (`--check-machinery`), held-out-drop check, denylist, `block-dangerous-git` — all enforced
-  by hooks at the merge point, all fail-open, all self-tested.
-- **Self-measuring verifier loop:** `escapes.jsonl` ground truth + `/calibrate` canaries
-  (freeze downgrades on a miss) + contract-test kill-rate calibration (weak visible oracle →
-  raise rigor, never lower).
-- **Closure gate** vs the frozen plan snapshot, fresh-evidence rule, bounded remediation.
-- **Governed self-modification:** the loop proposes; a human ratifies machinery changes
-  (META_PROPOSALS); headless runs cannot edit their own machinery (Gödel-agent threat model,
-  survey §4e).
+- **Mechanized risk floors:** a path-glob → minimum-profile map enforced at the merge point by
+  inspecting the *actual diff paths* (a mis-tagged security task cannot be validated cheaply
+  and merged silently); a machinery-paths check (task branches cannot edit the loop's own
+  machinery); a held-out-test-drop check; a destructive-git blocker — all enforced by hooks,
+  all fail-open, all self-tested.
+- **Self-measuring verifier loop:** a committed **escapes log** (defects a panel missed —
+  labeled ground truth) + **calibration canaries** (plant a known defect the panel should
+  catch before trusting any "0 findings" downgrade; a miss freezes the downgrade) +
+  contract-test kill-rate calibration (a weak visible oracle raises rigor, never lowers it).
+- **Closure gate** vs a plan snapshot frozen at build start, a fresh-evidence rule (only
+  evidence newer than the last remediation can decide), bounded remediation rounds.
+- **Governed self-modification:** the loop proposes; a human ratifies machinery changes via a
+  committed ratification queue (`docs/PROPOSALS.md`); headless runs cannot edit their own
+  machinery (self-modifying loops can encode a bypass of their own safeguards without
+  "deciding" to — survey §4e).
 
 ## 8. The controller — closing the loop on both objectives
 
-The `efficiency` retro dimension remains the cost/quality controller, now optimizing the §2
-objective explicitly:
+A periodic reflection step doubles as the cost/quality controller, optimizing the §2 objective
+explicitly:
 
-- **Inputs:** `tokens_by_role` (+ `effort`), `modelCosts`, window telemetry from `budget.sh`,
-  catch-rate vs `escapes.jsonl`, calibration results, concurrency-attributed rework, evidence
-  roll-up.
-- **Levers:** implementer/testAuthor start-tier, validator tier/count/lens-set, per-profile
-  effort, `maxConcurrentTasks`, vault replay rate, window ceilings.
-- **Discipline:** one lever at a time; `minSampleTasks` floors; model-id/effort changes reset
+- **Inputs:** per-role token telemetry (+ effort), a $/MTok cost table per model, window
+  telemetry from the budget governor, catch-rate vs the escapes log, calibration results,
+  concurrency-attributed rework, the evidence roll-up.
+- **Levers:** implementer/test-author starting tier, validator tier/count/lens-set,
+  per-profile effort, the concurrency cap, vault replay rate, window ceilings.
+- **Discipline:** one lever at a time; minimum-sample floors; model-id/effort changes reset
   samples; every downgrade needs a fresh calibration PASS; protected profiles strengthen-only;
-  all tunings queue to META_PROPOSALS with a cost/benefit estimate — never auto-applied.
-- **Justification surface:** `cc-agentloop-template/docs/EVIDENCE.md` (value / cost / features-fired)
-  proves the harness earns its spend; `prune-advisor` retires dormant non-insurance machinery.
+  all tunings queue to the ratification queue with a cost/benefit estimate — never
+  auto-applied.
+- **Justification surface:** a committed evidence trail (`docs/EVIDENCE.md`, regenerated from
+  telemetry) answers *is it catching real defects, is the cost justified, which features
+  actually fire* — and drives subtraction: dormant non-insurance machinery gets flagged for
+  pruning; insurance machinery (floors, calibration, closure, budget) is never dropped on
+  dormancy, since there silence is the desired state.
 
 ## 9. Failure modes and mitigations
 
 | Failure mode | Mitigation |
 |---|---|
-| Stuck loop burning window budget | `liveness.sh` multi-signal park (git-delta authoritative; slow-grind vs predicted bucket) |
-| Budget wall mid-panel (wasted panel) | Between-task `budget.sh` check; degrade→pause ladder; window-aware admission (§5.1, §6.2) |
+| Stuck loop burning window budget | Liveness guard: multi-signal park (git-delta authoritative; repeated-error signature; slow-grind vs predicted duration bucket) |
+| Budget wall mid-panel (wasted panel) | Between-task budget-governor check; degrade→pause ladder; window-aware admission (§5.1, §6.2) |
 | Cache thrash (the silent 10–20× event) | Frozen-prefix rules + prefix-edit warning hook; small CLAUDE.md; no huge-transcript resumes (§5.2) |
-| Weak visible tests (green-but-wrong; the ~31% problem) | Held-out layer + contract-test kill-rate calibration + `check-heldout` at merge |
+| Weak visible tests (green-but-wrong; the ~31% problem) | Held-out layer + contract-test kill-rate calibration + held-out-drop check at merge |
 | Vault goes stale / gets gamed | Mandatory fresh authoring on changed surface; leakage budget; rotation; no replay on risk-floored surfaces (§5.5) |
 | Pulled-forward task gets invalidated (wasted tokens) | `start-early-safe` predicate (`mayBeInvalidatedBy`); conservative default |
 | Parallel burst empties the window, then stalls | Admission rule forecast; window-phase scheduling (§6.2) |
-| Subpar plan (worse than no plan — survey §4d) | Human approval gate on TECHNICAL_PLAN.md; phase-close retro re-scopes remaining phases |
+| Subpar plan (worse than no plan — survey §4d) | Human approval gate on the plan document; phase-close reflection re-scopes remaining phases |
 | Limits change under the harness (they did, 6+ times) | No hard-coded magnitudes; empirical ceiling calibration; §10.3 changelog discipline; re-check after 2026-07-13 promo expiry |
-| Concurrent firings | Manual trigger + advisory marker + operator arbitration (v1 decision, retained) |
+| Concurrent firings | Manual trigger + advisory run marker + operator arbitration |
 | Reward hacking / stale-green | The whole §7 floor; hooks un-skippable at merge/stop points |
 
 ## 10. Appendix — Max-window facts the design depends on
@@ -385,12 +407,12 @@ objective explicitly:
 ### 10.2 Contested — design takes the conservative branch
 
 **Do cache reads count against subscription limits?** API-side, cache reads are ~10% price and
-exempt from ITPM `[official]`. Subscription-side: issue #24147 measured 1,310:1 cache-read:I/O
-and argues near-full quota weight; other sources assume the ~10% discount `[contested]`.
-Design assumption: **cache reads are cheap but not free; a cache-busted turn is catastrophic
-either way** — so the discipline in §5.2 is unconditional, and `budget.sh`'s estimate mode
-counts cache reads at a configurable weight (default conservative) until Anthropic documents
-the truth.
+exempt from ITPM rate limits `[official]`. Subscription-side: one measured report (1,310:1
+cache-read:I/O ratio) argues near-full quota weight; other sources assume the ~10% discount
+`[contested]`. Design assumption: **cache reads are cheap but not free; a cache-busted turn is
+catastrophic either way** — so the discipline in §5.2 is unconditional, and the budget
+governor's estimate mode counts cache reads at a configurable weight (default conservative)
+until Anthropic documents the truth.
 
 ### 10.3 Volatility log (why nothing is hard-coded)
 
@@ -399,31 +421,30 @@ the truth.
 | 2025-08-28 | Weekly caps introduced (overall + Opus) `[official]` |
 | 2025-11-24 | Opus weekly cap removed; overall raised; Sonnet gets its own cap `[official]` |
 | 2026-01 | Unannounced Opus tightening reported `[measured]` |
-| ~2026-03 | Peak-hour throttling; v2.1.76 cache bug (10–20× inflation) `[measured]` |
+| ~2026-03 | Peak-hour throttling; client cache bug (10–20× inflation) `[measured]` |
 | 2026-04-23 | Cache bug fixed + limit resets `[measured]` |
 | 2026-05-06 | 5-hour limits doubled; peak throttling removed `[official]` |
 | 2026-05-13 → **2026-07-13** | +50% weekly promo — **current headroom is inflated; recalibrate ceilings after expiry** `[measured]` |
 
 ## 11. Rollout — staged, measured flips
 
-Mirrors the v1 `taskRouting` discipline: cheapest proven lever first, each flip gated on the
-previous stage's telemetry.
+Cheapest proven lever first; each flip gated on the previous stage's telemetry.
 
-- **Stage 0 (day one, no new machinery):** frozen-prefix cache discipline + prefix-edit
-  warning hook; window-aware admission in its degenerate form (`budget.sh` estimate mode,
-  serial execution); start-tier P1; pipelining + pre-decompose; structured outputs on all
-  worker returns; `DISABLE_NON_ESSENTIAL_MODEL_CALLS` on headless firings.
-- **Stage 1 (after `minSampleTasks` of telemetry):** per-profile effort via the Workflow spawn
-  path (Part A), effort in the run-log (Part B); duration predictor (`predictDuration: true`)
-  if P1 shows escapes ~0 and $/task down; cross-phase DAG scheduling behind a conservative
+- **Stage 0 (day one):** frozen-prefix cache discipline + prefix-edit warning hook;
+  budget governor in estimate mode with serial execution; per-profile starting-tier override;
+  pipelining + pre-decompose; structured outputs on all worker returns;
+  `DISABLE_NON_ESSENTIAL_MODEL_CALLS` on headless firings.
+- **Stage 1 (after the minimum task sample):** per-profile effort via the Workflow spawn path,
+  effort recorded in the run-log; the duration predictor, if the simple starting-tier lever
+  shows escapes ~0 and $/task down; cross-phase DAG scheduling behind a conservative
   `start-early-safe` predicate.
 - **Stage 2 (needs Stage-1 evidence):** held-out vault + safe-RTS replay (non-floored surfaces
-  first, replay rate-limited); `maxConcurrentTasks: 2` under the admission rule, run-log
+  first, replay rate-limited); concurrency cap 2 under the admission rule, with the run-log
   attributing rework to concurrency.
-- **Stage 3 (optional, evidence-gated):** startTier matrix (P3); test-execution caching
-  (bounded to non-security surfaces, mandatory cache-defeat on changed surface — explicitly
-  down-weighted by the objective); `ENABLE_PROMPT_CACHING_1H` if idle-gap misses measurably
-  matter.
+- **Stage 3 (optional, evidence-gated):** the full bucket×profile starting-tier matrix;
+  test-execution caching (bounded to non-security surfaces, mandatory cache-defeat on the
+  changed surface — explicitly down-weighted by the objective); `ENABLE_PROMPT_CACHING_1H` if
+  idle-gap misses measurably matter.
 - **Standing:** recalibrate window ceilings after 2026-07-13 (promo expiry) and after any
   entry lands in §10.3.
 
@@ -433,12 +454,11 @@ previous stage's telemetry.
    budget on the token-proxy estimate; the source ladder upgrades in place when it lands.
 2. **Cache-read quota weight** (§10.2): worth a controlled measurement (one firing with
    deliberate cache-busting vs one without, same work, compare `/usage` movement) before
-   tuning `budget.sh`'s cache-read weight away from conservative.
+   tuning the budget governor's cache-read weight away from conservative.
 3. **Vault sandbox enforcement:** the concrete mechanism proving the implementer *cannot* read
-   the vault (separate repo + credential? OS-level sandbox rule? hook-verified path audit?) —
-   design decision deferred to the vault proposal's ratification.
-4. **Per-agent effort portability:** the Workflow spawn path is probe-verified on this build;
-   the Agent-call fallback ladder must stay the default until the primitive is verified on the
-   target environment (PORTABILITY.md note).
+   the vault (separate repo + credential? OS-level sandbox rule? hook-verified path audit?).
+4. **Per-agent effort portability:** the Workflow spawn path is probe-verified on the current
+   Claude Code build; the parallel-`Agent`-calls fallback stays the default until the
+   primitive is verified wherever the harness runs.
 5. **Window-occupancy forecasting:** the admission rule needs a per-task burn forecast; start
-   with profile×tier static estimates, upgrade to `predict-duration` buckets once P2 is live.
+   with profile×tier static estimates, upgrade to duration buckets once the predictor is live.

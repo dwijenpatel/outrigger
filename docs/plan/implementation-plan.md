@@ -46,7 +46,7 @@ Layout: harness library modules in `harness/` (config in `harness/config/`), tes
 
 | ID | Increment | Design ref | Deps | Status |
 |---|---|---|---|---|
-| B1 | **Task/ledger schema + status index** (`harness/ledger.py`): task records (id, phase, risk profile, hard deps, `mayBeInvalidatedBy` soft edges, status), status-index read/write, resume-from-disk view | §3.4, §9 | — | not-started |
+| B1 | **Task/ledger schema + status index** (`harness/ledger.py`): task records (id, phase, risk profile, hard deps, `mayBeInvalidatedBy` soft edges, status), validated status transitions, atomic (temp+rename) status-index writes, governor pause/resume marker, resume-from-disk view (`runnable`/`summary`) | §3.4, §9 | — | done |
 | B2 | **Preflight DAG check + scheduler tick** (`harness/scheduler.py`): cross-phase DAG validation (cycle detection), runnable-set computation, `start-early-safe` predicate, critical-path-then-risk priority; concurrency admission calls A4 (incl. per-pipeline cold-prefix warmup cost, §6.2) | §6.1, §6.2 | B1, A4 | not-started |
 | B3 | **Liveness guard (observe-only)** (`harness/liveness.py`): per-task step-count cap, repeated-error-signature detection, slow-grind vs predicted bucket; observe-only until false-abort rate proven (§5.6) | §9 | B1 | not-started |
 
@@ -85,9 +85,11 @@ Layout: harness library modules in `harness/` (config in `harness/config/`), tes
 
 ## Next up
 
-**B1 — task/ledger schema + status index.** It unblocks the scheduler (B2), the risk-floor
-map (C3), and the orchestration phase. C1/C2 (hooks) and D1 (vault config) are also
-dependency-free and can be pulled forward if B1 stalls.
+**B2 — preflight DAG check + scheduler tick** (`harness/scheduler.py`): cycle detection over
+the cross-phase dep graph, `start-early-safe` predicate over `may_be_invalidated_by` soft
+edges, critical-path-then-risk prioritization, concurrency admission via A4 (including the
+per-pipeline cold-prefix warmup cost, §6.2). B1's `runnable()` is the candidate-set input.
+C1/C2 (hooks) and D1 (vault config) are dependency-free alternatives if B2 stalls.
 
 ## Deviations & open items
 
@@ -114,4 +116,8 @@ dependency-free and can be pulled forward if B1 stalls.
 - **2026-07-04 (run 1):** Plan created. Implemented A1–A4 with test suites
   (`tests/test_runlog.py`, `tests/test_spawncheck.py`, `tests/test_governor.py`,
   `tests/test_admission.py`); all passing, plus existing `--selftest` scripts re-verified.
-  Merged `feat/stage0-foundations`. Next run starts at B1.
+  Merged `feat/stage0-foundations`. Then implemented B1 (`harness/ledger.py` +
+  `tests/test_ledger.py`) on `feat/b1-ledger-status-index`; 101 tests passing total.
+  Ledger design notes: `done` is terminal (reopening is an operator file edit, never a
+  silent loop action); a corrupt status index raises loudly instead of resetting statuses;
+  cycle detection deliberately deferred to B2's preflight. Next run starts at B2.

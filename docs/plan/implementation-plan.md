@@ -116,6 +116,25 @@ Layout: harness library modules in `harness/` (config in `harness/config/`), tes
 |---|---|---|---|---|
 | G1 | **Pooled lease-based worktree lifecycle**: warm pool, env-setup hooks run once per member, durable leases surviving worker death, fail-closed teardown (landed = patch-ID containment incl. post-squash; refuse when remote unreachable; per-risk opt-in flags, no blanket force) | §6.2 (2026-07-04 amendment) | B2, concurrency cap ≥2 flip | done (machinery built; pool activation is the Stage-2 flip) |
 
+### Phase H — Enforcement wiring + verifier-precision floor (2026-07-04 evening amendments)
+
+From the updated design critique ([../research/landscape-and-novelty.md §4](../research/landscape-and-novelty.md)):
+the C/D/E-series built the enforcement *logic*; Phase H makes it **wired, triggered, and
+precision-aware**. All gates fail closed; interlocks are inert outside a live firing.
+
+| ID | Increment | Design ref | Deps | Status |
+|---|---|---|---|---|
+| H1 | **Hook registration**: committed `.claude/settings.json` registering git-guard + prefix-edit-warn (PreToolUse) and the closure gate (Stop); `hooks/closure_gate.py` gains a **Stop-hook stdin mode** (config from a fixed path; **inert when no live run marker** — the gate guards firings, not operator sessions); selftest **fails when registration is absent** or points off the ratified scripts | §7 wiring amendment 1, §11 Stage 0 | C1–C5, E5 | not-started |
+| H2 | **Merge + spawn interlocks** (`harness/interlocks.py`, `hooks/merge_interlock.py`, `hooks/spawn_interlock.py`): during a live firing, `git merge`/`git push` to protected refs requires a **fresh PASS gate stamp bound to branch + HEAD SHA** (run_gate writes stamps on PASS); worker spawns require a **fresh admission stamp** (scheduler tick writes it); both inert outside firings, fail closed inside | §7 wiring amendments 2–3 | H1, D2, B2 | not-started |
+| H3 | **Gate mandatory-step manifest** (`harness/config/gate-required-steps.json`): per-profile required steps loaded from the ratified ref; a required input that is absent **fails closed** — "caller's choice" passes survive only where the manifest says so | §7 wiring amendment 4 | D2 | not-started |
+| H4 | **Executable-repro findings + false-FAIL telemetry**: verdict/finding schema gains a machine-replayable `repro` (command + expectation); the gate replays repro **in the clean checkout** before an error finding blocks; unreproduced findings **downgrade to ask-user** and are counted (per-lens/tier false-FAIL rate lands in the run-log; repro-required per profile) | §7 typed-findings amendment, §8 inputs | D2, E1, A1 | not-started |
+| H5 | **Panel-correlation telemetry + cross-provider card**: calibration aggregates canary trials panel-wide (all-lenses-missed = correlated blind spot, feeds the evidence roll-up); a decision-card factory for the opt-in cross-provider validator on critical profiles | §7 panel amendment, §8 | D4, E3, F1 | not-started |
+| H6 | **Escape-discovery protocol**: deterministic backfill (later-phase defect on a merged surface → escapes-log entry attributed to merging task + panel); sampled **escape-hunt due-check** (budget-governed); downgrade/flip guard requires **discovery channel active**, not just zero escapes | §7 self-measuring amendment | D4 | not-started |
+| H7 | **Evidence leakage policy**: held-out execution output routes to a **vault-side evidence store** covered by the same deny rules; in-repo gate reports **scrubbed against the vault manifest** (vault paths/test identifiers → stable hashes); verdict-verbosity line in the leakage budget | §5.5 point 5 | D1, D2 | not-started |
+| H8 | **Firing preflight + staleness-aware governor**: occupancy readings carry age (stale → margin widens with data age, rung falls through); `preflight()` probes the ladder at firing start — no live-utilization rung reachable → **conservative mode** (tightened thresholds, cheap-serial only) or operator ack | §5.1 amendment | A3, E2 | not-started |
+| H9 | **Spec-ambiguity blockers**: handoff schema gains `spec_ambiguities`; on high/critical profiles they become **blocker records parking the task before implementation spends tokens** (advisory `key_learnings` on lower profiles) | §6.3 amendment | E1, E3 | not-started |
+| H10 | **Worker-side unconditional machinery deny**: `worker_settings()` denies Edit/Write on machinery globs regardless of branch name, merged with the vault fragment — branch prefixes are a dev convenience, not a boundary a worker can adopt | §7 wiring amendment 5 | E2, D1 | not-started |
+
 ## Stage-gate flips (operational, evidence-gated — design §11)
 
 Not build increments: config/enforcement flips of machinery built above, each gated on the
@@ -141,21 +160,22 @@ prior stage's telemetry.
   headless firings (design §12 reclassified item).
 - Re-run `tools/budget-governor/probe-spawn-portability.js` on any new Claude Code build or
   environment before trusting per-agent `(model, effort)` dispatch.
+- **Re-audit the design §4 leverage map on each Claude Code feature wave** — migrate custom
+  residue a new built-in now covers (first candidate: build-loop control flow as a Workflow
+  script; evaluate, don't mandate). *(added 2026-07-04 evening)*
 
 ## Next up
 
+**H1 — hook registration** (settings artifact + closure Stop-hook stdin mode + registration
+selftest): first Phase-H increment; H2 depends on it. After Phase H, the next unit of work is
+**not machinery** — it is the **pilot firing** (Stage-0 exit criterion, design §11): a small
+real greenfield build producing the first real run-log/canary/calibration data and
+operator-gated recorded traces.
+
+<!-- superseded pointer kept for history: -->
 **E1 — subagent definitions + verdict/handoff schemas** (`.claude/agents/*.md` + JSON
 schemas): the first Phase-E increment; A6's mock rig is expected to iterate with the frozen
 schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
-
-<!-- superseded pointer kept for history: -->
-**B2 — preflight DAG check + scheduler tick** (`harness/scheduler.py`): cycle detection over
-the cross-phase dep graph, runnable-set computation over B4's `reconcile()` view,
-`start-early-safe` predicate over `may_be_invalidated_by` soft edges, critical-path-then-risk
-prioritization, window-phase awareness, concurrency admission via A4 (incl. per-pipeline
-cold-prefix warmup cost, §6.2). A5 (governor driver rules) and A6 (token-free test rig) are
-dependency-light alternatives if B2 stalls; A6 in particular unblocks e2e testing for
-everything in Phases B–E.
 
 ## Deviations & open items
 
@@ -264,3 +284,11 @@ everything in Phases B–E.
   operational, not build: stage-gate flips (evidence-gated), standing rechecks, the
   operator-gated cache-weight experiment and routing-canary collection runs, and real
   telemetry from a first plan run through the loop.
+- **2026-07-04 (run 7, in progress):** Critique-refresh exercise (read-only) re-derived the
+  design critique against the as-built system + fresh external evidence (correlated errors,
+  false-FAIL base rates); research corpus and design amended (see
+  [../research/landscape-and-novelty.md §4](../research/landscape-and-novelty.md) and the
+  design's 2026-07-04-evening amendments). **Phase H added** (H1–H10: enforcement wiring +
+  verifier-precision floor) and execution begun. Also logged: this file's own status table
+  went stale mid-run-6 (F/G done while marked not-started) — a live instance of the
+  claims-not-evidence rule; the reconciliation view, not this prose, is the resume authority.

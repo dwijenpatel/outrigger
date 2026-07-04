@@ -78,20 +78,20 @@ Layout: harness library modules in `harness/` (config in `harness/config/`), tes
 
 | ID | Increment | Design ref | Deps | Status |
 |---|---|---|---|---|
-| C1 | **Prefix-edit warning hook**: PreToolUse (Edit\|Write matcher) flags mid-firing edits to CLAUDE.md / settings / constraints (silent no-op + cache guard) | §5.2 rule 1 | — | not-started |
-| C2 | **Destructive-git blocker + machinery-paths check**: task branches cannot edit loop machinery; block destructive git; **hook/gate executable config loads only from the ratified default branch at a freshly-fetched commit** (fetch failure → empty config, refuse; never the task branch's copy) | §7 (2026-07-04 amendment) | — | not-started |
-| C3 | **Risk-floor map**: path-glob → minimum-profile, enforced against *actual diff paths* at merge | §7 | B4 | not-started |
-| C4 | **Held-out-test-drop check** at merge | §7 | D1 | not-started |
-| C5 | **Hook self-test harness**: every gate proves itself with a failing case (incl. the vault canary once D1 lands); gates demonstrably fail-closed (a gate that cannot run refuses) | §7 | C1–C4 | not-started |
+| C1 | **Prefix-edit warning hook**: PreToolUse (Edit\|Write matcher) flags mid-firing edits to CLAUDE.md / settings / constraints (silent no-op + cache guard) | §5.2 rule 1 | — | done |
+| C2 | **Destructive-git blocker + machinery-paths check**: task branches cannot edit loop machinery; block destructive git; **hook/gate executable config loads only from the ratified default branch at a freshly-fetched commit** (fetch failure → empty config, refuse; never the task branch's copy) | §7 (2026-07-04 amendment) | — | done |
+| C3 | **Risk-floor map**: path-glob → minimum-profile, enforced against *actual diff paths* at merge | §7 | B4 | done |
+| C4 | **Held-out-test-drop check** at merge | §7 | D1 | done |
+| C5 | **Hook self-test harness**: every gate proves itself with a failing case (incl. the vault canary once D1 lands); gates demonstrably fail-closed (a gate that cannot run refuses) | §7 | C1–C4 | done |
 
 ### Phase D — Vault + merge gate
 
 | ID | Increment | Design ref | Deps | Status |
 |---|---|---|---|---|
-| D1 | **Vault isolation config + canary**: six-layer stack config + canary read-attempt self-test | §5.5, §7 | — | not-started |
-| D2 | **Merge gate script**: clean-checkout reproduction, `--require-clean`, all-must-pass panel verdicts; **typed findings** (`severity × action` with per-step auto-fix budgets; review-class defaults to 0); gate pipeline (not the implementer) applies mechanical fixes; **evidence directory** per gated task (transcripts, gate captures) committed to ride review; gate report output follows turn economy (aggregates, definitive empties, tail-truncate + full log to disk with grep hint) | §7, §6.1 (2026-07-04 amendments) | C-series | not-started |
-| D3 | **Safe-RTS vault replay + leakage budget** (Stage 2 — gated on Stage-1 telemetry) | §5.5 | D1, D2 | not-started |
-| D4 | **Escapes log + calibration machinery**: committed escapes-log format (defects a panel missed — labeled ground truth); **calibration canaries** (plant a known defect the panel must catch before any "0 findings" downgrade is trusted; a miss freezes the downgrade); contract-test kill-rate calibration (a weak visible oracle raises rigor, never lowers it) | §7 self-measuring loop, §3 p5 | D2 | not-started |
+| D1 | **Vault isolation config + canary**: six-layer stack config + canary read-attempt self-test | §5.5, §7 | — | done |
+| D2 | **Merge gate script**: clean-checkout reproduction, `--require-clean`, all-must-pass panel verdicts; **typed findings** (`severity × action` with per-step auto-fix budgets; review-class defaults to 0); gate pipeline (not the implementer) applies mechanical fixes; **evidence directory** per gated task (transcripts, gate captures) committed to ride review; gate report output follows turn economy (aggregates, definitive empties, tail-truncate + full log to disk with grep hint) | §7, §6.1 (2026-07-04 amendments) | C-series | done |
+| D3 | **Safe-RTS vault replay + leakage budget** (Stage 2 — gated on Stage-1 telemetry) | §5.5 | D1, D2 | done (ships disabled — enabling is the Stage-2 flip) |
+| D4 | **Escapes log + calibration machinery**: committed escapes-log format (defects a panel missed — labeled ground truth); **calibration canaries** (plant a known defect the panel must catch before any "0 findings" downgrade is trusted; a miss freezes the downgrade); contract-test kill-rate calibration (a weak visible oracle raises rigor, never lowers it) | §7 self-measuring loop, §3 p5 | D2 | done |
 
 ### Phase E — Orchestration surface
 
@@ -144,6 +144,11 @@ prior stage's telemetry.
 
 ## Next up
 
+**E1 — subagent definitions + verdict/handoff schemas** (`.claude/agents/*.md` + JSON
+schemas): the first Phase-E increment; A6's mock rig is expected to iterate with the frozen
+schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
+
+<!-- superseded pointer kept for history: -->
 **B2 — preflight DAG check + scheduler tick** (`harness/scheduler.py`): cycle detection over
 the cross-phase dep graph, runnable-set computation over B4's `reconcile()` view,
 `start-early-safe` predicate over `may_be_invalidated_by` soft edges, critical-path-then-risk
@@ -221,3 +226,20 @@ everything in Phases B–E.
   (`harness/liveness.py`: step/token/wall caps, collapsed error signatures, no-op rule,
   observe-only). 185 tests passing. Each increment on its own feature branch, merged green.
   Continuing into Phase C (hooks) and Phase D (vault + gate).
+- **2026-07-04 (run 5, complete):** **Phases A, B, C, and D are all complete** — 266 tests
+  passing. C1–C3 (`harness/hooks.py` + `hooks/`: advisory prefix-edit warning fails open;
+  git-guard and risk-floor gates fail closed, floor config read only from the ratified ref —
+  a branch tampering with its own floors.json is ignored), D1 (`harness/vault.py` +
+  `harness/config/vault-isolation.json`: six-layer declaration validator, canary proven to
+  detect a readable vault AND pass a denied one, sha256 manifest), C4
+  (`hooks/heldout_drop_check.py`: dropped/mutated held-out tests block, fresh authoring
+  passes), C5 (`harness/selftest.py`: every gate proven both directions in hermetic
+  fixtures), D2 (`harness/gate.py`: fixed-order clean-checkout gate, typed findings with
+  per-step auto-fix budgets, evidence dirs, turn-economy report), D4
+  (`harness/calibration.py`: escapes log, canary trials, downgrade frozen on misses/fresh
+  escapes, weak-oracle raises rigor), D3 (`harness/replay.py`: safe-RTS plan, unanalyzable →
+  fresh, floored never replays, leakage budget; ENABLED_DEFAULT=False). Process note: one red
+  suite briefly merged because unittest's exit status was piped through `tail` — caught and
+  fixed next command; future gate chains must test the real exit status (exactly the design's
+  stale-green lesson, self-inflicted at 1-command scale). Next: **Phase E** (E1 subagent
+  definitions + verdict/handoff schemas).

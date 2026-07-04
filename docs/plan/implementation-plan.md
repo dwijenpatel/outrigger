@@ -70,7 +70,7 @@ Layout: harness library modules in `harness/` (config in `harness/config/`), tes
 | ID | Increment | Design ref | Deps | Status |
 |---|---|---|---|---|
 | B1 | **Task/ledger schema + status index** (`harness/ledger.py`): task records (id, phase, risk profile, hard deps, `mayBeInvalidatedBy`, status), validated transitions, atomic writes, pause/resume marker, `runnable`/`summary` views | §3 p4, §9 | — | done (pre-amendment) |
-| B4 | **State-architecture rework of B1** (event-log/reconciliation split): status index becomes an **append-only event log** plus a **derived reconciliation view** whose authoritative inputs are gate/run artifacts and git state (never the last event line); **write-ahead event queue** (durable event recorded before any suppression/progress marker advances; recovery = drain queue); **generation-stamped mutations** (stale expected-generation fails loudly). `runnable()`/`summary()` become reconciliation reads. Digest output rendered per format policy (flattened Markdown table + aggregate header: `tasks: 12 of 47 done, 3 FAIL, 2 blocked`) | §3 p4, §5.4 format policy (2026-07-04 amendments) | B1 | not-started |
+| B4 | **State-architecture rework of B1** (event-log/reconciliation split): status index becomes an **append-only event log** plus a **derived reconciliation view** whose authoritative inputs are gate/run artifacts and git state (never the last event line); **write-ahead event queue** (durable event recorded before any suppression/progress marker advances; recovery = drain queue); **generation-stamped mutations** (stale expected-generation fails loudly). `runnable()`/`summary()` become reconciliation reads. Digest output rendered per format policy (flattened Markdown table + aggregate header: `tasks: 12 of 47 done, 3 FAIL, 2 blocked`) | §3 p4, §5.4 format policy (2026-07-04 amendments) | B1 | done |
 | B2 | **Preflight DAG check + scheduler tick** (`harness/scheduler.py`): cross-phase DAG validation (cycle detection), runnable-set computation over the B4 reconciliation view, `start-early-safe` predicate, critical-path-then-risk priority; concurrency admission calls A4 (incl. per-pipeline cold-prefix warmup cost, §6.2); **window-phase awareness** — heavy fan-out slots early in a fresh window, the tail runs cheap serial work | §6.1, §6.2 | B4, A4 | not-started |
 | B3 | **Liveness guard (observe-only)** (`harness/liveness.py`): per-task step-count cap; **per-task token cap from the §5.1 P95 forecast, checked mid-flight**; repeated-error-signature detection; slow-grind vs predicted bucket; **no-op rule** (zero git delta + zero new artifacts = failed turn, halts the spin); observe-only until false-abort rate proven (§5.6) | §9 (2026-07-04 amendment) | B4 | not-started |
 
@@ -144,10 +144,12 @@ prior stage's telemetry.
 
 ## Next up
 
-**B4 — state-architecture rework of the ledger/status index** (event-log + reconciliation
-split, write-ahead queue, generation stamps, Markdown-table digest): it is the foundation B2,
-B3, C3, and E3 now sit on. A5 (governor driver rules) and A6 (token-free test rig) are
-dependency-light alternatives if B4 stalls; A6 in particular unblocks e2e testing for
+**B2 — preflight DAG check + scheduler tick** (`harness/scheduler.py`): cycle detection over
+the cross-phase dep graph, runnable-set computation over B4's `reconcile()` view,
+`start-early-safe` predicate over `may_be_invalidated_by` soft edges, critical-path-then-risk
+prioritization, window-phase awareness, concurrency admission via A4 (incl. per-pipeline
+cold-prefix warmup cost, §6.2). A5 (governor driver rules) and A6 (token-free test rig) are
+dependency-light alternatives if B2 stalls; A6 in particular unblocks e2e testing for
 everything in Phases B–E.
 
 ## Deviations & open items
@@ -198,3 +200,15 @@ everything in Phases B–E.
   standing-rechecks sections so the rollout stages and volatility watches live in the plan,
   not only the design. §12 trim reflected (two open questions; three reclassified). Next up
   unchanged: **B4**.
+- **2026-07-04 (run 4):** Execution begun on the finalized plan. **B4 done** on
+  `feat/b4-event-log-reconciliation`, merged; 126 tests passing (was 101). Implementation
+  notes: `StatusIndex` removed — replaced by `EventLog` (append-only fsync'd JSONL; torn-tail
+  crash model: unacknowledged fragment ignored on read and repaired on next append, interior
+  corruption/broken seq chain raises loudly); reconciliation precedence is gate verdict > run
+  liveness > event claim, with contradictions surfaced as `discrepancies` and never healed
+  silently (appending the correcting event is the caller's decision); dead-run tasks report
+  `unknown` (reconciliation-only status, blocks dependents, never persisted);
+  `StaleGenerationError` on stale `expected_generation`; consumer cursor cannot pass durable
+  events or rewind; `digest()` renders the §5.4 aggregate-header + Markdown-table view with
+  definitive empty states. Docs from the amendment/finalization session committed and merged
+  the same run. Next: **B2**.

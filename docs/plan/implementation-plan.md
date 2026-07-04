@@ -107,14 +107,14 @@ Layout: harness library modules in `harness/` (config in `harness/config/`), tes
 
 | ID | Increment | Design ref | Deps | Status |
 |---|---|---|---|---|
-| F1 | **Telemetry roll-up + `docs/EVIDENCE.md` generator** (per-role/tier/effort cost, catch-rate vs the D4 escapes log, calibration results; D2 evidence directories as input); digests rendered per format policy (flattened Markdown tables + aggregate headers) | §8, §5.4 | A1, D2, D4 | not-started |
-| F2 | **Controller lever proposals**: one-lever-at-a-time, sample floors, strengthen-only for protected profiles, queue to ratification (E3 cards) — never auto-applied; lever evaluations follow the **paired-arm template** (one lever = one arm, continuous metric, paired per-task stats, out-of-sample difficulty strata, confirmatory-vs-exploratory labels) | §8 (2026-07-04 amendment) | F1, E3 | not-started |
+| F1 | **Telemetry roll-up + `docs/EVIDENCE.md` generator** (per-role/tier/effort cost, catch-rate vs the D4 escapes log, calibration results; D2 evidence directories as input); digests rendered per format policy (flattened Markdown tables + aggregate headers) | §8, §5.4 | A1, D2, D4 | done |
+| F2 | **Controller lever proposals**: one-lever-at-a-time, sample floors, strengthen-only for protected profiles, queue to ratification (E3 cards) — never auto-applied; lever evaluations follow the **paired-arm template** (one lever = one arm, continuous metric, paired per-task stats, out-of-sample difficulty strata, confirmatory-vs-exploratory labels) | §8 (2026-07-04 amendment) | F1, E3 | done |
 
 ### Phase G — Stage-2 wall-clock (deferred until Stage-1 telemetry)
 
 | ID | Increment | Design ref | Deps | Status |
 |---|---|---|---|---|
-| G1 | **Pooled lease-based worktree lifecycle**: warm pool, env-setup hooks run once per member, durable leases surviving worker death, fail-closed teardown (landed = patch-ID containment incl. post-squash; refuse when remote unreachable; per-risk opt-in flags, no blanket force) | §6.2 (2026-07-04 amendment) | B2, concurrency cap ≥2 flip | deferred (Stage 2) |
+| G1 | **Pooled lease-based worktree lifecycle**: warm pool, env-setup hooks run once per member, durable leases surviving worker death, fail-closed teardown (landed = patch-ID containment incl. post-squash; refuse when remote unreachable; per-risk opt-in flags, no blanket force) | §6.2 (2026-07-04 amendment) | B2, concurrency cap ≥2 flip | done (machinery built; pool activation is the Stage-2 flip) |
 
 ## Stage-gate flips (operational, evidence-gated — design §11)
 
@@ -252,3 +252,15 @@ everything in Phases B–E.
   tamper-detected snapshot, fresh-evidence rule, bounded remediation escalates), E4
   (`harness/routing_canaries.py` + fixtures: negative controls mandatory, fingerprints).
   Continuing into Phases F and G.
+- **2026-07-04 (run 6, complete):** **Phases E, F, and G are all complete — every increment
+  in the plan is now built.** 358 tests passing. F1 (`harness/evidence.py`: cost cells per
+  role/tier/effort/profile, catch-rate never fabricated at n=0, sticky-`~` totals,
+  format-policy EVIDENCE.md), F2 (`harness/controller.py`: one-lever-at-a-time, sample
+  floors, protected profiles strengthen-only, downgrades gated on D4 calibration proof,
+  proposals emitted as E3 cards carrying paired-arm evaluation plans), G1
+  (`harness/worktrees.py`: warm pool, durable leases surviving process death, landed =
+  ancestry OR patch-id containment, fail-closed teardown with per-risk flags — machinery
+  built; *activation* remains the Stage-2 flip, like D3's replay). Remaining work is
+  operational, not build: stage-gate flips (evidence-gated), standing rechecks, the
+  operator-gated cache-weight experiment and routing-canary collection runs, and real
+  telemetry from a first plan run through the loop.

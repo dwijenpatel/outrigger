@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "worker handoff",
+  "type": "object",
+  "required": ["outcome", "summary", "intent", "key_changes_made", "key_learnings"],
+  "additionalProperties": true,
+  "properties": {
+    "outcome": {"enum": ["pass", "fail", "parked"]},
+    "summary": {"type": "string", "minLength": 1},
+    "intent": {"type": "string", "minLength": 1},
+    "key_changes_made": {
+      "type": "array", "items": {"type": "string", "minLength": 1},
+      "description": "Material outcomes, not activities"
+    },
+    "key_learnings": {
+      "type": "array", "items": {"type": "string", "minLength": 1},
+      "description": "Surprising only — not captured by prior lessons"
+    },
+    "files_touched": {"type": "array", "items": {"type": "string"}}
+  }
+}

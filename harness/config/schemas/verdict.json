@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "validator verdict",
+  "type": "object",
+  "required": ["lens", "verdict", "evidence", "intent"],
+  "additionalProperties": true,
+  "properties": {
+    "lens": {"type": "string", "minLength": 1},
+    "verdict": {"enum": ["PASS", "FAIL"]},
+    "evidence": {
+      "type": "array", "minItems": 1,
+      "items": {"type": "string", "minLength": 1},
+      "description": "Quoted OBSERVED behavior, never impressions"
+    },
+    "intent": {"type": "string", "minLength": 1},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "action", "summary"],
+        "properties": {
+          "severity": {"enum": ["error", "warning", "info"]},
+          "action": {"enum": ["auto-fix", "ask-user", "no-op"]},
+          "summary": {"type": "string", "minLength": 1},
+          "file": {"type": "string"},
+          "line": {"type": "integer"},
+          "step": {"type": "string"}
+        }
+      }
+    }
+  }
+}

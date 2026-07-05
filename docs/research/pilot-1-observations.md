@@ -77,6 +77,38 @@ the repo** (sibling dir, e.g. `../cc-agent-harness-test1-vault/`). Batch
 fix: pin this in the SKILL.md and in `vault.isolation_settings` docs;
 consider a loud check (vault path inside the repo root → refuse).
 
+### P1-8 🔴 There is no planning surface — the loop improvises the plan and asks almost nothing
+
+Observed: given a one-line project description, the pilot session asked one
+project question (with "~4–6 ledger tasks" pre-baked into it), accepted a
+one-line answer, and moved straight to authoring the ledger — no
+requirements elicitation (trade specifics, roles, tenancy/auth model, the
+billing-wedge behaviors, in/out list, tech stack), no per-task spec review,
+no explicit plan-ratification step beyond the initial question. The operator
+expected "a lot more clarifying questions."
+
+Root cause is in-tree: the design's plan-first half ("the plan template,
+risk-classification table, human gate" — §4 residue) **was never an
+increment**; the plan has no planning skill anywhere in Phases A–H. The
+build-loop skill's first line assumes "the ratified plan" exists. Everything
+downstream leans on spec quality — the spec is the panel's *only shared
+context*, the test-author writes held-out tests *from the spec alone*, and
+H9's ambiguity blockers only bite where profiles are set right — so a thin
+improvised spec quietly weakens the entire O0 chain ("a subpar plan hurts
+more than no plan" is the measured result the human gate exists for).
+
+**Live-pilot mitigation:** operator interrupts before the ledger freezes and
+runs the elicitation manually (paste-block provided in the main session).
+**Batch fix (pilot #2, high priority):** a `plan-build` skill — elicitation
+checklist ("keep asking until every held-out test the test-author would
+write has a determinate answer"), plan/spec template (per-task: scope,
+interfaces pinned, acceptance criteria, risk profile, deps), floors.json
+authoring, an explicit operator-ratification stop, then freeze_snapshot.
+Sizing guidance belongs there too: phase 1 = a small walking skeleton
+(4–6 tasks is fine) with later phases pre-decomposed as *provisional*
+(planning-only) ledgers — small first firing, without letting "small" mean
+"vague."
+
 ---
 
 ## Themes so far
@@ -89,3 +121,6 @@ consider a loud check (vault path inside the repo root → refuse).
    gate stays green end-to-end.
 2. **Turn economy applies to the harness's own surfaces** (P1-6): the
    machinery is legible to its authors, not yet to a fresh orchestrator.
+3. **The enforcement half was built; the elicitation half wasn't** (P1-8):
+   every guard downstream of the spec is mechanized, but nothing mechanizes
+   *producing a good spec* — the single input the whole O0 chain trusts.

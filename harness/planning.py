@@ -34,6 +34,7 @@ import sys
 from . import closure as _closure
 from . import hooks as _hooks
 from . import ledger as _ledger
+from . import vault as _vault
 
 RATIFICATION_NAME = "ratification.json"
 MIN_SPEC_CHARS = 200  # a scoped spec below this cannot pin interfaces + criteria
@@ -98,9 +99,16 @@ def ratify(plan_dir: str, approved_by: str) -> dict:
     return doc
 
 
-def plan_ready(plan_dir: str, snapshot_path: str) -> dict:
+def plan_ready(plan_dir: str, snapshot_path: str,
+               vault_config_path: str | None = None,
+               repo_root: str = ".") -> dict:
     """Every check the firing's inputs depend on. Returns {"ready", "why",
-    "checks": [...]}; the first failing check decides ``why`` (fail closed)."""
+    "checks": [...]}; the first failing check decides ``why`` (fail closed).
+
+    With ``vault_config_path`` (I4b — ported from the pilot session's
+    parallel implementation), readiness additionally requires the vault to
+    be configured, coherent, and present: a plan is not fireable against an
+    unconfigured or drifted vault."""
     checks = []
 
     def check(name, ok, detail):
@@ -194,6 +202,20 @@ def plan_ready(plan_dir: str, snapshot_path: str) -> dict:
     check("ratification", True,
           f"approved by {rat.get('approved_by', '?')} at "
           f"{rat.get('ratified_at', '?')}")
+
+    # 6. vault configured + coherent + present (I4b)
+    if vault_config_path:
+        try:
+            vault_doc = _vault.load_vault_config(repo_root, vault_config_path)
+        except _vault.VaultError as exc:
+            check("vault", False, f"{exc} (fail-closed)")
+            return finish()
+        vres = _vault.check_vault_config(vault_doc, repo_root)
+        if not vres["configured"] or not vres["ok"]:
+            check("vault", False, vres["why"])
+            return finish()
+        check("vault", True,
+              f"vault at {vault_doc['vault_path']} configured + coherent")
     return finish()
 
 
@@ -203,6 +225,11 @@ def _cli(argv=None) -> int:
     ready_p = sub.add_parser("ready", help="is the plan fireable?")
     ready_p.add_argument("--plan-dir", default="plan")
     ready_p.add_argument("--snapshot", default="state/plan-snapshot.json")
+    ready_p.add_argument("--vault-config",
+                         help="also require a configured, coherent vault "
+                              "(I4b); the build-loop passes "
+                              "harness/config/vault-isolation.json")
+    ready_p.add_argument("--repo", default=".")
     rat_p = sub.add_parser("ratify", help="record operator approval "
                                           "(only after explicit approval)")
     rat_p.add_argument("--plan-dir", default="plan")
@@ -218,7 +245,9 @@ def _cli(argv=None) -> int:
         print(json.dumps(doc, indent=2))
         return 0
 
-    result = plan_ready(args.plan_dir, args.snapshot)
+    result = plan_ready(args.plan_dir, args.snapshot,
+                        vault_config_path=args.vault_config,
+                        repo_root=args.repo)
     print(json.dumps(result, indent=2))
     if not result["ready"]:
         print(f"plan NOT ready: {result['why']}", file=sys.stderr)

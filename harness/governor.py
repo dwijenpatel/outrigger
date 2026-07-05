@@ -268,6 +268,25 @@ def decide(occupancy: Occupancy, degrade: float = DEFAULT_DEGRADE,
     }
 
 
+def assumed_occupancy(fraction: float, acked_by: str) -> Occupancy:
+    """P2-4 bootstrap rung — a first-ever firing has no live rung and no
+    calibrated ceilings, so occupancy is unknown and admission (correctly)
+    refuses everything. The way out is an **explicit, operator-attributed
+    assumption**: recorded as its own source, always optimistic (sticky-``~``),
+    bounds-checked. It exists for conservative-mode serial bootstrap only —
+    it never clears a preflight and never justifies concurrency."""
+    if not isinstance(acked_by, str) or not acked_by.strip():
+        raise GovernorError("an assumed occupancy needs --acked-by <operator> "
+                            "— assumptions are attributed, never ambient")
+    if isinstance(fraction, bool) or not isinstance(fraction, (int, float)) \
+            or not 0 <= fraction < 1:
+        raise GovernorError(f"assumed occupancy must be in [0, 1), "
+                            f"got {fraction!r}")
+    return Occupancy(source=f"operator-assumed:{acked_by.strip()}",
+                     windows={name: float(fraction) for name in WINDOWS},
+                     optimistic=True)
+
+
 def preflight(statusline_doc: dict | None = None,
               statusline_read_at: float | None = None,
               oauth_doc: dict | None = None,
@@ -362,6 +381,24 @@ def _mtime_of(value: str) -> float | None:
     return None
 
 
+def _load_source(value: str | None, label: str):
+    """P2-2 — a missing or corrupt source *file* is an unavailable rung, not
+    a crash: warn, return (None, None), and let the ladder fall through to
+    the designed refusal/conservative path."""
+    if not value:
+        return None, None
+    try:
+        return _load_json_arg(value), _mtime_of(value)
+    except (FileNotFoundError, OSError) as exc:
+        print(f"warning: {label} source {value!r} unavailable ({exc}) — "
+              f"rung skipped", file=sys.stderr)
+        return None, None
+    except json.JSONDecodeError as exc:
+        print(f"warning: {label} source {value!r} corrupt ({exc}) — "
+              f"rung skipped", file=sys.stderr)
+        return None, None
+
+
 def _cli(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--statusline-json", help="statusline stdin JSON: path, '-', or inline")
@@ -379,15 +416,20 @@ def _cli(argv=None):
     p.add_argument("--preflight", action="store_true",
                    help="H8: probe live rungs only; exit 0 normal, 3 "
                         "conservative")
+    p.add_argument("--assume-occupancy", type=float,
+                   help="P2-4 bootstrap: operator-attributed occupancy "
+                        "assumption in [0,1), used only when no source "
+                        "yields a usable window; requires --acked-by")
+    p.add_argument("--acked-by",
+                   help="operator name attributing --assume-occupancy")
     p.add_argument("--log", help="append the decision to this JSONL file")
     args = p.parse_args(argv)
 
     import time as _time
     now_ts = _time.time()
-    statusline_doc = _load_json_arg(args.statusline_json) if args.statusline_json else None
-    oauth_doc = _load_json_arg(args.oauth_json) if args.oauth_json else None
-    statusline_read_at = _mtime_of(args.statusline_json) if args.statusline_json else None
-    oauth_read_at = _mtime_of(args.oauth_json) if args.oauth_json else None
+    statusline_doc, statusline_read_at = _load_source(
+        args.statusline_json, "statusline")
+    oauth_doc, oauth_read_at = _load_source(args.oauth_json, "oauth")
 
     if args.preflight:
         result = preflight(statusline_doc=statusline_doc,
@@ -404,13 +446,23 @@ def _cli(argv=None):
         for lineno, message in errors:
             print(f"warning: {args.runlog}:{lineno}: {message}", file=sys.stderr)
 
-    occ = resolve(statusline_doc=statusline_doc, oauth_doc=oauth_doc,
-                  runlog_records=records,
-                  ceilings=json.loads(args.ceilings) if args.ceilings else None,
-                  cache_read_weight=args.cache_read_weight,
-                  statusline_read_at=statusline_read_at,
-                  oauth_read_at=oauth_read_at, now_ts=now_ts,
-                  stale_after_s=args.stale_after)
+    occ = None
+    try:
+        occ = resolve(statusline_doc=statusline_doc, oauth_doc=oauth_doc,
+                      runlog_records=records,
+                      ceilings=json.loads(args.ceilings) if args.ceilings
+                      else None,
+                      cache_read_weight=args.cache_read_weight,
+                      statusline_read_at=statusline_read_at,
+                      oauth_read_at=oauth_read_at, now_ts=now_ts,
+                      stale_after_s=args.stale_after)
+    except GovernorError:
+        if args.assume_occupancy is None:
+            raise
+    # P2-4: the attributed assumption applies only when nothing else
+    # produced a usable window fraction
+    if args.assume_occupancy is not None and (occ is None or not occ.windows):
+        occ = assumed_occupancy(args.assume_occupancy, args.acked_by or "")
     decision = decide(occ, degrade=args.degrade, pause=args.pause, mode=args.mode)
     if args.log:
         log_decision(args.log, decision)

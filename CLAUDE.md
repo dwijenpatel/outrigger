@@ -13,3 +13,9 @@
 - Machinery paths (`harness/`, `hooks/`, `.claude/`, `tools/`, `docs/plan/`,
   `docs/design/`) are gate-protected; product code goes elsewhere
   (e.g. `pilot/<name>/`).
+- **Machinery is upstream-owned.** In a pilot clone, do NOT implement
+  machinery fixes locally — two parallel implementations collided once
+  already (P2-collision). Record the defect in the pilot's observations
+  ledger; the fix lands in the parent repo and arrives by
+  `git fetch <parent> main && git merge FETCH_HEAD`. Local machinery edits
+  will be overwritten by that merge.

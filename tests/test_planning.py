@@ -166,3 +166,61 @@ class CliTests(PlanFixture):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VaultReadinessTests(PlanFixture):
+    """I4b — a plan is not fireable against an unconfigured/absent vault."""
+
+    def vault_cfg(self, configure=True):
+        cfg = os.path.join(self.dir.name, "vault-isolation.json")
+        with open(cfg, "w") as fh:
+            json.dump({"_meta": {}, "structural_layers": {
+                "config_out_of_scope": "x", "egress_control": "x",
+                "role_processes": "x"},
+                "vault_path": None, "worker_settings": None}, fh)
+        if configure:
+            import shutil
+            from harness import vault
+            vault_home = tempfile.mkdtemp(prefix="outside-vault-")
+            self.addCleanup(lambda: shutil.rmtree(vault_home,
+                                                  ignore_errors=True))
+            vault.configure_vault(self.dir.name,
+                                  os.path.join(vault_home, "vault"),
+                                  config_path=cfg)
+        return cfg
+
+    def test_unconfigured_vault_blocks_readiness(self):
+        planning.ratify(self.plan, "dwijen")
+        cfg = self.vault_cfg(configure=False)
+        result = planning.plan_ready(self.plan, self.snapshot,
+                                     vault_config_path=cfg,
+                                     repo_root=self.dir.name)
+        self.assertFalse(result["ready"])
+        self.assertIn("unconfigured", result["why"])
+
+    def test_configured_vault_passes_readiness(self):
+        planning.ratify(self.plan, "dwijen")
+        cfg = self.vault_cfg(configure=True)
+        result = planning.plan_ready(self.plan, self.snapshot,
+                                     vault_config_path=cfg,
+                                     repo_root=self.dir.name)
+        self.assertTrue(result["ready"], result["why"])
+        self.assertEqual(result["checks"][-1]["check"], "vault")
+
+    def test_missing_vault_dir_blocks_readiness(self):
+        import shutil
+        planning.ratify(self.plan, "dwijen")
+        cfg = self.vault_cfg(configure=True)
+        from harness import vault
+        doc = vault.load_vault_config(self.dir.name, cfg)
+        shutil.rmtree(doc["vault_path"])
+        result = planning.plan_ready(self.plan, self.snapshot,
+                                     vault_config_path=cfg,
+                                     repo_root=self.dir.name)
+        self.assertFalse(result["ready"])
+        self.assertIn("does not exist", result["why"])
+
+    def test_no_vault_config_keeps_prior_behavior(self):
+        planning.ratify(self.plan, "dwijen")
+        result = planning.plan_ready(self.plan, self.snapshot)
+        self.assertTrue(result["ready"], result["why"])

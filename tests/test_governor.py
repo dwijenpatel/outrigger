@@ -302,3 +302,59 @@ class StalenessAndPreflightTests(unittest.TestCase):
             capture_output=True, text=True, timeout=30)
         self.assertEqual(conservative.returncode, 3)
         self.assertIn("conservative", conservative.stdout)
+
+
+class BootstrapAndSourceRobustnessTests(unittest.TestCase):
+    """P2-2/P2-4 — missing sources degrade; bootstrap is explicit + attributed."""
+
+    def test_missing_source_file_is_a_skipped_rung_not_a_crash(self):
+        import subprocess
+        got = subprocess.run(
+            [sys.executable, "-m", "harness.governor", "--preflight",
+             "--statusline-json", "/nonexistent/dump.json"],
+            capture_output=True, text=True, timeout=30)
+        self.assertEqual(got.returncode, 3)  # conservative, not a traceback
+        self.assertNotIn("Traceback", got.stderr)
+        self.assertIn("rung skipped", got.stderr)
+
+    def test_assumed_occupancy_requires_attribution_and_bounds(self):
+        with self.assertRaises(governor.GovernorError):
+            governor.assumed_occupancy(0.3, "")
+        for bad in (-0.1, 1.0, 1.5, True):
+            with self.assertRaises(governor.GovernorError):
+                governor.assumed_occupancy(bad, "dwijen")
+
+    def test_assumed_occupancy_is_attributed_and_optimistic(self):
+        occ = governor.assumed_occupancy(0.3, "dwijen")
+        self.assertEqual(occ.source, "operator-assumed:dwijen")
+        self.assertTrue(occ.optimistic)
+        decision = governor.decide(occ)
+        self.assertEqual(decision["status"], "ok")
+        self.assertTrue(decision["optimistic"])  # sticky-~ downstream
+
+    def test_cli_bootstrap_breaks_the_p2_4_deadlock(self):
+        import subprocess
+        # no sources at all + assumption → a usable, attributed decision
+        got = subprocess.run(
+            [sys.executable, "-m", "harness.governor",
+             "--assume-occupancy", "0.3", "--acked-by", "dwijen"],
+            capture_output=True, text=True, timeout=30)
+        self.assertEqual(got.returncode, 0, got.stderr)
+        self.assertIn("operator-assumed:dwijen", got.stdout)
+        # ...but only with attribution
+        refused = subprocess.run(
+            [sys.executable, "-m", "harness.governor",
+             "--assume-occupancy", "0.3"],
+            capture_output=True, text=True, timeout=30)
+        self.assertNotEqual(refused.returncode, 0)
+
+    def test_real_source_beats_the_assumption(self):
+        import subprocess
+        got = subprocess.run(
+            [sys.executable, "-m", "harness.governor",
+             "--statusline-json",
+             '{"rate_limits": {"five_hour": {"used_percentage": 90}}}',
+             "--assume-occupancy", "0.1", "--acked-by", "dwijen"],
+            capture_output=True, text=True, timeout=30)
+        self.assertIn('"statusline"', got.stdout)
+        self.assertIn("degrade", got.stdout)

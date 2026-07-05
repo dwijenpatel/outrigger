@@ -273,6 +273,13 @@ def check_vault_config(doc: dict, repo_root: str) -> dict:
         check("six_layers", False, f"missing/misconfigured layers: {missing}")
         return finish(True)
     check("six_layers", True, "all six layers declared")
+
+    if not os.path.isdir(real_vault):
+        check("vault_dir_exists", False,
+              f"{vault_path!r} does not exist — `python3 -m harness.vault "
+              f"configure` creates it (I4b, ported from the pilot session)")
+        return finish(True)
+    check("vault_dir_exists", True, "vault directory present")
     return finish(True)
 
 
@@ -288,6 +295,15 @@ def configure_vault(repo_root: str, vault_path: str,
         existing = load_vault_config(repo_root, path)
     except VaultError:
         existing = {}
+    if not isinstance(vault_path, str) or not os.path.isabs(vault_path):
+        raise VaultError(f"vault path must be absolute, got {vault_path!r}")
+    real_vault = os.path.realpath(vault_path)
+    real_repo = os.path.realpath(repo_root)
+    if real_vault == real_repo or \
+            os.path.commonpath([real_vault, real_repo]) == real_repo:
+        raise VaultError(f"vault path {vault_path!r} resolves inside the "
+                         f"repo (P1-7) — pick a sibling directory")
+    os.makedirs(vault_path, exist_ok=True)  # I4b: configure creates the vault
     doc = {
         "_meta": existing.get("_meta", {}),
         "structural_layers": existing.get("structural_layers", {}),

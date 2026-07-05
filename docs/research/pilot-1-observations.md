@@ -110,6 +110,29 @@ edit voids it), `plan_ready` fail-closed gate, and **build-loop step 0 now
 refuses to fire without it**. Sizing guidance included: phase 1 = small
 walking skeleton, later phases provisional — small must not mean vague.
 
+### P1-9 🔴 A tracked `.pyc` dirties every clone the moment Python runs
+
+Found reviewing pilot #2's planning session: `tools/budget-governor/
+__pycache__/populate_estimates.cpython-314.pyc` was **committed** in the
+parent repo, so `.gitignore`'s `__pycache__/` line never applied (ignores
+don't cover tracked files). Any import regenerates the bytecode → `git
+status` shows a modification → `require_clean` refuses gates, and every
+clone inherits the problem. Same family as P1-5: the tree the gate judges
+must contain zero files the machinery itself rewrites.
+**Fixed (parent repo):** `git rm --cached` + commit; 0 tracked pycache
+files remain. **Live pilot repo:** operator paste-line provided.
+
+### P2-1 ✅ (what worked) The plan-build interview performs as designed
+
+Pilot #2's planning session: ~20 single-question rounds with recommended
+answers, dependency-ordered (tenancy before auth), research delegated to
+agents instead of asked ("explore, don't ask" — FSM landscape scouted
+mid-interview), delegated "you decide" answers recorded as DECISION rows,
+a final sweep that surfaced three genuine spec-level pins (one-off jobs,
+crew visibility + immutable occurrence-date, delete semantics) and a tax
+question. PLAN.md carries a D1–D24 decisions log and a phased OUT list.
+The P1-8 fix held; the failure mode did not recur.
+
 ---
 
 ## Themes so far

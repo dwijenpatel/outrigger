@@ -59,6 +59,13 @@ facts were re-verified by direct fetch of the official pages.
   changelog.
 - [isolation-and-sandboxing.md](isolation-and-sandboxing.md) — the six-layer stack proving the
   implementer cannot read the vault (design open question #3).
+- [model-speed-effort-benchmark-2026-07/](model-speed-effort-benchmark-2026-07/README.md) —
+  `[measured]` local benchmark (2026-07-05, 73 timed `claude -p` runs) of Fable 5 / Opus 4.8 /
+  Sonnet 5 / Haiku 4.5: latency, throughput, token-spend variance, correctness, and relative
+  cost per solved coding task at xhigh effort; raw per-run JSONs and reproduction harness
+  included. Headline: correctness is saturated at prompt-scale coding; speed ranking inverts
+  between thinking-heavy (Fable fastest) and tool-loop (Sonnet/Haiku fastest) regimes; token
+  efficiency offsets most of the Fable/Opus per-token price premium.
 
 ## How this maps to the design doc
 
@@ -67,7 +74,7 @@ facts were re-verified by direct fetch of the official pages.
 | §2 objective function; §7 correctness floor | correctness-and-verification-evidence; landscape-and-novelty |
 | §5.1 budget governor; §6 wall-clock & parallelism | token-economics-and-scheduling; claude-code-and-max-plan-facts |
 | §5.2 cache discipline; §10 Max-window facts | claude-code-and-max-plan-facts |
-| §5.3 model/effort routing | token-economics-and-scheduling |
+| §5.3 model/effort routing | token-economics-and-scheduling; model-speed-effort-benchmark-2026-07 |
 | §5.5 re-validation reuse / vault | revalidation-reuse-and-leakage (economics); isolation-and-sandboxing (secrecy) |
 | §4 leverage map; §8 controller; whole-design novelty | landscape-and-novelty |
 | §4 skills/ToolSearch rows; §5.4 context hygiene; §6.1 turn accelerators | tool-surface-and-format-economics |

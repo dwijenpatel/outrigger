@@ -560,6 +560,11 @@ message behavior `[measured]` even allows deliberate window alignment to the ope
 
 - **Park-and-continue:** a blocked task parks; the loop continues other runnable work — a
   human answer is never on the critical path of unrelated tasks.
+- **Foreseeable questions surface at ratification, not mid-firing** *(2026-07-05 amendment,
+  I19)*: ratification is the one moment the operator is guaranteed present, so `plan_ready`
+  and the pre-ratification `preflight` simulate every statically-evaluable pre-spawn gate
+  (floors×touches, H9×existing-handoffs) and force adjudication then. Mid-firing operator
+  asks are reserved for what genuinely could not be known earlier.
 - **Batch ratifications** at phase close: machinery proposals, consequential plan revisions,
   and efficiency tunings queue and are ratified in one sitting; push notification on
   queue-append. Each queued item is a **decision card** (format in §7).

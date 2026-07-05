@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import glob as _glob
 import hashlib
 import json
 import os
@@ -34,10 +35,15 @@ import sys
 from . import closure as _closure
 from . import hooks as _hooks
 from . import ledger as _ledger
+from . import schemas as _schemas
 from . import vault as _vault
 
 RATIFICATION_NAME = "ratification.json"
 MIN_SPEC_CHARS = 200  # a scoped spec below this cannot pin interfaces + criteria
+
+#: I19/I21 convention: the card kind an operator's ambiguity adjudication
+#: carries (what pilot-3-v2's session wrote, adopted as the contract).
+H9_CARD_KIND = "H9-spec-ambiguity"
 
 
 class PlanningError(ValueError):
@@ -97,6 +103,138 @@ def ratify(plan_dir: str, approved_by: str) -> dict:
         fh.write("\n")
     os.replace(tmp, path)
     return doc
+
+
+def _resolved_ambiguity_card(blockers_dir: str, task_id: str) -> str | None:
+    """Path of a RESOLVED operator card adjudicating ``task_id``'s spec
+    ambiguities, or None. Matches by card ``kind`` (H9_CARD_KIND) or, for
+    cards written before the kind convention, an 'ambiguity' filename."""
+    if not os.path.isdir(blockers_dir):
+        return None
+    for name in sorted(os.listdir(blockers_dir)):
+        if not name.endswith(".json"):
+            continue
+        path = os.path.join(blockers_dir, name)
+        try:
+            card = json.loads(_read(path))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(card, dict) or card.get("task_id") != task_id:
+            continue
+        if card.get("kind") != H9_CARD_KIND and "ambiguity" not in name:
+            continue
+        res = card.get("resolved")
+        if isinstance(res, dict) and res.get("decision"):
+            return path
+    return None
+
+
+def gate_preflight(plan_dir: str, vault_config_path: str | None = None,
+                   repo_root: str = ".",
+                   blockers_dir: str | None = None) -> dict:
+    """I19 (P3-2, P3v2-1): simulate every statically-evaluable pre-spawn gate
+    at ratification/readiness time — while the operator is still in the room.
+    Both pilot-3 halts were foreseeable from artifacts that already existed
+    when the plan was (re-)ratified; each instead surfaced mid-firing, once
+    as a full halt and once as an 8h25m interactive stall.
+
+    Two halves, each active only where the plan/vault records enough to check
+    (old plans stay valid — absence skips, it never fails):
+
+    - **floors × touches**: a task recording ``touches`` (representative
+      concrete paths its spec pins) is checked with the same
+      ``check_risk_floor`` the merge gate runs; a collision is a plan defect,
+      fatal here instead of a mid-firing bounce.
+    - **H9 × existing handoffs**: a blocking-profile task with a carried-over
+      test-author handoff in the vault evidence store gets
+      ``ambiguity_blockers`` run now. Undischarged ambiguities WILL park it at
+      spawn — fatal unless a resolved operator card (state/blockers/) already
+      adjudicates them; adjudicated ones surface as non-fatal notes.
+
+    Returns {"ok", "findings": [{"task_id", "kind", "fatal", "detail"}]}.
+    """
+    ledger = load_tasks(plan_dir)
+    floors_path = os.path.join(plan_dir, "floors.json")
+    try:
+        floor_map = _hooks.validate_floor_map(
+            json.loads(_read(floors_path)).get("floors", []))
+    except FileNotFoundError:
+        raise PlanningError(f"no {floors_path} — preflight needs the plan's "
+                            f"floors") from None
+    except json.JSONDecodeError as exc:
+        raise PlanningError(f"{floors_path} corrupt: {exc}") from None
+
+    evidence_dir = None
+    if vault_config_path:
+        vdoc = _vault.load_vault_config(repo_root, vault_config_path)
+        if vdoc.get("vault_path"):
+            evidence_dir = _vault.heldout_evidence_dir(vdoc["vault_path"])
+    if blockers_dir is None:
+        blockers_dir = os.path.join(repo_root, "state", "blockers")
+
+    findings = []
+    for task_id in sorted(ledger.tasks):
+        task = ledger.tasks[task_id]
+
+        touches = task.get("touches")
+        if touches is not None:
+            if (not isinstance(touches, list) or not touches
+                    or not all(isinstance(t, str) and t for t in touches)):
+                findings.append({
+                    "task_id": task_id, "kind": "touches-invalid",
+                    "fatal": True,
+                    "detail": "touches must be a non-empty list of concrete "
+                              "paths the spec pins"})
+            else:
+                res = _hooks.check_risk_floor(task["profile"], touches,
+                                              floor_map)
+                if not res["ok"]:
+                    floored = [m["path"] for m in res["matched"]]
+                    findings.append({
+                        "task_id": task_id, "kind": "floor-collision",
+                        "fatal": True,
+                        "detail": f"{res['why']} (pinned paths: "
+                                  f"{floored[:4]}) — the gate WILL bounce "
+                                  f"this merge; re-profile or re-scope "
+                                  f"before ratifying"})
+
+        if evidence_dir and task["profile"] in \
+                _schemas.BLOCKING_AMBIGUITY_PROFILES:
+            pattern = os.path.join(evidence_dir, f"{task_id}.*handoff*.json")
+            for hpath in sorted(_glob.glob(pattern)):
+                base = os.path.basename(hpath)
+                try:
+                    blockers = _schemas.ambiguity_blockers(
+                        json.loads(_read(hpath)), task_id, task["profile"])
+                except (OSError, json.JSONDecodeError,
+                        _schemas.SchemaError) as exc:
+                    findings.append({
+                        "task_id": task_id, "kind": "handoff-invalid",
+                        "fatal": True, "detail": f"{base}: {exc}"})
+                    continue
+                if not blockers:
+                    continue
+                card = _resolved_ambiguity_card(blockers_dir, task_id)
+                if card:
+                    findings.append({
+                        "task_id": task_id, "kind": "h9-adjudicated",
+                        "fatal": False,
+                        "detail": f"{len(blockers)} ambiguity blocker(s) "
+                                  f"from {base} already adjudicated by "
+                                  f"resolved card "
+                                  f"{os.path.relpath(card, repo_root)}"})
+                else:
+                    findings.append({
+                        "task_id": task_id, "kind": "h9-will-park",
+                        "fatal": True,
+                        "detail": f"{len(blockers)} undischarged spec "
+                                  f"ambiguit{'y' if len(blockers) == 1 else 'ies'} "
+                                  f"in {base} WILL park {task_id} pre-spawn — "
+                                  f"adjudicate now (resolved card under "
+                                  f"{os.path.join('state', 'blockers')}) or "
+                                  f"re-author with corpus_covers"})
+
+    return {"ok": not any(f["fatal"] for f in findings), "findings": findings}
 
 
 def plan_ready(plan_dir: str, snapshot_path: str,
@@ -216,6 +354,24 @@ def plan_ready(plan_dir: str, snapshot_path: str,
             return finish()
         check("vault", True,
               f"vault at {vault_doc['vault_path']} configured + coherent")
+
+    # 7. gate preflight (I19) — what would bounce or park pre-spawn,
+    # surfaced while the operator is still in the room
+    try:
+        pf = gate_preflight(plan_dir, vault_config_path=vault_config_path,
+                            repo_root=repo_root)
+    except (PlanningError, _hooks.HookError, _vault.VaultError) as exc:
+        check("preflight", False, f"{exc} (fail-closed)")
+        return finish()
+    fatal = [f for f in pf["findings"] if f["fatal"]]
+    if fatal:
+        check("preflight", False, "; ".join(
+            f"{f['task_id']}: {f['detail']}" for f in fatal[:3]))
+        return finish()
+    notes = [f for f in pf["findings"] if not f["fatal"]]
+    check("preflight", True,
+          "; ".join(f"{f['task_id']}: {f['detail']}" for f in notes[:3])
+          if notes else "no pre-spawn bounce/park foreseen")
     return finish()
 
 
@@ -234,7 +390,37 @@ def _cli(argv=None) -> int:
                                           "(only after explicit approval)")
     rat_p.add_argument("--plan-dir", default="plan")
     rat_p.add_argument("--approved-by", required=True)
+    pf_p = sub.add_parser("preflight",
+                          help="I19: simulate statically-evaluable pre-spawn "
+                               "gates (floors×touches, H9×handoffs) — run "
+                               "before ratifying, and after any profile or "
+                               "floor change")
+    pf_p.add_argument("--plan-dir", default="plan")
+    pf_p.add_argument("--vault-config",
+                      help="also check carried-over handoffs in the vault "
+                           "evidence store")
+    pf_p.add_argument("--repo", default=".")
+    pf_p.add_argument("--blockers-dir",
+                      help="operator adjudication cards "
+                           "(default <repo>/state/blockers)")
     args = p.parse_args(argv)
+
+    if args.cmd == "preflight":
+        try:
+            pf = gate_preflight(args.plan_dir,
+                                vault_config_path=args.vault_config,
+                                repo_root=args.repo,
+                                blockers_dir=args.blockers_dir)
+        except (PlanningError, _ledger.LedgerError, _hooks.HookError,
+                _vault.VaultError) as exc:
+            print(f"preflight failed: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(pf, indent=2))
+        if not pf["ok"]:
+            print("preflight FATAL: the firing would bounce/park on the "
+                  "findings above — adjudicate or amend before ratifying",
+                  file=sys.stderr)
+        return 0 if pf["ok"] else 2
 
     if args.cmd == "ratify":
         try:

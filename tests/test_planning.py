@@ -67,8 +67,9 @@ class PlanReadyTests(PlanFixture):
         planning.ratify(self.plan, "dwijen")
         result = self.ready()
         self.assertTrue(result["ready"], result["why"])
-        self.assertIn("approved by dwijen",
-                      result["checks"][-1]["detail"])
+        rat = next(c for c in result["checks"]
+                   if c["check"] == "ratification")
+        self.assertIn("approved by dwijen", rat["detail"])
 
     def test_edit_after_ratification_voids_it(self):
         planning.ratify(self.plan, "dwijen")
@@ -205,7 +206,9 @@ class VaultReadinessTests(PlanFixture):
                                      vault_config_path=cfg,
                                      repo_root=self.dir.name)
         self.assertTrue(result["ready"], result["why"])
-        self.assertEqual(result["checks"][-1]["check"], "vault")
+        # I19: the gate preflight runs after (and only after) a coherent vault
+        self.assertEqual([c["check"] for c in result["checks"][-2:]],
+                         ["vault", "preflight"])
 
     def test_missing_vault_dir_blocks_readiness(self):
         import shutil
@@ -224,3 +227,145 @@ class VaultReadinessTests(PlanFixture):
         planning.ratify(self.plan, "dwijen")
         result = planning.plan_ready(self.plan, self.snapshot)
         self.assertTrue(result["ready"], result["why"])
+
+
+class PreflightTests(PlanFixture):
+    """I19 (P3-2, P3v2-1) — both pilot-3 halts were statically foreseeable at
+    (re-)ratification; the preflight makes the machine do that sweep."""
+
+    HANDOFF = {"outcome": "pass", "summary": "authored held-out tests",
+               "intent": "pin the contract", "key_changes_made": ["pins x"],
+               "key_learnings": []}
+
+    def set_touches(self, task_id, touches):
+        path = os.path.join(self.plan, "tasks.json")
+        with open(path) as fh:
+            doc = json.load(fh)
+        for t in doc["tasks"]:
+            if t["id"] == task_id:
+                t["touches"] = touches
+        with open(path, "w") as fh:
+            json.dump(doc, fh)
+
+    def vault_with_handoff(self, task_id, ambiguities):
+        vault = os.path.join(self.dir.name, "vault")
+        os.makedirs(os.path.join(vault, "evidence"), exist_ok=True)
+        cfg = os.path.join(self.dir.name, "vault-config.json")
+        with open(cfg, "w") as fh:
+            json.dump({"vault_path": vault}, fh)
+        handoff = dict(self.HANDOFF, spec_ambiguities=ambiguities)
+        name = f"{task_id}.test-author.handoff.json"
+        with open(os.path.join(vault, "evidence", name), "w") as fh:
+            json.dump(handoff, fh)
+        return cfg
+
+    def resolve_card(self, task_id):
+        blockers = os.path.join(self.dir.name, "state", "blockers")
+        os.makedirs(blockers, exist_ok=True)
+        card = {"task_id": task_id, "kind": planning.H9_CARD_KIND,
+                "repro": "10 ambiguities", "recommendation": "proceed",
+                "options": [{"key": "a", "label": "A"},
+                            {"key": "b", "label": "B"}],
+                "resolved": {"decision": "proceed-as-read", "by": "op",
+                             "at": "2026-07-05T20:40:45Z"}}
+        with open(os.path.join(blockers, f"{task_id}-ambiguity.json"),
+                  "w") as fh:
+            json.dump(card, fh)
+
+    # -- floors × touches -----------------------------------------------------
+
+    def test_no_touches_skips_silently(self):
+        pf = planning.gate_preflight(self.plan, repo_root=self.dir.name)
+        self.assertTrue(pf["ok"])
+        self.assertEqual(pf["findings"], [])
+
+    def test_touches_floor_collision_is_fatal(self):
+        # t2 is routine; the fixture floors pilot/**/auth/** at critical
+        self.set_touches("t2", ["pilot/app/auth/login.py"])
+        pf = planning.gate_preflight(self.plan, repo_root=self.dir.name)
+        self.assertFalse(pf["ok"])
+        f = pf["findings"][0]
+        self.assertEqual((f["task_id"], f["kind"], f["fatal"]),
+                         ("t2", "floor-collision", True))
+        self.assertIn("WILL bounce", f["detail"])
+
+    def test_touches_clear_of_floors_passes(self):
+        self.set_touches("t2", ["pilot/app/views.py"])
+        pf = planning.gate_preflight(self.plan, repo_root=self.dir.name)
+        self.assertTrue(pf["ok"], pf["findings"])
+
+    def test_malformed_touches_fatal(self):
+        self.set_touches("t2", "app.py")
+        pf = planning.gate_preflight(self.plan, repo_root=self.dir.name)
+        self.assertFalse(pf["ok"])
+        self.assertEqual(pf["findings"][0]["kind"], "touches-invalid")
+
+    def test_plan_ready_fails_on_collision(self):
+        self.set_touches("t2", ["pilot/app/auth/login.py"])
+        planning.ratify(self.plan, "dwijen")
+        result = planning.plan_ready(self.plan, self.snapshot,
+                                     repo_root=self.dir.name)
+        self.assertFalse(result["ready"])
+        self.assertIn("preflight", result["why"])
+
+    # -- H9 × existing handoffs -----------------------------------------------
+
+    def test_unadjudicated_ambiguities_fatal(self):
+        # t1 is critical (blocking); carried-over handoff has raw strings
+        cfg = self.vault_with_handoff("t1", ["Is deletion soft or hard?"])
+        pf = planning.gate_preflight(self.plan, vault_config_path=cfg,
+                                     repo_root=self.dir.name)
+        self.assertFalse(pf["ok"])
+        f = pf["findings"][0]
+        self.assertEqual((f["task_id"], f["kind"]), ("t1", "h9-will-park"))
+        self.assertIn("WILL park", f["detail"])
+
+    def test_resolved_card_adjudicates(self):
+        cfg = self.vault_with_handoff("t1", ["Is deletion soft or hard?"])
+        self.resolve_card("t1")
+        pf = planning.gate_preflight(self.plan, vault_config_path=cfg,
+                                     repo_root=self.dir.name)
+        self.assertTrue(pf["ok"], pf["findings"])
+        self.assertEqual(pf["findings"][0]["kind"], "h9-adjudicated")
+
+    def test_dual_covered_handoff_no_finding(self):
+        # I20 discharge: corpus absorbs both readings -> nothing to adjudicate
+        cfg = self.vault_with_handoff(
+            "t1", [{"text": "Soft or hard?", "corpus_covers": "both"}])
+        pf = planning.gate_preflight(self.plan, vault_config_path=cfg,
+                                     repo_root=self.dir.name)
+        self.assertTrue(pf["ok"])
+        self.assertEqual(pf["findings"], [])
+
+    def test_non_blocking_profile_handoff_ignored(self):
+        cfg = self.vault_with_handoff("t2", ["Soft or hard?"])  # t2 routine
+        pf = planning.gate_preflight(self.plan, vault_config_path=cfg,
+                                     repo_root=self.dir.name)
+        self.assertTrue(pf["ok"])
+        self.assertEqual(pf["findings"], [])
+
+    def test_corrupt_handoff_fatal(self):
+        cfg = self.vault_with_handoff("t1", [])
+        evidence = os.path.join(self.dir.name, "vault", "evidence")
+        with open(os.path.join(evidence, "t1.retry.handoff.json"), "w") as fh:
+            fh.write("not json")
+        pf = planning.gate_preflight(self.plan, vault_config_path=cfg,
+                                     repo_root=self.dir.name)
+        self.assertFalse(pf["ok"])
+        self.assertEqual(pf["findings"][0]["kind"], "handoff-invalid")
+
+    # -- CLI --------------------------------------------------------------------
+
+    def test_cli_exit_codes(self):
+        clean = subprocess.run(
+            [sys.executable, "-m", "harness.planning", "preflight",
+             "--plan-dir", self.plan, "--repo", self.dir.name],
+            capture_output=True, text=True, timeout=30, cwd=REPO_ROOT)
+        self.assertEqual(clean.returncode, 0, clean.stderr)
+        self.set_touches("t2", ["pilot/app/auth/login.py"])
+        fatal = subprocess.run(
+            [sys.executable, "-m", "harness.planning", "preflight",
+             "--plan-dir", self.plan, "--repo", self.dir.name],
+            capture_output=True, text=True, timeout=30, cwd=REPO_ROOT)
+        self.assertEqual(fatal.returncode, 2)
+        self.assertIn("preflight FATAL", fatal.stderr)

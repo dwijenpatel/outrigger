@@ -173,6 +173,14 @@ session. Skill step 3b now routes by environment: terminal → statusline
 shim; desktop → the refresher; one-shot fetch; acked assumption last.
 The statusline machinery stays — it is the right rung for CLI workflows.
 
+### P2-9 🔴 (caught at the pause boundary) Worker worktree homes dirty the judged tree
+
+The paused GL1 implementer's worktree lives at `.claude/worktrees/` —
+untracked, not gitignored: the next gate's `require_clean` would have
+refused every merge (P1-5's exact family, fourth instance). The dir must
+survive (durable-lease semantics — the parked worker's home) but never
+count as tree dirt. **Fixed:** `.claude/worktrees/` gitignored.
+
 ## Themes so far
 
 1. **Composition defects keep outrunning hermetic tests** (P2-4 joins

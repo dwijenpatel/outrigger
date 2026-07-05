@@ -1,0 +1,11 @@
+{
+  "verdict": "PASS",
+  "lens": "correctness",
+  "summary": "GL1-scaffold correctly and completely implements the spec: factory, env-driven config, per-app engine isolation (criterion 3), real get_db generator closing in finally, health route, asset rules, pinned toolchain.",
+  "findings": [],
+  "task_id": "GL1-scaffold",
+  "profile": "routine",
+  "commit": "95a34ed",
+  "validator_model": "claude-haiku-4-5-20251001",
+  "firing": "firing-20260705-013824-dwijen"
+}

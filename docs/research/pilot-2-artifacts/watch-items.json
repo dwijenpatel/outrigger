@@ -1,0 +1,23 @@
+{
+  "firing_id": "firing-20260705-013824-dwijen",
+  "registered_at": "2026-07-05T08:38:24Z",
+  "acked_by": "dwijen",
+  "supersedes": "firing-20260705-wallclock-c3",
+  "operator_flip": {
+    "objective": "optimize wall-clock",
+    "concurrency_cap": 3,
+    "admission_rule": "§6.2 — occupancy below degrade incl. P95-forecast added burn + cold-prefix warmup per pipeline; hard deps and mayBeInvalidatedBy clear; one implementer per isolated worktree; never force a slot",
+    "panels": "full profile breadth, batched-parallel",
+    "pipelining": true,
+    "rework_attribution": "attribute rework/merge-conflict cost to concurrency in run-log",
+    "i12": "implementers start one tier below panel (config-resolved); escalate per ladder on durable FAILs; per-model outcomes in run-log; ~40% implementer-FAIL rate trips profile start tier back up + ledger note",
+    "live_rung": "statusline dump present this session — concurrency-3 flip genuinely active (prior firing ran conservative-serial on assumed 0.3)"
+  },
+  "watch_items": [
+    "stale-generation errors on the event log",
+    "write-ahead ordering under interleaving",
+    "gate-stamp vs HEAD races at sequential merges of parallel branches",
+    "admission warmup math",
+    "worktree conflicts"
+  ]
+}

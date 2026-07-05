@@ -264,6 +264,32 @@ declined to force the operator's cap-3 against it; credential posture held
   waives tail-capping when the projection clears pause (degrade/pause still
   bind; anything unknown stays conservative).
 
+## Pilot #2 closed (2026-07-05) — terminated by design, purpose served
+
+Operator decision after the I14–I18 batch: finishing would not produce a
+clean I12 arm — GL1 ran on pre-I14 machinery, everything after the sync
+would run post-I18, so the run was already confounded mid-flight. Its real
+output was the defect harvest (16 ledger entries, 9 now machinery fixes)
+plus the first real telemetry (archived in
+[pilot-2-artifacts/](pilot-2-artifacts/): run-log with the per-attempt
+escalation ladder, governor decisions, event log, watch items, GL1
+verdict). Only sunk cost: re-running GL1.
+
+**Pilot protocol going forward (operator, 2026-07-05): the design plan is
+held byte-identical across pilots** — the greenlane plan (ratification
+`03a4877bbfa52f91`) is the fixed instrument; machinery is the arm variable.
+- **Pilot #3** = same untagged plan on I14–I18 machinery (regime layer
+  dormant by construction: no tags = I12 routing) — isolates the machinery
+  batch vs pilot #2's baseline.
+- **Pilot #4** = same plan + ONLY regime tags in tasks.json — isolates
+  I18 regime routing as a single lever.
+- **The vault carries across pilots** (same held-out oracle = comparable
+  gate strictness; additive growth legal; replays metered).
+- **Pre-registered expected event:** GL10-seed (routine) touching floored
+  `routes/**` should bounce at the gate under I16 floors-always in both
+  #3 and #4 — the P2-13 tension measured, exercising the ratified
+  re-profile flow.
+
 ## Themes so far
 
 1. **Composition defects keep outrunning hermetic tests** (P2-4 joins

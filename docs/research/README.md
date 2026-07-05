@@ -48,6 +48,10 @@ facts were re-verified by direct fetch of the official pages.
 - [harness-evaluation-prior-art.md](harness-evaluation-prior-art.md) — measuring the
   machinery itself: skill-routing reliability, process-ceremony cost/benefit (paired-arm
   methodology), validator/judge format patterns; with independent confirmation.
+- [task-horizon-prediction.md](task-horizon-prediction.md) — can task length be predicted
+  well enough to route models? METR horizons, effort-estimation literature, the 2026
+  difficulty-router papers (single-source, unverified), and the bucket/asymmetric-loss
+  version the harness adopts.
 - [pilot-1-observations.md](pilot-1-observations.md) — live triage ledger of the first real
   firing's failures and friction (started 2026-07-04); the empirical feed for the
   pilot-#2 amendments.
@@ -74,7 +78,7 @@ facts were re-verified by direct fetch of the official pages.
 | §2 objective function; §7 correctness floor | correctness-and-verification-evidence; landscape-and-novelty |
 | §5.1 budget governor; §6 wall-clock & parallelism | token-economics-and-scheduling; claude-code-and-max-plan-facts |
 | §5.2 cache discipline; §10 Max-window facts | claude-code-and-max-plan-facts |
-| §5.3 model/effort routing | token-economics-and-scheduling; model-speed-effort-benchmark-2026-07 |
+| §5.3 model/effort routing | token-economics-and-scheduling (incl. §2b local supersessions); model-speed-effort-benchmark-2026-07; task-horizon-prediction |
 | §5.5 re-validation reuse / vault | revalidation-reuse-and-leakage (economics); isolation-and-sandboxing (secrecy) |
 | §4 leverage map; §8 controller; whole-design novelty | landscape-and-novelty |
 | §4 skills/ToolSearch rows; §5.4 context hygiene; §6.1 turn accelerators | tool-surface-and-format-economics |
@@ -113,6 +117,17 @@ Corrections produced by the fact-check passes, kept so future readers don't re-i
   throw. See `tools/budget-governor/probe-spawn-portability-2026-07-04.md` for the full
   methodology and re-verification protocol; the harness's spawn code must validate `(model,
   effort)` itself rather than trusting the primitive to reject bad config.
+
+- **Superseded 2026-07-05 (local benchmark, adaptive-thinking lineup only):** the §5.3
+  effort guidance "always-high overthinks trivial inputs (+1,953%)" no longer binds on
+  Fable 5 / Opus 4.8 / Sonnet 5 — adaptive thinking self-adjusts at fixed `xhigh` (easy
+  tasks cost the same at every effort). "Always-low drops success" still holds. Uniform
+  `xhigh` is the new default; `max` is the escalation rung. Haiku 4.5 has no effort
+  control at all (API rejects; CLI silently ignores).
+- **Refined 2026-07-05:** I12's "smaller models are faster" wall-clock rationale holds
+  only in the tool-loop regime; on thinking-heavy tasks the ranking inverts (Fable
+  fastest, Haiku slowest) and Opus costs ≈Sonnet per solved task. Routing is
+  regime-aware from I18 onward.
 
 **Absence-of-feature findings** (strong, but inherently harder to prove than a positive): Kiro
 closure gate; Spec Kit automated final gate; LangGraph built-in critic; any published

@@ -309,7 +309,20 @@ wasted cheap attempt `[measured]`).
      wasted attempt + re-run costs more than starting one tier up; the controller trips the
      start tier back up when telemetry crosses it. (This threshold is exactly the >40%-failure
      regime where published work says upfront routing should replace the cascade `[measured]`.)
-- **Effort axis.** Profiles carry `effort` alongside `model`. The Workflow-based spawn path
+- **Effort axis** *(rewritten 2026-07-05 — local benchmark,
+  [token-economics-and-scheduling.md §2b](../research/token-economics-and-scheduling.md)):*
+  on the adaptive-thinking lineup (Fable 5 / Opus 4.8 / Sonnet 5) effort is a
+  thinking-budget *ceiling* the model spends only when the task warrants —
+  measured locally, easy tasks cost the same at every effort. So the harness
+  default is **uniform `xhigh`** (Claude Code's own documented default for
+  coding/agentic work): the overthinking risk that motivated per-profile
+  effort routing is superseded on this lineup, while "always-low drops
+  success" still holds (Sonnet 5 measured wrong at low/medium where
+  Opus/Fable at low were right — effort-down is not a safe economy).
+  `max` is reserved as the escalation rung (deliberation at diminishing
+  returns); Haiku 4.5 has no effort control at all. The paragraph below
+  documents the superseded per-profile-effort regime for models without
+  adaptive thinking. Profiles carry `effort` alongside `model`. The Workflow-based spawn path
   threads per-agent `model` *and* `effort` (re-verified by direct probe on Claude Code 2.1.45,
   2026-07-04: all five effort levels dispatch; both tested model overrides are honored — see
   [tools/budget-governor/probe-spawn-portability-2026-07-04.md](../../tools/budget-governor/probe-spawn-portability-2026-07-04.md)),
@@ -335,6 +348,20 @@ wasted cheap attempt `[measured]`).
 - **Routing floor for grunt work:** mechanical fan-out (file moves, renames, log filtering,
   status sweeps) always runs cheap-tier subagents — deliberate routing cuts cost substantially
   (the published band above; the gate catches any miss).
+- **Regime-aware tier routing** *(added 2026-07-05 — local benchmark + pilot-2 P2-16)*:
+  per-token speed is not task speed. Measured on the 2026 lineup, the wall-clock ranking
+  **inverts by regime** — thinking-dominated work: Fable fastest (3–5× fewer tokens to a
+  correct answer), Haiku slowest despite 255 tok/s; tool-loop chores: Sonnet/Haiku fastest
+  (TTFT + per-turn overhead dominate). Cost per *solved* thinking-heavy task: Opus ≈ Sonnet,
+  Fable ≈ 1.6–1.8× Sonnet — the price ladder is not the cost ladder where thinking dominates.
+  So implementer tier-down (the I12 experiment) is conditioned on the task's **regime**
+  (`chore | thinking | long_horizon`), assigned by the planner at plan time (the zero-ML v1
+  of the §5.3 duration-bucket predictor — buckets with **asymmetric loss**: the only
+  expensive error is routing long/thinking work down, so when unsure, route up; validated
+  against run-log telemetry at the same Stage-1 gate before any learned predictor replaces
+  the tags; [task-horizon-prediction.md](../research/task-horizon-prediction.md)). Chores
+  route down freely; thinking-regime tasks never start below `standard`; long-horizon tasks
+  keep their profile's base tier.
 - **Weekly-pool awareness:** with the model-specific weekly cap now on **Sonnet** rather than
   Opus `[official]`, "route grunt work down-tier" is no longer automatically
   weekly-budget-safer. The controller tracks which pool each tier drains and re-checks the

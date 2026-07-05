@@ -157,6 +157,7 @@ precision-aware**. All gates fail closed; interlocks are inert outside a live fi
 | I15 | **Validated worker lifecycle events** — task_spawn/aborted/parked + `worker_event()` builder; `attempt` validated | P2-12 | I10 | done |
 | I16 | **Floors + held-out required on every profile**; plan-build floors↔profiles reconciliation rule | P2-13 | H3, I14 | done |
 | I17 | **Reset-time awareness** — resets_in_s in decisions, weekly-anchor operator fallback, ceiling-free burn rate, reset-headroom tail waiver | operator ask (P2-3 family) | H8 | done |
+| I18 | **Regime-aware routing + xhigh default** (local benchmark + horizon research): uniform `xhigh` effort on adaptive-thinking models (`max` = escalation rung; supersedes per-profile effort routing for this lineup); planner-assigned task `regime` (chore \| thinking \| long_horizon, ledger-validated) conditions the implementer tier — chore→cheap, thinking→never below standard, long_horizon→profile base; asymmetric loss (unsure → heavier regime); refines I12 | benchmark 2026-07, task-horizon-prediction.md | I12 | done |
 | I5 | **Firing smoke test** — scripted walk of the skill's step sequence in a scratch clone via the mock worker; asserts clean tree + green gate end-to-end (hermetic suites missed P1-5/P1-7-class composition defects) | P1 theme 1 | A6 | not-started |
 
 ## Stage-gate flips (operational, evidence-gated — design §11)

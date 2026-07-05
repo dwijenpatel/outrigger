@@ -69,9 +69,15 @@
       "xhigh": null
     }
   },
+  "regime_implementer_tiers": {
+    "_meta": "I18: regime overrides the profile's implementer_tier. chore -> tool-loop work, cheap wins wall-clock AND cost; thinking -> never below standard (measured: haiku slowest + failure-prone there); long_horizon -> profile base tier, no downgrade. Absent regime = profile implementer_tier (I12 behavior).",
+    "chore": "cheap",
+    "long_horizon": null,
+    "thinking": "standard"
+  },
   "risk_profiles": {
     "critical": {
-      "effort": "high",
+      "effort": "xhigh",
       "implementer_tier": "capable",
       "lenses": [
         "correctness",
@@ -83,7 +89,7 @@
       "validator_count": 4
     },
     "elevated": {
-      "effort": "medium",
+      "effort": "xhigh",
       "implementer_tier": "cheap",
       "lenses": [
         "correctness",
@@ -93,7 +99,7 @@
       "validator_count": 2
     },
     "high": {
-      "effort": "high",
+      "effort": "xhigh",
       "implementer_tier": "standard",
       "lenses": [
         "correctness",
@@ -104,7 +110,7 @@
       "validator_count": 3
     },
     "routine": {
-      "effort": "low",
+      "effort": "xhigh",
       "lenses": [
         "correctness"
       ],

@@ -117,6 +117,16 @@ def require_result(result, context: str = "spawn"):
     return result
 
 
+def load_regime_tiers(path: str | None = None) -> dict:
+    """I18: regime -> implementer-tier rule from the estimates config.
+    Strings are tier names; None (long_horizon) means 'profile base, no
+    downgrade'. The _meta key is documentation, stripped here."""
+    with open(path or DEFAULT_ESTIMATES_PATH) as fh:
+        doc = json.load(fh)
+    table = doc.get("regime_implementer_tiers") or {}
+    return {k: v for k, v in table.items() if k != "_meta"}
+
+
 def load_risk_profiles(path: str | None = None) -> dict:
     with open(path or DEFAULT_ESTIMATES_PATH) as fh:
         doc = json.load(fh)
@@ -126,8 +136,10 @@ def load_risk_profiles(path: str | None = None) -> dict:
     return profiles
 
 
-def profile_spawn_params(profile: str, tiers_doc: dict | None = None,
-                         profiles: dict | None = None) -> dict:
+def profile_spawn_params(profile: str, regime: str | None = None,
+                         tiers_doc: dict | None = None,
+                         profiles: dict | None = None,
+                         regime_tiers: dict | None = None) -> dict:
     """Fully-validated spawn parameters for a risk profile.
 
     Returns {"model", "effort", "tier", "validator_count", "lenses"} with the
@@ -158,6 +170,30 @@ def profile_spawn_params(profile: str, tiers_doc: dict | None = None,
     # validators always use the base params: their weakness fails SILENTLY,
     # so downgrades there need canary proof (D4/H6), never a config edit.
     impl_tier = entry.get("implementer_tier")
+
+    # I18: the task's regime (planner-assigned, ledger-validated) conditions
+    # the implementer tier — per-token speed is not task speed:
+    #   chore        -> tool-loop work; cheap wins wall-clock AND cost
+    #   thinking     -> never below standard (measured: haiku slowest and
+    #                   failure-prone exactly there)
+    #   long_horizon -> the profile's base tier, no downgrade at all
+    if regime is not None:
+        from . import ledger as _ledger
+        if regime not in _ledger.REGIMES:
+            raise SpawnValidationError(
+                f"unknown regime {regime!r}; known: {_ledger.REGIMES}")
+        rules = (regime_tiers if regime_tiers is not None
+                 else load_regime_tiers())
+        rule = rules.get(regime)
+        if regime == "long_horizon" or rule is None:
+            impl_tier = resolved["tier"]          # base, no downgrade
+        elif regime == "thinking":
+            floor_idx = TIER_NAMES.index(rule)
+            have = impl_tier or resolved["tier"]
+            impl_tier = TIER_NAMES[max(TIER_NAMES.index(have), floor_idx)]
+        else:                                      # chore
+            impl_tier = rule
+
     if impl_tier is not None:
         resolved["implementer"] = validate_spawn(
             tier=impl_tier, effort=entry.get("implementer_effort",
@@ -167,4 +203,5 @@ def profile_spawn_params(profile: str, tiers_doc: dict | None = None,
         resolved["implementer"] = {"model": resolved["model"],
                                    "effort": resolved["effort"],
                                    "tier": resolved["tier"]}
+    resolved["regime"] = regime
     return resolved

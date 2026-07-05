@@ -55,6 +55,9 @@ TRANSITIONS = {
 EVENT_KINDS = ("status", "marker_set", "marker_clear")
 
 
+REGIMES = ("chore", "thinking", "long_horizon")  # I18
+
+
 class LedgerError(ValueError):
     pass
 
@@ -93,6 +96,13 @@ def validate_tasks(doc: dict) -> dict:
         if entry.get("profile") not in PROFILES:
             raise LedgerError(
                 f"task {task_id!r}: profile {entry.get('profile')!r} not in {PROFILES}")
+        if "regime" in entry and entry["regime"] not in REGIMES:
+            # I18: planner-assigned wall-clock regime (zero-ML v1 of the
+            # SS5.3 duration-bucket predictor); optional - absent means
+            # profile-default routing
+            raise LedgerError(
+                f"task {task_id!r}: regime {entry.get('regime')!r} not in "
+                f"{REGIMES}")
         tasks[task_id] = dict(entry)
         tasks[task_id]["deps"] = _require_str_list(entry, "deps", task_id)
         tasks[task_id]["may_be_invalidated_by"] = _require_str_list(

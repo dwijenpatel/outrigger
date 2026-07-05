@@ -84,6 +84,37 @@ Confidence: `[measured]` `[folklore]` `[E]`/`[I]`. Consolidated corrections and 
   design's fresh-spawn-per-escalation path, where it is automatic. `[I]` Practical rule: prefer
   effort bumps before tier bumps, and always escalate at a worker respawn boundary.
 
+## 2b. Local supersessions — the 2026 adaptive-thinking lineup (added 2026-07-05)
+
+The [local benchmark](model-speed-effort-benchmark-2026-07/README.md)
+(`[measured, local, n=3/cell]` — 73 timed `claude -p` runs on Fable 5 /
+Opus 4.8 / Sonnet 5 / Haiku 4.5) changes three §2/§1-adjacent conclusions
+**for this lineup specifically**:
+
+- **"Always-high overthinks trivial inputs (+1,953%)" is superseded on
+  adaptive-thinking models.** That figure (arXiv 2412.21187) predates
+  adaptive thinking; measured now, easy tasks cost the same 3–10s at every
+  effort — the dial self-adjusts, so **uniform `xhigh` is safe** (and is
+  Claude Code's documented default for coding/agentic work). "Always-low
+  drops success" **still holds** (Sonnet 5 wrong at low/medium on the hard
+  reasoning task while Opus/Fable at low were right) — the asymmetry now
+  points one way: don't route effort down; `max` buys deliberation time at
+  diminishing returns and is best kept as an escalation rung.
+- **Per-token speed ≠ task speed — the ranking inverts by regime.** On
+  thinking-dominated coding, Fable is the *fastest model wall-clock*
+  (Opus-class tok/s × 3–5× fewer tokens to a correct answer) and Haiku the
+  slowest despite ~255 tok/s (it brute-forces reasoning as visible text).
+  On tool-loop chores, Sonnet/Haiku win (~36s vs ~51s; TTFT + per-turn
+  overhead dominate). Routing for wall-clock must be **regime-aware**, not
+  "smaller = faster."
+- **Token efficiency largely offsets the price ladder at the top.** Cost
+  per solved thinking-heavy task: Opus ≈ Sonnet (5× price ÷ ~2.5× fewer
+  tokens), Fable ≈ 1.6–1.8× Sonnet (not 10×). On no-thinking chores the
+  ladder passes through (Haiku ~3.5× cheaper than Sonnet). Correctness was
+  **saturated at prompt scale** (36/36) — separation lives at horizon
+  scale, which is what makes horizon/regime the routing axis
+  ([task-horizon-prediction.md](task-horizon-prediction.md)).
+
 ## 3. Burn forecasting — a hard published ceiling (verified 3-0)
 
 `[measured; arXiv 2604.22750 "How Do AI Agents Spend Your Money?" — 8 frontier models incl.

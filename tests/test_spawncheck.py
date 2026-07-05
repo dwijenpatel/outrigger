@@ -174,3 +174,58 @@ class ImplementerTierSplitTests(unittest.TestCase):
         high = spawncheck.profile_spawn_params("high")
         self.assertEqual(high["implementer"]["tier"], "standard")
         self.assertNotEqual(high["implementer"]["tier"], "cheap")  # guardrail
+
+
+class RegimeRoutingTests(unittest.TestCase):
+    """I18 — the task's regime conditions the implementer tier; asymmetric
+    loss (when unsure, route up) is structural."""
+
+    RULES = {"chore": "cheap", "thinking": "standard", "long_horizon": None}
+
+    def params(self, profile, regime):
+        return spawncheck.profile_spawn_params(profile, regime=regime,
+                                               regime_tiers=self.RULES)
+
+    def test_chore_routes_down_freely(self):
+        got = self.params("elevated", "chore")
+        self.assertEqual(got["implementer"]["tier"], "cheap")
+        self.assertEqual(got["tier"], "standard")  # panel untouched
+
+    def test_thinking_never_below_standard(self):
+        self.assertEqual(self.params("routine", "thinking")
+                         ["implementer"]["tier"], "standard")
+        self.assertEqual(self.params("elevated", "thinking")
+                         ["implementer"]["tier"], "standard")
+        # profiles already above the floor keep their (I12) implementer tier
+        self.assertEqual(self.params("critical", "thinking")
+                         ["implementer"]["tier"], "capable")
+
+    def test_long_horizon_keeps_profile_base(self):
+        got = self.params("critical", "long_horizon")
+        self.assertEqual(got["implementer"]["tier"], "max")
+        self.assertEqual(self.params("high", "long_horizon")
+                         ["implementer"]["tier"], "capable")
+
+    def test_absent_regime_preserves_i12_behavior(self):
+        got = spawncheck.profile_spawn_params("elevated", regime=None)
+        self.assertEqual(got["implementer"]["tier"], "cheap")
+        self.assertIsNone(got["regime"])
+
+    def test_unknown_regime_is_loud(self):
+        with self.assertRaises(spawncheck.SpawnValidationError):
+            self.params("routine", "weekend_project")
+
+    def test_committed_config_is_xhigh_everywhere(self):
+        for profile in ("routine", "elevated", "high", "critical"):
+            got = spawncheck.profile_spawn_params(profile)
+            self.assertEqual(got["effort"], "xhigh")
+            self.assertEqual(got["implementer"]["effort"], "xhigh")
+
+    def test_ledger_validates_regime_field(self):
+        from harness import ledger as lm
+        doc = {"tasks": [{"id": "t1", "phase": "p", "profile": "routine",
+                          "deps": [], "regime": "thinking"}]}
+        self.assertEqual(lm.validate_tasks(doc)["t1"]["regime"], "thinking")
+        doc["tasks"][0]["regime"] = "epic"
+        with self.assertRaises(lm.LedgerError):
+            lm.validate_tasks(doc)

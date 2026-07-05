@@ -382,3 +382,18 @@ schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
   path has no effort rung), **I25** (firing-scoped `fraction_rate`). Session findings
   P3v2-3..8 folded upstream. 545 tests. **test1 synced at the pause boundary** (arm change
   recorded in the ledger); next: overnight resume from GL2 with the unattended-mode kickoff.
+- **2026-07-05 (evening: I5 + I26 — the overnight arm):** Operator allotted ~10h before the
+  overnight run; landed the spawn-path rework the effort finding pointed at. **I26**:
+  headless one-shot workers (`loop.headless_worker_cmd` / `write_worker_overlay` /
+  `parse_worker_result` + death patterns) become the loop's spawn path — per-spawn concrete
+  `--model` AND measured-applied `--effort`, `--json-schema`-forced role contracts, and
+  per-worktree `worker_settings` binding (§7 layer 6 realized; Agent-tool spawns demote to
+  recorded fallback); ladder regains the effort rung (attempt 2 = same tier @ `max` +
+  sharpened feedback). **I5**: `harness.smoketest` — 17-step zero-quota walk of the firing
+  sequence in a scratch clone (~2s), wired into firing step 2; caught two path-resolution
+  traps on its first run. **Live probe (2.1.201, 3 spawns):** overlay deny rules bind
+  headless (`CANNOT-READ`); effort applied 109→5,947 output tokens low→max; correctness
+  inverted (low wrong, max right) — the benchmark's "effort-down unsafe" finding replicated
+  on our own worker path. 552 tests; selftest 30/30; smoke green in parent AND in test1
+  post-sync (plan-ready 7/7). Next: attended GL2-only short pilot on the new arm, then the
+  overnight run on the fresh weekly window.

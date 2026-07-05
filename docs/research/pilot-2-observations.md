@@ -153,6 +153,26 @@ argument; the session had to read the source to build the call (P1-6's
 turn-economy lesson again, one function at a time). Fixed: the skill now
 carries the exact one-liner.
 
+### P2-8 🔴 The statusline rung can never fire in this operator's environment — sessions run in the desktop app
+
+Third firing's bootstrap stalled on a missing statusline dump despite I9/I9b.
+Full diagnostic chain: the registered command was proven correct by hand
+(dump written, line printed); official docs confirmed project-scope
+`statusLine` IS supported and settings hot-reload; `disableAllHooks` unset;
+then the one observable only the operator could supply settled it — **the
+sessions run in the Claude Code desktop app, which has no statusline
+surface at all** (it is a terminal-TUI feature). I9/I9b were correct
+machinery aimed at a surface that does not exist in this deployment's
+workflow. Registration checks, hand-execution, even doc verification — none
+of them test "does the environment actually invoke this?"
+**Fixed (I13):** `tools/oauth_usage_refresh.sh` — an operator-started loop
+(interval 300s, half the staleness ceiling) that keeps the OAuth rung
+continuously fresh; token read once (macOS Keychain, OS prompt = the ack),
+lives only in the operator's terminal process, never in files or the firing
+session. Skill step 3b now routes by environment: terminal → statusline
+shim; desktop → the refresher; one-shot fetch; acked assumption last.
+The statusline machinery stays — it is the right rung for CLI workflows.
+
 ## Themes so far
 
 1. **Composition defects keep outrunning hermetic tests** (P2-4 joins

@@ -181,6 +181,64 @@ refused every merge (P1-5's exact family, fourth instance). The dir must
 survive (durable-lease semantics — the parked worker's home) but never
 count as tree dirt. **Fixed:** `.claude/worktrees/` gitignored.
 
+### P2-10 🔴 The gate never runs the held-out corpus — the core O0 step is orchestrator prose
+
+Surfaced at GL1's first gate approach: `run_gate` executes `test_cmd` on the
+clean checkout and checks the manifest for *drops*, but **nothing
+materializes the vault's held-out tests into the checkout** — there is no
+`vault.materialize()`, and held-out execution exists only as "the
+orchestrator supplies a test_cmd that wires it." The session had to invent
+the wiring (copy corpus into a clean copy, pytest --tb=line, read pass/fail
+names only). It did this *well* — but the single most load-bearing O0
+mechanism is currently improvised per-task, per-session, with leakage
+control resting on the orchestrator's manners, outside the gate's H7
+scrubbing/evidence routing. **Fix (I14, post-firing):** vault.materialize +
+a gate-native held-out step (corpus into checkout, output vault-side,
+scrubbed tail in-repo).
+
+### P2-11 🟡 Orchestrator ground-truth replays are uncounted adaptive reuse
+
+Three held-out corpus runs against three fix attempts = classic adaptive
+reuse (Ladder/Thresholdout territory), plus rework guidance derived from
+failure output — bounded carefully this time (--tb=line, spec-anchored
+guidance, no assertions leaked), but the D3 leakage budget counts none of
+it (it ships disabled and only meters gate-side replays). Post-firing:
+orchestrator-side replays must consume the same budget.
+
+### P2-12 🟡 The write-ahead "spawn event" should be a schema, not an improvisation
+
+The prior firing left a malformed task_complete (missing total_tokens —
+written around the validated append). This session solved it correctly:
+an open-schema spawn event at spawn time, full record with real tokens on
+return. Mechanize as a validated `task_spawn` event type (I15) so routing
+choices survive mid-task death by contract, not by orchestrator invention.
+
+### P2-13 🔴 (design tension, needs a decision before pilot #3) Routine's step-manifest silently disables the mis-tag floor defense
+
+GL1 (routine) creates `app/models.py` (floored high) and `app/routes/**`
+(elevated) as scaffold stubs. The H3 default manifest omits `risk_floor`
+for routine — so the gate never floor-checks exactly the profile where
+mis-tagging is most likely, and C3's "the diff decides, not the tag"
+defense is quietly off for cheap tasks. The deeper tension: scaffold tasks
+legitimately *create* floored paths as stubs; had floors run, GL1 would
+block and demand a high-profile panel for a skeleton. Candidate fix (I16):
+require risk_floor in ALL profiles' manifests (it is nearly free), and
+teach plan-build to reconcile at planning time — either profile
+path-creating tasks at their floor, or write floors that exclude the
+scaffold phase explicitly (ratified either way). For THIS firing, gating
+GL1 under the committed manifest is consistent with the ratified config.
+
+### P2-14 ✅ (what worked) Tick 1 exercised the whole floor, and it held
+
+Statusline rung live end-to-end (preflight normal, 1.5s-old reading);
+blocker-card resume into the parked worktree; write-ahead ordering and
+generation stamps clean (7→10, no stale-gen); I12 ladder textbook —
+haiku FAIL ×2 (effort rung between) → sonnet PASS 42/42, all three
+self-reported "pass" claims falsified by ground truth BEFORE panel/gate
+spend; window-phase tail correctly capped slots to 1 and the orchestrator
+declined to force the operator's cap-3 against it; credential posture held
+(checked env, never touched the Keychain).
+
 ## Themes so far
 
 1. **Composition defects keep outrunning hermetic tests** (P2-4 joins

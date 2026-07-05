@@ -158,7 +158,10 @@ precision-aware**. All gates fail closed; interlocks are inert outside a live fi
 | I16 | **Floors + held-out required on every profile**; plan-build floors↔profiles reconciliation rule | P2-13 | H3, I14 | done |
 | I17 | **Reset-time awareness** — resets_in_s in decisions, weekly-anchor operator fallback, ceiling-free burn rate, reset-headroom tail waiver | operator ask (P2-3 family) | H8 | done |
 | I18 | **Regime-aware routing + xhigh default** (local benchmark + horizon research): uniform `xhigh` effort on adaptive-thinking models (`max` = escalation rung; supersedes per-profile effort routing for this lineup); planner-assigned task `regime` (chore \| thinking \| long_horizon, ledger-validated) conditions the implementer tier — chore→cheap, thinking→never below standard, long_horizon→profile base; asymmetric loss (unsure → heavier regime); refines I12 | benchmark 2026-07, task-horizon-prediction.md | I12 | done |
-| I19 | **Planning-time floors×profiles consistency check**: plan-build records each task's predicted `touches` globs; `plan_ready` cross-checks touches × floors × profile deterministically — the contradiction pilot #3 caught at firing time becomes un-ratifiable | P3-2 | I2, I16 | not-started |
+| I19 | **Ratification-time gate preflight** (scope expanded from floors×profiles by P3v2-1): plan-build records each task's representative concrete `touches` paths; `gate_preflight` — wired as `plan_ready` check 7 and a `preflight` CLI run before every (re-)ratification — simulates every statically-evaluable pre-spawn gate: floors×touches via the gate's own `check_risk_floor`, and H9×existing-handoffs from the vault evidence store (fatal unless a resolved operator card adjudicates; discharge-aware via I20). Both pilot-3 halts become un-ratifiable; absence of touches/vault/handoffs skips, so old plans (incl. byte-identical instrument v2) stay valid | P3-2, P3v2-1 | I2, I16, I20 | done |
+| I20 | **H9 dual-covered ambiguity discharge**: `spec_ambiguities` entries may be `{text, corpus_covers}` objects; `corpus_covers: "both"` (the corpus passes under every reading — validated-wrong software impossible) discharges the entry to advisory on all profiles. Recorded, auditable (handoff rides the evidence store), reversible by re-authoring; test-author contract updated. Kills the P3v2-1 false-positive class: all 10 GL1 blockers were dual-covered in prose | P3v2-1 | H9 | done |
+| I21 | **Operator-adjudication protocol** (card-first, ask-second): blocker card with `asked_at` + `parked` ledger status written BEFORE any interactive ask; best-effort desktop notification (`tools/notify_operator.sh`); interactive ask only when parking leaves nothing admissible; `resolved{decision,by,at}` validated on the card — operator-wait becomes disk-derivable O2 telemetry (parked→resumed) | P3v2-1 | E3, H9 | done |
+| I22 | **git_guard command-boundary fix**: destructive-git gap classes exclude `\n` (a newline separates commands like `;`) — an `echo "... clean ..."` line plus a later `--abbrev-ref` no longer matches `git clean -f` across lines; destructive lines inside compounds still caught | P3v2-2 | C2 | done |
 | I5 | **Firing smoke test** — scripted walk of the skill's step sequence in a scratch clone via the mock worker; asserts clean tree + green gate end-to-end (hermetic suites missed P1-5/P1-7-class composition defects) | P1 theme 1 | A6 | not-started |
 
 ## Stage-gate flips (operational, evidence-gated — design §11)
@@ -346,3 +349,17 @@ schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
   (`ca8d707`) instead of via a feature branch — caught immediately after; content identical
   to what the merge would have produced; not history-rewritten (destructive-git rule).
   Next: **the pilot firing** (see Next up).
+- **2026-07-05 (pilot-3-v2 mid-firing review):** The rerun on instrument v2 resumed GL1
+  exactly per kickoff (parked→in_progress off the resolved card, no re-adjudication), then
+  stalled **8h25m** on an interactive H9 ask (12:15Z→20:40Z) — Package A's routine→high raise
+  had silently armed the spec-ambiguity gate against GL1's carried-over handoff (10 blockers,
+  all dual-covered in prose). Root-caused into four increments, all merged upstream while the
+  firing continues (sync at the next firing boundary): **I20** (dual-covered discharge — the
+  false-positive class dies at the schema), **I19** (ratification-time `gate_preflight`:
+  floors×touches + H9×handoffs as `plan_ready` check 7 + pre-ratification CLI; verified
+  against test1's live state → reproduces the whole event as a non-fatal, already-adjudicated
+  finding), **I21** (card-first/ask-second adjudication protocol + `notify_operator.sh` +
+  blocker lifecycle fields — operator-wait is now disk-derivable), **I22** (git_guard
+  cross-line over-match, found live by the firing session). 542 tests passing (was 521).
+  Findings ledgered as P3v2-1/P3v2-2 in
+  [../research/pilot-3-observations.md](../research/pilot-3-observations.md).

@@ -72,3 +72,30 @@ accepted too):
    accepting low/medium/high/max (not xhigh); the local benchmark measured NO
    behavioral change for haiku at any effort (round 1; CLI silently
    tolerant). Measured wins for the tested build.
+
+## 2026-07-05 evening — I26 live probe (build 2.1.201, three real spawns)
+
+Method: `harness.loop.headless_worker_cmd` argv, `headless_env`, worker
+overlay (`write_worker_overlay`) denying a scratch "vault", cwd=scratch
+worktree, `parse_worker_result` harvest. Model `claude-sonnet-5`.
+
+| Probe | Result |
+|---|---|
+| A: deny binding | Worker asked to read the overlay-denied vault file replied exactly `CANNOT-READ` (exit 0). **Layer-stack binds headless**; harvest normalized usage + cost. |
+| B: `--effort low` | Prime-sum question → **wrong answer (1060)**, 109 output tokens. |
+| C: `--effort max` | Same question → **correct answer (3167)**, 5,947 output tokens. |
+
+Findings:
+1. **Effort is APPLIED on this path, not merely accepted** — 109 → 5,947
+   output tokens (~55×) low→max on an identical prompt. The I26 ladder's
+   `max` rung is real.
+2. **Correctness inverted with effort** — sonnet@low wrong, sonnet@max
+   right: a live replication of the benchmark round-2 finding ("effort-down
+   is not a safe economy" on Sonnet 5), now on the harness's own worker path.
+3. **Cache economics of the ladder:** same-model+same-effort spawns share
+   the prefix cache (probe B read 27k of probe A's 37.5k creation); an
+   effort change busts the prefix (probe C: 0 read, fresh 37.4k creation).
+   Attempt-2@max therefore pays one fresh prefix — priced in, not a surprise.
+4. `total_cost_usd` in the JSON doc is the CLI's notional figure; quota
+   rides the subscription windows (no ANTHROPIC_API_KEY in worker env —
+   `headless_env` guarantees it).

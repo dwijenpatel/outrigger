@@ -12,6 +12,7 @@ Two cases — decide by whether **you** are the orchestrator of the live firing 
 
 Perform the clean pause at the current boundary (identical to a governor `pause`):
 
+0. **Acknowledge first (I23).** If `state/pause.request` exists, write the receipt before anything else: `harness.loop.acknowledge_pause('state/pause.request', 'state/pause.ack', draining=[<in-flight task:role ids>])` — the operator watching `state/pause.ack` learns the request landed and what is draining, even if this session dies mid-drain.
 1. **No new admissions** — do not start the next tick or spawn new workers.
 2. **Finish or park the in-flight worker.** Park = a blocker record (schema `blocker.json`) routed as an E3 card — never silent abandonment. Append its run-log + event-log records **write-ahead**, with `outcome: "aborted"` or `"parked"` and the spawn's resolved `model`/`tier`/`effort` — an interrupted routing choice is still telemetry.
 3. **Reconcile worktrees** (leases stay durable; a parked pipeline keeps its home for the disk resume).
@@ -28,6 +29,10 @@ Write the pause flag; the loop checks it at every tick boundary and runs the seq
 python3 -c "from harness import loop; print(loop.request_pause('state/pause.request', reason='<why>', requested_by='<operator>'))"
 ```
 
-Report to the operator: the request is durable on disk, the firing will pause at its next boundary (between tasks — an in-flight worker finishes or parks first), and `state/run.marker` disappearing is the confirmation the pause landed.
+Report to the operator, including the latency expectation (I23, P3v2-8):
+
+- **Acknowledgment:** the loop checks the flag at every tick AND stage boundary (worker handoff, panel return, gate exit) and writes `state/pause.ack` the moment it sees the request — watch that file for the receipt. With background-spawned workers the longest gap between checks is one poll interval.
+- **Full pause:** bounded by the longest **in-flight worker attempt** — attempts are atomic (disk-is-memory applies at handoff boundaries, not mid-attempt; killing an attempt means redoing it), so the loop drains in-flight work to its handoff rather than killing it, then parks, writes the resume marker, and releases the run marker. `state/run.marker` disappearing confirms the pause landed. Zero rework is the point of the wait.
+- **Do not type the pause into the live firing session:** an in-session message starves in the queue until the loop's turn yields — potentially the whole firing (P3v2-8: ~17 min behind one worker; unbounded behind a pipeline). The flag from a second terminal is the responsive channel.
 
 **Never** "pause" by killing processes or editing state files directly — a hard interrupt is crash-safe (disk is the memory) but loses the parked-blocker record and the interrupted worker's telemetry.

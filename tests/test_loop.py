@@ -262,3 +262,21 @@ class PauseRequestTests(unittest.TestCase):
         got = loop.pause_requested(self.path)
         self.assertIsNotNone(got)
         self.assertIn("pausing anyway", got["reason"])
+
+    def test_acknowledge_pause_is_the_receipt_before_the_drain(self):
+        loop.request_pause(self.path, "stepping away", "dwijen")
+        ack_path = os.path.join(self.dir.name, "state", "pause.ack")
+        doc = loop.acknowledge_pause(self.path, ack_path,
+                                     ["GL2-auth:implementer"])
+        self.assertEqual(doc["draining"], ["GL2-auth:implementer"])
+        self.assertEqual(doc["request"]["requested_by"], "dwijen")
+        with open(ack_path) as fh:
+            on_disk = json.load(fh)
+        self.assertIn("seen_at", on_disk)
+        self.assertIn("no new admissions", on_disk["policy"])
+
+    def test_acknowledge_without_a_request_is_loud(self):
+        with self.assertRaises(LoopError):
+            loop.acknowledge_pause(
+                self.path, os.path.join(self.dir.name, "state", "pause.ack"),
+                [])

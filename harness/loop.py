@@ -151,6 +151,31 @@ def clear_pause_request(path: str) -> bool:
         return False
 
 
+DEFAULT_PAUSE_ACK_PATH = os.path.join("state", "pause.ack")
+
+
+def acknowledge_pause(request_path: str, ack_path: str, draining: list) -> dict:
+    """I23 (P3v2-8) — the instant the loop SEES a pause request it says so on
+    disk, before draining: the operator watching ``state/pause.ack`` learns
+    the request landed, what is still in flight, and the policy (no new
+    admissions; in-flight attempts run to their handoff — a killed attempt is
+    a redone attempt, so drain latency is the price of zero rework). Written
+    ack-then-drain so a session dying mid-drain still leaves the receipt."""
+    req = pause_requested(request_path)
+    if req is None:
+        raise LoopError(f"no pause request at {request_path} to acknowledge")
+    doc = {"request": req, "seen_at": _utcnow_iso(),
+           "draining": list(draining or []),
+           "policy": "no new admissions; in-flight attempts drain to handoff"}
+    parent = os.path.dirname(ack_path) or "."
+    os.makedirs(parent, exist_ok=True)
+    tmp = ack_path + ".tmp"
+    with open(tmp, "w") as fh:
+        json.dump(doc, fh, indent=2, sort_keys=True)
+    os.replace(tmp, ack_path)
+    return doc
+
+
 def closure_hook_config(path: str, snapshot: str, ledger: str, events: str,
                         **extra) -> dict:
     """Write the Stop-hook closure config at firing start (H1). The hook reads

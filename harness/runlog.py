@@ -103,6 +103,14 @@ def validate_record(rec: dict) -> dict:
         _require_nonneg_int(out, "total_tokens", required=True)
         _require_enum(out, "tier", TIERS)
         _require_enum(out, "effort", EFFORTS)
+        if "model" in out and (not isinstance(out["model"], str)
+                               or not out["model"].strip()):
+            # I10: the CONCRETE model id (§5.3/§8 segment by tier+model+effort
+            # — tiers.json is config, so tier alone blends models across
+            # remappings); comes from spawncheck's resolved params, never a
+            # worker self-report
+            raise RunLogError(f"model={out['model']!r} must be a non-empty "
+                              f"string when present")
         _require_enum(out, "outcome", OUTCOMES)
         _require_enum(out, "predicted_bucket", BUCKETS)
         _require_enum(out, "role", ROLES)

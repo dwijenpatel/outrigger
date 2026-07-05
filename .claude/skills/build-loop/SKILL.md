@@ -26,7 +26,7 @@ You are the orchestrator for one operator-started firing. Deterministic machiner
 4. Feed each worker step to `harness.liveness.Vitals`; on a park recommendation, park with a blocker record (schema `blocker.json`) and continue other work.
 5. Merge only through the gate: `harness.gate.run_gate(...)` with verdict dir, floors config, vault path, evidence dir, `stamp_dir=state/gate-stamps` (a PASS writes the stamp the merge interlock demands; without it `git merge` is hook-blocked during the firing), and `required_steps_path=harness/config/gate-required-steps.json` (the manifest turns omitted inputs into fail-closed refusals for the task's profile). The gate's exit status decides — **check the real exit status, never a piped tail of it**.
 6. Handle worker infrastructure errors via `harness.failures.classify` → continue / backoff / abort per the taxonomy. Agent-reported FAILs are escalation signals (effort before tier, at a fresh worker boundary), not errors.
-7. Append every outcome to the run-log and ledger event log **before** advancing any cursor/marker (write-ahead).
+7. Append every outcome to the run-log and ledger event log **before** advancing any cursor/marker (write-ahead). Each run-log record carries the **spawn params you requested** — `role`, `tier`, **`model` (the concrete id from `spawncheck`'s resolved params)**, `effort`, `profile` — never a worker's self-report. A worker that dies or parks mid-task still gets its record (`outcome: "aborted"`/`"parked"`) so the routing choice is never lost.
 
 ## Pipelining (while validation runs)
 

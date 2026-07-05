@@ -22,13 +22,17 @@ class EvidenceError(ValueError):
 
 
 def rollup(runlog_records: list) -> dict:
-    """Aggregate task_complete records per (role, tier, effort, profile)."""
+    """Aggregate task_complete records per (role, tier, model, effort,
+    profile). Model is the concrete id (I10): tiers.json is config, so a
+    tier-only key silently blends different models across remappings —
+    exactly what the controller's model-id-change sample reset must see."""
     cells: dict = {}
     totals = {"tasks": 0, "tokens": 0, "fails": 0}
     for rec in runlog_records:
         if rec.get("event") != "task_complete":
             continue
         key = (rec.get("role") or "?", rec.get("tier") or "?",
+               rec.get("model") or "?",
                rec.get("effort") or "?", rec.get("profile") or "?")
         cell = cells.setdefault(key, {"tasks": 0, "tokens": 0, "fails": 0})
         cell["tasks"] += 1
@@ -120,14 +124,15 @@ def generate_evidence_md(runlog_records: list, escapes: list,
     lines.append("")
 
     if roll["cells"]:
-        lines.append("| role | tier | effort | profile | tasks | tokens | fail-rate |")
-        lines.append("|---|---|---|---|---|---|---|")
+        lines.append("| role | tier | model | effort | profile | tasks | "
+                     "tokens | fail-rate |")
+        lines.append("|---|---|---|---|---|---|---|---|")
         for key in sorted(roll["cells"]):
             cell = roll["cells"][key]
             fr = cell["fails"] / cell["tasks"]
             lines.append(f"| {key[0]} | {key[1]} | {key[2]} | {key[3]} | "
-                         f"{cell['tasks']} | {fmt(cell['tokens'], est)} | "
-                         f"{fr:.0%} |")
+                         f"{key[4]} | {cell['tasks']} | "
+                         f"{fmt(cell['tokens'], est)} | {fr:.0%} |")
     else:
         lines.append("worker runs: 0 recorded — no cost table yet")
     lines.append("")

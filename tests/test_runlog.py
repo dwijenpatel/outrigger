@@ -157,3 +157,37 @@ class WindowAndSumTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ModelFieldTests(unittest.TestCase):
+    """I10 — the concrete model id rides every task_complete record."""
+
+    def base(self, **patch):
+        doc = {"event": "task_complete", "profile": "routine",
+               "total_tokens": 100, "tier": "cheap", "effort": "low"}
+        doc.update(patch)
+        return doc
+
+    def test_model_accepted_and_preserved(self):
+        out = runlog.validate_record(self.base(model="claude-haiku-4-5"))
+        self.assertEqual(out["model"], "claude-haiku-4-5")
+
+    def test_model_optional(self):
+        runlog.validate_record(self.base())  # no raise
+
+    def test_bad_model_is_loud(self):
+        for bad in ("", "   ", 7, None):
+            with self.assertRaises(runlog.RunLogError):
+                runlog.validate_record(self.base(model=bad))
+
+    def test_spawncheck_resolution_feeds_the_record(self):
+        # the loop merges spawncheck's resolved params straight in — the
+        # requested spawn, never a worker self-report
+        from harness import spawncheck
+        resolved = spawncheck.validate_spawn(tier="cheap", effort="low")
+        out = runlog.validate_record(self.base(
+            tier=resolved["tier"], model=resolved["model"],
+            effort=resolved["effort"]))
+        self.assertEqual(out["model"], resolved["model"])
+        self.assertTrue(out["model"])  # a concrete id, not a tier name
+        self.assertNotIn(out["model"], ("cheap", "standard", "capable", "max"))

@@ -11,10 +11,10 @@ from harness.controller import ControllerError
 
 
 def rec(role="implementer", tier="cheap", effort="low", profile="routine",
-        tokens=1000, outcome="pass"):
+        tokens=1000, outcome="pass", model="claude-haiku-4-5"):
     return {"event": "task_complete", "role": role, "tier": tier,
-            "effort": effort, "profile": profile, "total_tokens": tokens,
-            "outcome": outcome}
+            "model": model, "effort": effort, "profile": profile,
+            "total_tokens": tokens, "outcome": outcome}
 
 
 TRIALS_OK = [{"canary_id": f"c{i}", "caught": True,
@@ -25,11 +25,24 @@ class RollupTests(unittest.TestCase):
     def test_cells_aggregate(self):
         roll = evidence.rollup([rec(), rec(tokens=2000, outcome="fail"),
                                 rec(tier="capable", profile="critical")])
-        cheap = roll["cells"][("implementer", "cheap", "low", "routine")]
+        cheap = roll["cells"][("implementer", "cheap", "claude-haiku-4-5",
+                               "low", "routine")]
         self.assertEqual(cheap["tasks"], 2)
         self.assertEqual(cheap["tokens"], 3000)
         self.assertEqual(cheap["fails"], 1)
         self.assertEqual(roll["totals"]["tasks"], 3)
+
+    def test_model_id_segments_cells_across_tier_remaps(self):
+        # I10: same tier, different concrete model → different cells; a
+        # tiers.json remap must never silently blend telemetry
+        roll = evidence.rollup([rec(model="claude-haiku-4-5"),
+                                rec(model="claude-haiku-5")])
+        self.assertEqual(len(roll["cells"]), 2)
+        # records without a model still aggregate (legacy), keyed as '?'
+        legacy = evidence.rollup([{k: v for k, v in rec().items()
+                                   if k != "model"}])
+        self.assertIn(("implementer", "cheap", "?", "low", "routine"),
+                      legacy["cells"])
 
     def test_non_task_events_ignored(self):
         roll = evidence.rollup([{"event": "governor_decision"}])

@@ -94,7 +94,24 @@ def validate_handoff(doc: dict) -> dict:
     if not isinstance(files, list) or not all(isinstance(f, str) for f in files):
         raise SchemaError("handoff: files_touched must be a list of paths")
     if "spec_ambiguities" in doc:
-        _require_str_list(doc, "spec_ambiguities", "handoff")
+        entries = doc["spec_ambiguities"]
+        if not isinstance(entries, list):
+            raise SchemaError("handoff: spec_ambiguities must be a list")
+        for i, entry in enumerate(entries):
+            where = f"handoff spec_ambiguities[{i}]"
+            if isinstance(entry, str):
+                if not entry:
+                    raise SchemaError(f"{where}: empty string")
+            elif isinstance(entry, dict):
+                _require_str(entry, "text", where)
+                covers = entry.get("corpus_covers", "one-reading")
+                if covers not in AMBIGUITY_COVERAGE:
+                    raise SchemaError(
+                        f"{where}: corpus_covers must be one of "
+                        f"{AMBIGUITY_COVERAGE}, got {covers!r}")
+            else:
+                raise SchemaError(f"{where}: must be a string or an object "
+                                  f"with 'text' (+ optional 'corpus_covers')")
     if doc["outcome"] == "pass" and not doc["key_changes_made"]:
         raise SchemaError("handoff: a passing task with zero material changes "
                           "is a no-op claiming success (§9 no-op rule)")
@@ -126,6 +143,28 @@ def validate_blocker(doc: dict) -> dict:
 
 BLOCKING_AMBIGUITY_PROFILES = ("high", "critical")
 
+#: I20: how far the held-out corpus covers an ambiguity's readings.
+#: "both" = the corpus passes under EVERY reading, so whichever the
+#: implementer picks, validated-wrong software cannot result — the ambiguity
+#: is discharged (advisory, never blocking). "one-reading" (the default, and
+#: what a bare string means) = the corpus pins a reading; a wrong guess is
+#: exactly the H9 risk, so it blocks on blocking profiles.
+AMBIGUITY_COVERAGE = ("both", "one-reading")
+
+
+def ambiguity_text(entry) -> str:
+    """The human-readable question, whichever entry form carries it."""
+    return entry["text"] if isinstance(entry, dict) else entry
+
+
+def ambiguity_discharged(entry) -> bool:
+    """I20: True when the test-author recorded the corpus as dual-covered —
+    the discharge is the test-author's claim, but it is on the record (the
+    handoff rides the evidence store), auditable, and reversible by
+    re-authoring; pilot-3-v2 spent an 8h operator round-trip re-deriving
+    exactly this from prose notes (P3v2-1)."""
+    return isinstance(entry, dict) and entry.get("corpus_covers") == "both"
+
 
 def ambiguity_blockers(handoff: dict, task_id: str, profile: str,
                        blocking_profiles: tuple = BLOCKING_AMBIGUITY_PROFILES
@@ -134,13 +173,21 @@ def ambiguity_blockers(handoff: dict, task_id: str, profile: str,
     cannot audit. On blocking profiles, the test-author's ``spec_ambiguities``
     become blocker records that **park the task before the implementer spends
     tokens** on an ambiguous spec; one operator round-trip resolves each. On
-    lower profiles they stay advisory (riding ``key_learnings``)."""
+    lower profiles they stay advisory (riding ``key_learnings``).
+
+    I20: entries the test-author marked ``corpus_covers: "both"`` are
+    discharged — no blocker, no operator round-trip — because the corpus
+    already absorbs every reading. Numbering in the repro stays over the FULL
+    list so a blocker is traceable back to its handoff entry."""
     doc = validate_handoff(handoff)
     ambiguities = doc.get("spec_ambiguities") or []
     if profile not in blocking_profiles or not ambiguities:
         return []
     blockers = []
-    for i, text in enumerate(ambiguities, start=1):
+    for i, entry in enumerate(ambiguities, start=1):
+        if ambiguity_discharged(entry):
+            continue
+        text = ambiguity_text(entry)
         blockers.append(validate_blocker({
             "task_id": task_id,
             "repro": f"spec ambiguity {i}/{len(ambiguities)} "

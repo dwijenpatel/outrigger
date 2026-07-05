@@ -17,8 +17,21 @@
       "description": "Surprising only — not captured by prior lessons"
     },
     "spec_ambiguities": {
-      "type": "array", "items": {"type": "string", "minLength": 1},
-      "description": "H9: spec readings that had to be guessed (test-author especially). On high/critical profiles these park the task for the operator BEFORE implementation spends tokens; advisory on lower profiles"
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"type": "string", "minLength": 1},
+          {
+            "type": "object",
+            "required": ["text"],
+            "properties": {
+              "text": {"type": "string", "minLength": 1},
+              "corpus_covers": {"enum": ["both", "one-reading"]}
+            }
+          }
+        ]
+      },
+      "description": "H9: spec readings that had to be guessed (test-author especially). On high/critical profiles these park the task for the operator BEFORE implementation spends tokens; advisory on lower profiles. I20: use the object form with corpus_covers='both' ONLY when the authored corpus passes under every reading of that ambiguity — such entries are discharged (advisory on all profiles); a bare string means 'one-reading' (blocks)"
     },
     "files_touched": {"type": "array", "items": {"type": "string"}}
   }

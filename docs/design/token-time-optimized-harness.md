@@ -573,6 +573,14 @@ message behavior `[measured]` even allows deliberate window alignment to the ope
   profiles those become blocker records that park the task before the implementer spends
   tokens** on an ambiguous spec (one operator round-trip resolves them, same E3 machinery).
   On lower profiles they stay advisory `key_learnings`.
+  - *Dual-covered discharge (2026-07-05 amendment, P3v2-1)*: an ambiguity whose held-out
+    corpus **passes under every reading** cannot produce validated-wrong software — the
+    test-author records it as `corpus_covers: "both"` and it is **discharged** (advisory on
+    all profiles, no operator round-trip). Pilot-3-v2 spent an 8-hour operator round-trip
+    re-deriving exactly this from prose notes: all 10 GL1 ambiguities were dual-covered in
+    prose but blocked anyway. The discharge is the test-author's recorded, auditable claim
+    (the handoff rides the evidence store) and is reversible by re-authoring; blocking
+    remains for every ambiguity the corpus pins to one reading.
 
 ## 7. The correctness floor (O0)
 

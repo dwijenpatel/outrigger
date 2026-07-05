@@ -181,6 +181,41 @@ class AmbiguityBlockerTests(unittest.TestCase):
         with self.assertRaises(SchemaError):
             schemas.validate_handoff(self.handoff("not a list"))
 
+    def test_structured_entries_validate(self):
+        doc = self.handoff([
+            {"text": "Is deletion soft or hard?", "corpus_covers": "both"},
+            {"text": "Which timezone for due dates?"}])
+        self.assertEqual(len(schemas.validate_handoff(doc)["spec_ambiguities"]),
+                         2)
+        with self.assertRaises(SchemaError):  # object form needs text
+            schemas.validate_handoff(self.handoff([{"corpus_covers": "both"}]))
+        with self.assertRaises(SchemaError):  # unknown coverage is loud
+            schemas.validate_handoff(self.handoff(
+                [{"text": "x?", "corpus_covers": "maybe"}]))
+        with self.assertRaises(SchemaError):  # neither string nor object
+            schemas.validate_handoff(self.handoff([42]))
+
+    def test_dual_covered_entries_discharged(self):
+        # I20 (P3v2-1): corpus-absorbs-both-readings entries never block;
+        # numbering stays over the full list so blockers trace to the handoff.
+        blockers = schemas.ambiguity_blockers(
+            self.handoff([
+                {"text": "Is deletion soft or hard?", "corpus_covers": "both"},
+                "Which timezone for due dates?",
+                {"text": "Are names case-folded?",
+                 "corpus_covers": "one-reading"}]),
+            task_id="t7", profile="high")
+        self.assertEqual(len(blockers), 2)
+        self.assertIn("ambiguity 2/3", blockers[0]["repro"])
+        self.assertIn("timezone", blockers[0]["repro"])
+        self.assertIn("ambiguity 3/3", blockers[1]["repro"])
+
+    def test_all_discharged_means_no_blockers(self):
+        self.assertEqual(schemas.ambiguity_blockers(
+            self.handoff([{"text": "a?", "corpus_covers": "both"},
+                          {"text": "b?", "corpus_covers": "both"}]),
+            task_id="t7", profile="critical"), [])
+
     def test_blocker_card_roundtrip(self):
         from harness import ratification
         blocker = schemas.ambiguity_blockers(

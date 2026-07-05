@@ -26,6 +26,7 @@ Write the plan dir (default `plan/`):
 - `plan/tasks.json` — the ledger (schema: `harness/ledger.py` `validate_tasks`; fields: `id`, `phase`, `profile`, `deps`, optional `may_be_invalidated_by`). Phase 1 = a small walking skeleton (4–6 tasks is fine); **small must not mean vague**.
 - `plan/specs/<task-id>.md` — one scoped spec per task: pinned interfaces (names, routes, schemas), behavior, **acceptance criteria a held-out test can execute**, explicit non-goals. This file is the worker's whole world — write it for a reader with zero context.
 - `plan/floors.json` — path-glob → minimum profile (`{"floors": [{"glob": "...", "min_profile": "..."}]}`). Tenancy/auth/billing surfaces floor at `critical`.
+- **Reconcile profiles with floors (P2-13).** The gate enforces floors against each task's *actual diff* on every profile — so any task whose spec will create or touch a floored path must carry at least that floor's profile, or it will bounce at merge as mis-tagged. Scaffold tasks are the classic trap (they create floored files as stubs): either profile them at the floor, scope their specs to not touch floored paths, or write the floors to carve the scaffold phase out explicitly. Decide this AT PLANNING TIME, per task — a mid-firing re-profile means re-ratifying the plan.
 
 ## Ratification (hard stop)
 

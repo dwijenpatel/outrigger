@@ -45,7 +45,18 @@ manifest/floor/profile-policy change requires re-running the (I19) static
 consistency check and, if it fails, a re-ratified instrument v2 — which
 then becomes the new constant across pilots.
 
-## Decision pending (operator ratification)
+## Decision — RESOLVED 2026-07-05: Package A ratified
+
+Operator ratified the profile-raising amendment: GL1/GL4/GL6/GL7 → high,
+GL10 → elevated; specs/scope byte-identical to v1. Re-ratified as
+**instrument v2** (`fb51fce3346daa04`), snapshot unchanged (`d71eba21`,
+same task ids). GL1's blocker card carries the resolution; the next firing
+resumes it parked→in_progress. v2 is the fixed constant for pilot
+#3-rerun and #4; the added validation cost on 5 tasks is telemetry, not
+overhead. I19 (planning-time floors×profiles static check) remains the
+machinery fix so no future instrument ratifies this contradiction.
+
+## The original options (for the record)
 
 The blocker card's options, augmented by the systemic view:
 - **Package A (minimal, recommended for pilot discipline):** raise profiles

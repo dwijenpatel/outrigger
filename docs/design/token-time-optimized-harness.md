@@ -327,7 +327,12 @@ wasted cheap attempt `[measured]`).
   2026-07-04: all five effort levels dispatch; both tested model overrides are honored — see
   [tools/budget-governor/probe-spawn-portability-2026-07-04.md](../../tools/budget-governor/probe-spawn-portability-2026-07-04.md)),
   with a batch of parallel `Agent` calls as the portable fallback (model-only; effort
-  session-level). **Correction:** "invalid ids fail loud" does not hold as previously stated —
+  session-level). *(2026-07-05 pilot confirmation, P3v2-6 → I24)*: pilot-3-v2 hit this
+  fallback limitation live — an orchestrator escalating via `Agent` spawns cannot actuate a
+  `max`-effort rung; it correctly substituted a fresh same-tier worker with sharpened
+  spec-grounded feedback, which landed the fix on attempt 2. The build-loop ladder is now
+  stated in actuatable terms — feedback, then tier — with the effort rung reserved for
+  Workflow-path spawns. **Correction:** "invalid ids fail loud" does not hold as previously stated —
   an invalid `effort` string is **silently accepted** with no error, and an invalid `model` id
   fails only as an async `null` result + a workflow-level log entry, not a catchable throw.
   **The spawn code must therefore validate `(model, effort)` against an explicit allowlist

@@ -1,7 +1,8 @@
 {
   "_meta": {
     "purpose": "Design SS5.3: model selection is indirected through abstract tiers; this is the one config table mapping tier -> concrete model id. Config, not code -- update here (and only here) when Anthropic ships/renames models. Re-check after any SS10.3 volatility event.",
-    "last_reviewed": "2026-07-04"
+    "efforts_note": "I24 (P3v2-6): efforts are validated for run-log records; per-spawn actuation exists only on the Workflow spawn path -- Agent/Task spawns inherit the session effort.",
+    "last_reviewed": "2026-07-05"
   },
   "tiers": {
     "cheap": "claude-haiku-4-5-20251001",

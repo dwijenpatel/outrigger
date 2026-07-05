@@ -410,6 +410,26 @@ class ResetAwareTests(unittest.TestCase):
         self.assertIsNone(governor.fraction_rate(decisions[:1], "seven_day",
                                                  now_ts=now))
 
+    def test_fraction_rate_scoped_to_this_firing(self):
+        # I25 (P3v2-3): a prior firing's reading inside the 6h lookback must
+        # not resolve a rate for a firing whose marker postdates it.
+        decisions = [
+            {"event": "governor_decision", "optimistic": False,
+             "ts": "2026-07-05T08:00:00Z", "windows": {"seven_day": 0.10}},
+            {"event": "governor_decision", "optimistic": False,
+             "ts": "2026-07-05T10:00:00Z", "windows": {"seven_day": 0.60}},
+            {"event": "governor_decision", "optimistic": False,
+             "ts": "2026-07-05T11:00:00Z", "windows": {"seven_day": 0.62}},
+        ]
+        now = governor._iso_to_epoch("2026-07-05T11:00:00Z")
+        marker = governor._iso_to_epoch("2026-07-05T09:30:00Z")
+        rate = governor.fraction_rate(decisions, "seven_day", now_ts=now,
+                                      since_ts=marker)
+        self.assertAlmostEqual(rate, 0.02 / 3600)  # 08:00 point excluded
+        late_marker = governor._iso_to_epoch("2026-07-05T10:30:00Z")
+        self.assertIsNone(governor.fraction_rate(
+            decisions, "seven_day", now_ts=now, since_ts=late_marker))
+
     def test_reset_headroom_verdicts(self):
         # 0.62, resets in 20h, burning 0.02/h → projected 1.02 → blocked...
         blocked = governor.reset_headroom(0.62, 20 * 3600, 0.02 / 3600)

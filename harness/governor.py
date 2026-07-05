@@ -342,10 +342,18 @@ def resets_in_s(occ: Occupancy, now_ts: float) -> dict:
 def fraction_rate(decisions: list, window: str,
                   min_span_s: float = 600.0,
                   max_age_s: float = 6 * 3600.0,
-                  now_ts: float | None = None) -> float | None:
+                  now_ts: float | None = None,
+                  since_ts: float | None = None) -> float | None:
     """Occupancy burn rate (fraction/second) for one window, measured from
     the governor's own decision log — live (non-optimistic) readings only,
-    so ceilings are never needed. None = not enough data (conservative)."""
+    so ceilings are never needed. None = not enough data (conservative).
+
+    I25 (P3v2-3): pass ``since_ts`` = this firing's run-marker ``acquired_at``
+    epoch. Burn rate is a per-firing quantity — the wall-clock lookback alone
+    let a *prior* firing's readings (once, pre-clock-correction stamps)
+    resolve a rate on tick 1 and engage reset-headroom early. Readings older
+    than ``since_ts`` never count; a fresh firing therefore starts at None
+    (conservative) until it has ~min_span of its own readings, by design."""
     now = now_ts if now_ts is not None else __import__("time").time()
     points = []
     for d in decisions:
@@ -360,7 +368,7 @@ def fraction_rate(decisions: list, window: str,
             t = _iso_to_epoch(ts)
         except ValueError:
             continue
-        if now - t <= max_age_s:
+        if now - t <= max_age_s and (since_ts is None or t >= since_ts):
             points.append((t, float(frac)))
     if len(points) < 2:
         return None

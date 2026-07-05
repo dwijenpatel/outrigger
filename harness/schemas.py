@@ -120,7 +120,13 @@ def validate_handoff(doc: dict) -> dict:
 
 def validate_blocker(doc: dict) -> dict:
     """Park blocker record (§6.3): everything a human needs to decide in one
-    round-trip — repro, options, recommendation."""
+    round-trip — repro, options, recommendation.
+
+    I21 (P3v2-1): optional lifecycle fields. ``asked_at`` (ISO instant the
+    question reached the operator — the card is written BEFORE any interactive
+    ask, so this is also 'when the card hit disk') and ``resolved``
+    ({decision, by, at}) make operator-wait wall-clock a first-class,
+    disk-derivable cost instead of something buried in a session transcript."""
     if not isinstance(doc, dict):
         raise SchemaError("blocker must be an object")
     _require_str(doc, "task_id", "blocker")
@@ -138,6 +144,15 @@ def validate_blocker(doc: dict) -> dict:
     keys = [o["key"] for o in options]
     if len(set(keys)) != len(keys):
         raise SchemaError("blocker: option keys must be unique")
+    for optional in ("kind", "asked_at"):
+        if optional in doc:
+            _require_str(doc, optional, "blocker")
+    if "resolved" in doc:
+        res = doc["resolved"]
+        if not isinstance(res, dict):
+            raise SchemaError("blocker: resolved must be an object")
+        for field in ("decision", "by", "at"):
+            _require_str(res, field, "blocker resolved")
     return dict(doc)
 
 

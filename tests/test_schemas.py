@@ -107,6 +107,24 @@ class BlockerTests(unittest.TestCase):
             schemas.validate_blocker(good_blocker(
                 options=[{"key": "a", "label": "A"}, {"key": "a", "label": "B"}]))
 
+    def test_lifecycle_fields_validate(self):
+        # I21 (P3v2-1): asked_at/resolved make operator-wait disk-derivable.
+        doc = schemas.validate_blocker(good_blocker(
+            kind="H9-spec-ambiguity",
+            asked_at="2026-07-05T12:15:12Z",
+            resolved={"decision": "proceed-as-read", "by": "dwijen",
+                      "at": "2026-07-05T20:40:45Z"}))
+        self.assertEqual(doc["resolved"]["decision"], "proceed-as-read")
+
+    def test_bad_lifecycle_fields_loud(self):
+        with self.assertRaises(SchemaError):
+            schemas.validate_blocker(good_blocker(asked_at=1720180512))
+        with self.assertRaises(SchemaError):
+            schemas.validate_blocker(good_blocker(resolved="done"))
+        with self.assertRaises(SchemaError):  # a resolution names its human
+            schemas.validate_blocker(good_blocker(
+                resolved={"decision": "proceed-as-read"}))
+
 
 class JsonSchemaParityTests(unittest.TestCase):
     """The committed JSON Schemas must agree with the Python validators on the

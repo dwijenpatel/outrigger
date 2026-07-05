@@ -567,6 +567,15 @@ message behavior `[measured]` even allows deliberate window alignment to the ope
   stop-the-world.
 - Blockers carry everything needed to decide (repro, options, recommendation) so one
   round-trip resolves them.
+- **Card-first, ask-second** *(2026-07-05 amendment, P3v2-1)*: every operator decision is
+  written to disk as a blocker card (`asked_at` stamped) and reflected as `parked` in the
+  ledger **before** any interactive prompt — the card is the question; a prompt is one
+  delivery vehicle for it. Interactive asks are legal only when parking leaves nothing
+  admissible, and a best-effort desktop notification (`tools/notify_operator.sh`) fires on
+  every operator-blocking event. Pilot-3-v2 held an unnoticed interactive prompt for 8h25m
+  with no card on disk and the ledger claiming `in_progress` — a dead session would have
+  lost the question entirely. `parked→resumed` timestamps make operator-wait a measured
+  wall-clock cost (O2), and a full quota window can reset unused inside such a stall.
 - **Spec-ambiguity blockers** *(2026-07-04 evening amendment)*: the spec is the one shared
   input blind validation cannot audit — spec↔intent divergence is validated-wrong-software.
   The test-author already surfaces spec ambiguities in its handoff; on **high/critical

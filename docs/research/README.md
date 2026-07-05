@@ -48,6 +48,9 @@ facts were re-verified by direct fetch of the official pages.
 - [harness-evaluation-prior-art.md](harness-evaluation-prior-art.md) — measuring the
   machinery itself: skill-routing reliability, process-ceremony cost/benefit (paired-arm
   methodology), validator/judge format patterns; with independent confirmation.
+- [pilot-1-observations.md](pilot-1-observations.md) — live triage ledger of the first real
+  firing's failures and friction (started 2026-07-04); the empirical feed for the
+  pilot-#2 amendments.
 
 **Vendor-fact references (most volatile — recheck on schedule):**
 

@@ -270,6 +270,7 @@ REQUIRED_STEP_INPUTS = {
     "verdicts": "verdict_dir",
     "risk_floor": "floor_config_path",
     "heldout_drop": "vault_path",
+    "heldout_tests": "heldout_cmd",
 }
 
 
@@ -313,7 +314,8 @@ def run_gate(repo: str, branch: str, base: str = "main",
              stamp_dir: str | None = None,
              required_steps_path: str | None = None,
              repro_mode: str = "off",
-             repro_timeout: int = 300) -> dict:
+             repro_timeout: int = 300,
+             heldout_cmd: str | None = None) -> dict:
     """Run the full gate. Fail-fast on the first blocking step; every executed
     step is reported. Returns the report dict (see ``render_report``).
 
@@ -370,7 +372,7 @@ def run_gate(repo: str, branch: str, base: str = "main",
             return finish(False)
         supplied = {"test_cmd": test_cmd, "verdict_dir": verdict_dir,
                     "floor_config_path": floor_config_path,
-                    "vault_path": vault_path}
+                    "vault_path": vault_path, "heldout_cmd": heldout_cmd}
         required = manifest.get(task_profile, [])
         missing = [name for name in required
                    if supplied[REQUIRED_STEP_INPUTS[name]] is None]
@@ -490,6 +492,52 @@ def run_gate(repo: str, branch: str, base: str = "main",
                 return finish(False)
         else:
             step("heldout_drop", True, "no vault supplied (caller's choice)")
+
+        # 6b. held-out execution (I14/P2-10): the gate — not the orchestrator
+        # — materializes and runs the corpus; full output vault-side (H7),
+        # scrubbed tail in-repo, replay metered (P2-11)
+        if heldout_cmd:
+            if not vault_path:
+                step("heldout_tests", False,
+                     "heldout_cmd given but no vault_path (fail-closed)")
+                return finish(False)
+            if ensure_checkout()["error"]:
+                return finish(False)
+            try:
+                tests = _vault.materialize(vault_path, dest)
+            except _vault.VaultError as exc:
+                step("heldout_tests", False, f"{exc} (fail-closed)")
+                return finish(False)
+            if not tests:
+                step("heldout_tests", False,
+                     "vault manifest lists no tests — nothing to execute "
+                     "(fail-closed)")
+                return finish(False)
+            try:
+                proc = subprocess.run(
+                    shlex.split(heldout_cmd), cwd=dest, capture_output=True,
+                    text=True, timeout=test_timeout)
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                step("heldout_tests", False,
+                     f"held-out command failed to run: {exc} (fail-closed)")
+                return finish(False)
+            heldout_output = (proc.stdout or "") + (proc.stderr or "")
+            full = os.path.join(
+                _vault.heldout_evidence_dir(vault_path),
+                f"gate-heldout-{branch.replace('/', '__')}.log")
+            with open(full, "w") as fh:
+                fh.write(heldout_output)
+            report["heldout_tail"] = _vault.scrub_for_repo(
+                heldout_output[-TAIL_CHARS:], vault_path)
+            meter = _vault.record_replay(vault_path, branch, len(tests))
+            if not step("heldout_tests", proc.returncode == 0,
+                        f"exit {proc.returncode} over {len(tests)} held-out "
+                        f"file(s); full log vault-side; replay "
+                        f"{meter['replays_total']} metered"):
+                return finish(False)
+        else:
+            step("heldout_tests", True,
+                 "no held-out command supplied (caller's choice)")
 
         # 7. verdicts, all-must-pass — with H4 repro replay before a FAIL
         # blocks: a hallucinated FAIL must not drive the escalation ladder

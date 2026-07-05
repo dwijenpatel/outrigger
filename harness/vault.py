@@ -151,6 +151,48 @@ def build_manifest(vault_path: str) -> dict:
 # -- H7: evidence leakage policy ----------------------------------------------------
 
 
+HELDOUT_DIRNAME = ".heldout"
+
+
+def materialize(vault_path: str, dest_root: str,
+                dirname: str = HELDOUT_DIRNAME) -> list:
+    """I14 (P2-10) — copy the manifest-listed corpus into a checkout for
+    gate-time execution. The manifest is the source of truth: canary,
+    evidence, and anything unlisted never copy, and every copied file is
+    **hash-verified against the manifest** (a tampered corpus never runs).
+    This is the ONLY sanctioned way held-out tests reach a checkout —
+    orchestrators must not hand-wire it."""
+    import shutil
+    entries = load_manifest(vault_path)  # loud when missing (fail-closed)
+    dest = os.path.join(dest_root, dirname)
+    for rel in sorted(entries):
+        src = os.path.join(vault_path, rel)
+        if _sha256(src) != entries[rel]:
+            raise VaultError(f"vault file {rel!r} does not match its manifest "
+                             f"hash — corpus tampered/corrupt, refusing to "
+                             f"materialize")
+        target = os.path.join(dest, rel)
+        os.makedirs(os.path.dirname(target) or dest, exist_ok=True)
+        shutil.copyfile(src, target)
+    return sorted(entries)
+
+
+def record_replay(vault_path: str, ref: str, test_count: int) -> dict:
+    """P2-11 — every held-out execution is adaptive reuse; meter it. Appends
+    to the vault-side evidence store and returns the running total so the
+    leakage budget has a denominator (gate calls this on every run; the
+    orchestrator must too, if it ever ground-truths outside the gate)."""
+    import datetime as _dt
+    path = os.path.join(heldout_evidence_dir(vault_path), "replays.jsonl")
+    rec = {"ts": _dt.datetime.now(_dt.timezone.utc)
+           .strftime("%Y-%m-%dT%H:%M:%SZ"),
+           "ref": ref, "tests": int(test_count)}
+    with open(path, "a") as fh:
+        fh.write(json.dumps(rec, sort_keys=True) + "\n")
+    total = sum(1 for _ in open(path))
+    return {"replays_total": total, "recorded": rec}
+
+
 def heldout_evidence_dir(vault_path: str) -> str:
     """The vault-side evidence store (§5.5 point 5): held-out execution
     output (validator transcripts, held-out test logs) is written HERE —

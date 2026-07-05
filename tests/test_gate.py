@@ -528,3 +528,108 @@ class RequiredStepsManifestTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HeldoutGateTests(unittest.TestCase):
+    """I14 (P2-10) — the gate materializes and runs the corpus itself."""
+
+    def setUp(self):
+        self.root_ctx = tempfile.TemporaryDirectory()
+        self.root = self.root_ctx.name
+        self.fx = RepoFixture(self.root)
+        self.vault_dir = os.path.join(self.root, "the-vault")
+        vault.write_canary(self.vault_dir)
+        with open(os.path.join(self.vault_dir, "test_hidden_contract.py"),
+                  "w") as fh:
+            fh.write("import app\n"
+                     "def test_sub_exists(): assert app.sub(5, 3) == 2\n")
+        vault.save_manifest(self.vault_dir,
+                            vault.build_manifest(self.vault_dir))
+        self.heldout_cmd = (f"{sys.executable} -m pytest "
+                            f"{vault.HELDOUT_DIRNAME} -q")
+
+    def tearDown(self):
+        self.root_ctx.cleanup()
+
+    def run_gate(self, branch, **kw):
+        defaults = dict(repo=self.fx.repo, branch=branch, base="main",
+                        test_cmd=TEST_CMD, vault_path=self.vault_dir,
+                        heldout_cmd=self.heldout_cmd,
+                        verdict_dir=make_panel(self.root,
+                                               [("correctness", "PASS")]))
+        defaults.update(kw)
+        return gate.run_gate(**defaults)
+
+    def step(self, report, name):
+        return next(s for s in report["steps"] if s["step"] == name)
+
+    def test_green_when_heldout_passes(self):
+        self.fx.branch("task/good", {"app.py":
+                       "def add(a, b):\n    return a + b\n\n"
+                       "def sub(a, b):\n    return a - b\n"})
+        report = self.run_gate("task/good")
+        self.assertTrue(report["ok"], report["steps"])
+        detail = self.step(report, "heldout_tests")["detail"]
+        self.assertIn("1 held-out file(s)", detail)
+        self.assertIn("replay 1 metered", detail)
+
+    def test_blocks_when_heldout_fails_and_evidence_routes_vault_side(self):
+        self.fx.branch("task/bad", {"app.py":
+                       "def add(a, b):\n    return a + b\n\n"
+                       "def sub(a, b):\n    return 0\n"})
+        report = self.run_gate("task/bad")
+        self.assertFalse(report["ok"])
+        self.assertFalse(self.step(report, "heldout_tests")["ok"])
+        # full log vault-side, named per branch
+        log = os.path.join(self.vault_dir, "evidence",
+                           "gate-heldout-task__bad.log")
+        self.assertTrue(os.path.exists(log))
+        self.assertIn("test_sub_exists", open(log).read())
+        # in-repo tail is scrubbed of the corpus identifier
+        self.assertNotIn("test_hidden_contract", report["heldout_tail"])
+        self.assertIn("vault:", report["heldout_tail"])
+
+    def test_replays_metered_across_runs(self):
+        self.fx.branch("task/good2", {"app.py":
+                       "def add(a, b):\n    return a + b\n\n"
+                       "def sub(a, b):\n    return a - b\n"})
+        self.run_gate("task/good2")
+        self.run_gate("task/good2")
+        replays = os.path.join(self.vault_dir, "evidence", "replays.jsonl")
+        self.assertEqual(sum(1 for _ in open(replays)), 2)
+
+    def test_heldout_without_vault_fails_closed(self):
+        self.fx.branch("task/x", {"app.py": "def add(a, b): return a + b\n"})
+        report = self.run_gate("task/x", vault_path=None)
+        self.assertFalse(report["ok"])
+        self.assertIn("no vault_path",
+                      self.step(report, "heldout_tests")["detail"])
+
+    def test_empty_manifest_fails_closed(self):
+        empty_vault = os.path.join(self.root, "empty-vault")
+        vault.write_canary(empty_vault)
+        vault.save_manifest(empty_vault, vault.build_manifest(empty_vault))
+        self.fx.branch("task/y", {"app.py": "def add(a, b): return a + b\n"})
+        report = self.run_gate("task/y", vault_path=empty_vault)
+        self.assertFalse(report["ok"])
+        self.assertIn("nothing to execute",
+                      self.step(report, "heldout_tests")["detail"])
+
+    def test_tampered_corpus_never_runs(self):
+        with open(os.path.join(self.vault_dir, "test_hidden_contract.py"),
+                  "a") as fh:
+            fh.write("# tampered after manifest\n")
+        self.fx.branch("task/z", {"app.py": "def add(a, b): return a + b\n"})
+        report = self.run_gate("task/z")
+        self.assertFalse(report["ok"])
+        # the drop check catches the mutation before materialize even runs
+        failing = next(s for s in report["steps"] if not s["ok"])
+        self.assertIn(failing["step"], ("heldout_drop", "heldout_tests"))
+
+    def test_materialize_hash_verification_is_loud(self):
+        dest = os.path.join(self.root, "dest")
+        with open(os.path.join(self.vault_dir, "test_hidden_contract.py"),
+                  "a") as fh:
+            fh.write("# drift\n")
+        with self.assertRaises(vault.VaultError):
+            vault.materialize(self.vault_dir, dest)

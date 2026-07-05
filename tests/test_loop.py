@@ -280,3 +280,104 @@ class PauseRequestTests(unittest.TestCase):
             loop.acknowledge_pause(
                 self.path, os.path.join(self.dir.name, "state", "pause.ack"),
                 [])
+
+
+class HeadlessWorkerTests(unittest.TestCase):
+    """I26 — the spawn path where model AND effort verifiably bind."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_cmd_carries_every_requested_knob(self):
+        cmd = loop.headless_worker_cmd(
+            "implement T1", "claude-sonnet-5", effort="max",
+            system_prompt="You are the implementer.",
+            json_schema_path="harness/config/schemas/handoff.json",
+            disallowed_tools=["Edit", "Write"], max_turns=40)
+        joined = " ".join(cmd)
+        self.assertEqual(cmd[:3], ["claude", "-p", "implement T1"])
+        self.assertIn("--model claude-sonnet-5", joined)
+        self.assertIn("--effort max", joined)
+        self.assertIn("--output-format json", joined)
+        self.assertIn("--max-turns 40", joined)
+        self.assertIn("--dangerously-skip-permissions", joined)
+        self.assertIn("--append-system-prompt You are the implementer.",
+                      joined)
+        self.assertIn("--json-schema harness/config/schemas/handoff.json",
+                      joined)
+        self.assertIn("--disallowedTools Edit,Write", joined)
+        self.assertIn("--no-session-persistence", joined)
+
+    def test_cmd_validates_against_the_allowlist(self):
+        from harness.spawncheck import SpawnValidationError
+        with self.assertRaises(SpawnValidationError):
+            loop.headless_worker_cmd("x", "gpt-99-turbo")
+        with self.assertRaises(SpawnValidationError):
+            loop.headless_worker_cmd("x", "claude-sonnet-5", effort="ultra")
+        with self.assertRaises(LoopError):
+            loop.headless_worker_cmd("  ", "claude-sonnet-5")
+        with self.assertRaises(LoopError):
+            loop.headless_worker_cmd("x", "claude-sonnet-5", max_turns=0)
+
+    def test_spawn_interlock_governs_the_headless_cmd(self):
+        import shlex
+        from harness import interlocks
+        marker = os.path.join(self.dir.name, "run.marker")
+        stamp = os.path.join(self.dir.name, "admission-stamp.json")
+        loop.acquire_run_marker(marker, "smoke")
+        try:
+            cmd = " ".join(shlex.quote(c) for c in loop.headless_worker_cmd(
+                "implement T1", "claude-sonnet-5", effort="xhigh"))
+            self.assertIsNotNone(interlocks.check_spawn(
+                "Bash", {"command": cmd}, marker, stamp))
+            interlocks.write_admission_stamp(stamp,
+                                             {"task_id": "T1", "tick": 1})
+            self.assertIsNone(interlocks.check_spawn(
+                "Bash", {"command": cmd}, marker, stamp))
+        finally:
+            loop.release_run_marker(marker)
+
+    def test_overlay_binds_worker_settings_to_the_worktree(self):
+        wt = os.path.join(self.dir.name, "wt")
+        os.makedirs(wt)
+        vault = os.path.join(self.dir.name, "outside-vault")
+        os.makedirs(vault)
+        path = loop.write_worker_overlay(wt, vault)
+        self.assertTrue(path.endswith(
+            os.path.join(".claude", "settings.local.json")))
+        with open(path) as fh:
+            on_disk = json.load(fh)
+        self.assertEqual(on_disk, loop.worker_settings(vault))
+        self.assertFalse(on_disk["sandbox"]["allowUnsandboxedCommands"])
+
+    def test_parse_worker_result_normalizes_and_stays_loud(self):
+        handoff = {"outcome": "pass", "summary": "s", "intent": "i",
+                   "key_changes_made": ["x"], "key_learnings": []}
+        doc = {"result": json.dumps(handoff), "session_id": "s1",
+               "usage": {"input_tokens": 10, "output_tokens": 5},
+               "total_cost_usd": 0.01}
+        got = loop.parse_worker_result(json.dumps(doc))
+        self.assertEqual(got["parsed"]["outcome"], "pass")
+        self.assertEqual(got["usage"]["output_tokens"], 5)
+        prose = loop.parse_worker_result(json.dumps(
+            {"result": "I did things but forgot the contract"}))
+        self.assertIsNone(prose["parsed"])  # the ladder's business, no crash
+        with self.assertRaises(LoopError):
+            loop.parse_worker_result("not json at all")
+        with self.assertRaises(LoopError):
+            loop.parse_worker_result(json.dumps({"no_result": True}))
+
+    def test_headless_failure_patterns_classify(self):
+        from harness import failures
+        extras = failures.load_patterns(list(loop.HEADLESS_FAILURE_PATTERNS))
+        got = failures.classify("Error: reached max turns (40)",
+                                extra_patterns=extras)
+        self.assertEqual(got["class"], failures.PERMANENT)
+        got = failures.classify(
+            "There's an issue with the selected model (gpt-99-turbo). It may "
+            "not exist or you may not have access to it.",
+            extra_patterns=extras)
+        self.assertEqual(got["class"], failures.PERMANENT)

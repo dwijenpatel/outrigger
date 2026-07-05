@@ -232,6 +232,114 @@ def worker_settings(vault_path: str | None = None) -> dict:
     return settings
 
 
+# -- headless one-shot workers (I26) -------------------------------------------------
+
+DEFAULT_WORKER_MAX_TURNS = 80
+WORKER_OVERLAY_RELPATH = os.path.join(".claude", "settings.local.json")
+
+#: Raw pattern table for ``failures.load_patterns`` → ``classify`` on headless
+#: worker deaths. Max-turns exhaustion is an AGENT failure (feeds the
+#: escalation ladder at a fresh worker boundary), never an infra retry.
+HEADLESS_FAILURE_PATTERNS = (
+    {"pattern": r"max.?turns", "class": "permanent",
+     "why": "worker exhausted --max-turns — agent-level failure; escalate at a "
+            "fresh worker boundary (ladder), do not blind-retry"},
+    {"pattern": r"may not exist or you may not have access", "class": "permanent",
+     "why": "model id rejected at spawn — tiers.json vs build config error"},
+    {"pattern": r"session limit|usage limit", "class": "retryable",
+     "why": "window pressure — back off; the governor decides the pace"},
+)
+
+
+def write_worker_overlay(worktree: str, vault_path: str | None = None) -> str:
+    """I26 — bind :func:`worker_settings` to one worker's worktree as
+    ``.claude/settings.local.json`` (gitignored; the local scope merges with
+    the worktree's committed machinery settings, deny-first). This is the
+    layer-6 binding the Agent-tool spawn path could never do: each worker
+    process loads its own strict sandbox + deny set from its own cwd."""
+    path = os.path.join(worktree, WORKER_OVERLAY_RELPATH)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as fh:
+        json.dump(worker_settings(vault_path), fh, indent=2, sort_keys=True)
+        fh.write("\n")
+    os.replace(tmp, path)
+    return path
+
+
+def headless_worker_cmd(prompt: str, model: str, *,
+                        effort: str | None = None,
+                        system_prompt: str | None = None,
+                        json_schema_path: str | None = None,
+                        max_turns: int = DEFAULT_WORKER_MAX_TURNS,
+                        disallowed_tools: list | None = None,
+                        session_persistence: bool = False,
+                        tiers_doc: dict | None = None) -> list:
+    """I26 — argv for one headless one-shot worker (``claude -p``): the one
+    spawn path where every requested knob verifiably binds — per-spawn
+    ``--model`` (concrete allowlisted id) AND ``--effort`` (measured-applied:
+    benchmark 2026-07 round 2) — plus per-worker settings via
+    :func:`write_worker_overlay`.
+
+    Run with ``cwd=<worktree>`` and ``env=headless_env(...)``. Deny rules and
+    blocking PreToolUse hooks survive ``--dangerously-skip-permissions``
+    [official], so the six-layer stack holds. The spawn interlock's Bash
+    regex recognizes this command — a fresh admission stamp is still required.
+    """
+    from . import spawncheck as _spawncheck
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise LoopError("headless worker needs a non-empty prompt")
+    resolved = _spawncheck.validate_spawn(model=model, effort=effort,
+                                          tiers_doc=tiers_doc)
+    if not isinstance(max_turns, int) or isinstance(max_turns, bool) \
+            or max_turns < 1:
+        raise LoopError(f"max_turns must be a positive int, got {max_turns!r}")
+    cmd = ["claude", "-p", prompt,
+           "--model", resolved["model"],
+           "--output-format", "json",
+           "--max-turns", str(max_turns),
+           "--dangerously-skip-permissions"]
+    if resolved["effort"] is not None:
+        cmd += ["--effort", resolved["effort"]]
+    if system_prompt:
+        cmd += ["--append-system-prompt", system_prompt]
+    if json_schema_path:
+        cmd += ["--json-schema", json_schema_path]
+    if disallowed_tools:
+        cmd += ["--disallowedTools", ",".join(disallowed_tools)]
+    if not session_persistence:
+        cmd += ["--no-session-persistence"]
+    return cmd
+
+
+def parse_worker_result(output_text: str) -> dict:
+    """Normalize a ``--output-format json`` worker document. Returns
+    ``{result, parsed, structured_output, usage, total_cost_usd, session_id}``
+    — ``parsed`` is the role contract's final-message JSON when the worker
+    honored it (else None: an agent-level failure for the ladder, not a
+    crash). Loud on output that is not the CLI's JSON document at all."""
+    try:
+        doc = json.loads(output_text)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise LoopError(f"worker output is not the CLI's JSON document: {exc}")
+    if not isinstance(doc, dict) or not isinstance(doc.get("result"), str):
+        raise LoopError("worker output JSON lacks a string 'result' field")
+    usage = doc.get("usage")
+    parsed = doc.get("structured_output")
+    if parsed is None:
+        try:
+            candidate = json.loads(doc["result"])
+            parsed = candidate if isinstance(candidate, dict) else None
+        except json.JSONDecodeError:
+            parsed = None
+    return {"result": doc["result"],
+            "parsed": parsed,
+            "structured_output": doc.get("structured_output"),
+            "usage": usage if isinstance(usage, dict) else {},
+            "total_cost_usd": doc.get("total_cost_usd"),
+            "session_id": doc.get("session_id")}
+
+
 # -- claims-not-evidence resume -----------------------------------------------------
 
 

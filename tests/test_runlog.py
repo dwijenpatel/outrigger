@@ -191,3 +191,51 @@ class ModelFieldTests(unittest.TestCase):
         self.assertEqual(out["model"], resolved["model"])
         self.assertTrue(out["model"])  # a concrete id, not a tier name
         self.assertNotIn(out["model"], ("cheap", "standard", "capable", "max"))
+
+
+class WorkerEventTests(unittest.TestCase):
+    """I15 (P2-12) — spawn/abort/park are validated events, not improvisations."""
+
+    RESOLVED = {"model": "claude-haiku-4-5-20251001", "tier": "cheap",
+                "effort": "low"}
+
+    def test_worker_event_builds_validated_records(self):
+        rec = runlog.worker_event(runlog.TASK_SPAWN, "GL2", "implementer",
+                                  self.RESOLVED, attempt=1)
+        self.assertEqual(rec["event"], "task_spawn")
+        self.assertEqual(rec["model"], "claude-haiku-4-5-20251001")
+        self.assertEqual(rec["attempt"], 1)
+        aborted = runlog.worker_event(runlog.TASK_ABORTED, "GL2",
+                                      "test_author",
+                                      {"model": "claude-fable-5",
+                                       "tier": "max", "effort": "high"})
+        self.assertEqual(aborted["event"], "task_aborted")
+
+    def test_worker_events_validate_fields(self):
+        with self.assertRaises(runlog.RunLogError):
+            runlog.validate_record({"event": "task_spawn", "role": "implementer"})
+        with self.assertRaises(runlog.RunLogError):
+            runlog.validate_record({"event": "task_parked", "task_id": "t",
+                                    "role": "goblin"})
+        with self.assertRaises(runlog.RunLogError):
+            runlog.worker_event("task_finished", "t", "implementer",
+                                self.RESOLVED)
+
+    def test_attempt_validated_everywhere(self):
+        with self.assertRaises(runlog.RunLogError):
+            runlog.validate_record({"event": "task_complete",
+                                    "profile": "routine", "total_tokens": 1,
+                                    "attempt": 0})
+        ok = runlog.validate_record({"event": "task_complete",
+                                     "profile": "routine", "total_tokens": 1,
+                                     "attempt": 3})
+        self.assertEqual(ok["attempt"], 3)
+
+    def test_spawn_total_tokens_optional_but_typed(self):
+        rec = runlog.worker_event(runlog.TASK_SPAWN, "t", "implementer",
+                                  self.RESOLVED)
+        self.assertNotIn("total_tokens", rec)
+        with self.assertRaises(runlog.RunLogError):
+            runlog.validate_record({"event": "task_spawn", "task_id": "t",
+                                    "role": "implementer",
+                                    "total_tokens": -5})

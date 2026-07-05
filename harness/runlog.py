@@ -31,6 +31,12 @@ ROLES = ("implementer", "validator", "test_author", "orchestrator", "other")
 #: Event type for a completed task attempt — the record shape most consumers care about.
 TASK_COMPLETE = "task_complete"
 FALSE_FAIL = "false_fail"  # H4: per-lens verifier-precision telemetry (§8)
+# I15 (P2-12): routing-preserving worker lifecycle events — a spawn/abort/park
+# record survives mid-task death by contract, not by orchestrator invention
+TASK_SPAWN = "task_spawn"
+TASK_ABORTED = "task_aborted"
+TASK_PARKED = "task_parked"
+WORKER_EVENTS = (TASK_SPAWN, TASK_ABORTED, TASK_PARKED)
 
 _TOKEN_COMPONENTS = (
     "input_tokens",
@@ -125,7 +131,40 @@ def validate_record(rec: dict) -> dict:
     elif out["event"] == FALSE_FAIL:
         for field in ("reproduced", "unreproduced", "no_repro"):
             _require_nonneg_int(out, field)
+    elif out["event"] in WORKER_EVENTS:
+        if not isinstance(out.get("task_id"), str) or not out["task_id"]:
+            raise RunLogError(f"{out['event']}: needs a task_id")
+        _require_enum(out, "role", ROLES, required=True)
+        _require_enum(out, "tier", TIERS)
+        _require_enum(out, "effort", EFFORTS)
+        _require_nonneg_int(out, "total_tokens")
+        if "model" in out and (not isinstance(out["model"], str)
+                               or not out["model"].strip()):
+            raise RunLogError(f"model={out['model']!r} must be a non-empty "
+                              f"string when present")
+    if "attempt" in out:
+        _require_nonneg_int(out, "attempt")
+        if out["attempt"] < 1:
+            raise RunLogError(f"attempt={out['attempt']!r} must be >= 1")
     return out
+
+
+def worker_event(event: str, task_id: str, role: str, resolved: dict,
+                 attempt: int | None = None, **extra) -> dict:
+    """I15 — build a validated routing-preserving record straight from
+    spawncheck's resolved params. The loop appends this at spawn time
+    (write-ahead), and again as abort/park if the worker never returns —
+    so the routing choice is never lost to a mid-task death."""
+    if event not in WORKER_EVENTS:
+        raise RunLogError(f"worker_event: {event!r} not in {WORKER_EVENTS}")
+    rec = {"event": event, "task_id": task_id, "role": role,
+           "tier": resolved.get("tier"), "model": resolved.get("model"),
+           "effort": resolved.get("effort")}
+    rec = {k: v for k, v in rec.items() if v is not None}
+    if attempt is not None:
+        rec["attempt"] = attempt
+    rec.update(extra)
+    return validate_record(rec)
 
 
 class RunLog:

@@ -97,17 +97,18 @@ H9's ambiguity blockers only bite where profiles are set right — so a thin
 improvised spec quietly weakens the entire O0 chain ("a subpar plan hurts
 more than no plan" is the measured result the human gate exists for).
 
-**Live-pilot mitigation:** operator interrupts before the ledger freezes and
-runs the elicitation manually (paste-block provided in the main session).
-**Batch fix (pilot #2, high priority):** a `plan-build` skill — elicitation
-checklist ("keep asking until every held-out test the test-author would
-write has a determinate answer"), plan/spec template (per-task: scope,
-interfaces pinned, acceptance criteria, risk profile, deps), floors.json
-authoring, an explicit operator-ratification stop, then freeze_snapshot.
-Sizing guidance belongs there too: phase 1 = a small walking skeleton
-(4–6 tasks is fine) with later phases pre-decomposed as *provisional*
-(planning-only) ledgers — small first firing, without letting "small" mean
-"vague."
+**Live-pilot mitigation:** operator stopped the session; pilot restarts
+from scratch after the fix.
+**FIXED (I2, 2026-07-04):** `plan-build` skill (interview modeled on
+mattpocock/skills "grilling": one question at a time with a recommended
+answer, walk the design tree in dependency order, explore-don't-ask, no
+enactment until explicit shared understanding) + our additions (the
+determinacy bar — a spec-only test-author needs no guesses; "you decide" →
+recorded delegated DECISION; two clean sweeps to finish) +
+`harness/planning.py`: content-bound ratification stamp (any post-approval
+edit voids it), `plan_ready` fail-closed gate, and **build-loop step 0 now
+refuses to fire without it**. Sizing guidance included: phase 1 = small
+walking skeleton, later phases provisional — small must not mean vague.
 
 ---
 

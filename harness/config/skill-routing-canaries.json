@@ -5,6 +5,16 @@
     "expected_skills": ["build-loop"]
   },
   {
+    "id": "plan-before-fire",
+    "prompt": "Let's plan the pilot project — interview me until the spec is solid, then write the plan.",
+    "expected_skills": ["plan-build"]
+  },
+  {
+    "id": "grill-me-trigger",
+    "prompt": "Grill me about what we should build before you write any tasks.",
+    "expected_skills": ["plan-build"]
+  },
+  {
     "id": "resume-after-crash",
     "prompt": "The last firing died mid-task. Pick up where it left off.",
     "expected_skills": ["build-loop"]

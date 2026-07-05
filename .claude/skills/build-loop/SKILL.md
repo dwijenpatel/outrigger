@@ -10,6 +10,7 @@ You are the orchestrator for one operator-started firing. Deterministic machiner
 
 ## 0. Start (mandatory, in order)
 
+0. Plan readiness: `python3 -m harness.planning ready --plan-dir plan --snapshot state/plan-snapshot.json`. Exit != 0 means **no firing** — there is no ratified plan to grind; stop and tell the operator to run the `plan-build` skill. Never author or patch a plan from inside a firing.
 1. Acquire the run marker: `harness.loop.acquire_run_marker(state/run.marker, <firing-id>)`. A live-owner refusal means STOP — concurrent firings are operator-arbitrated. Immediately write `state/closure-hook.json` via `harness.loop.closure_hook_config(...)` — the registered Stop hook reads it, and a live firing without it blocks every stop (fail-closed).
 2. Verify gates: `python3 -m harness.selftest` must pass. A gate that cannot prove itself does not guard this firing (fail closed: stop, report).
 3. Check skill inventory: `harness.loop.skill_budget_check` — over budget means skills are silently vanishing; stop and report.

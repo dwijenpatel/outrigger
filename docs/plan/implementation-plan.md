@@ -135,6 +135,16 @@ precision-aware**. All gates fail closed; interlocks are inert outside a live fi
 | H9 | **Spec-ambiguity blockers**: handoff schema gains `spec_ambiguities`; on high/critical profiles they become **blocker records parking the task before implementation spends tokens** (advisory `key_learnings` on lower profiles) | §6.3 amendment | E1, E3 | done |
 | H10 | **Worker-side unconditional machinery deny**: `worker_settings()` denies Edit/Write on machinery globs regardless of branch name, merged with the vault fragment — branch prefixes are a dev convenience, not a boundary a worker can adopt | §7 wiring amendment 5 | E2, D1 | done |
 
+### Phase I — pilot-1 fixes (seeded from [../research/pilot-1-observations.md](../research/pilot-1-observations.md))
+
+| ID | Increment | Source | Deps | Status |
+|---|---|---|---|---|
+| I1 | **`state/` gitignored** — the loop's own bookkeeping must not dirty the tree `require_clean` judges | P1-5 | — | done |
+| I2 | **Planning surface**: `plan-build` skill (grilling-method interview — one question at a time with a recommended answer, explore-don't-ask, determinacy bar = a spec-only test-author needs no guesses, hard ratification stop) + `harness/planning.py` (content-bound ratification stamp; `plan_ready` gate: ledger/specs/floors/snapshot/ratification all fail-closed) + build-loop step 0 refuses to fire without it; routing canaries; repo CLAUDE.md | P1-8 | — | done |
+| I3 | **Harness reference doc** — one page of shapes (task record, floors, gate call, state-file map) so planning sessions stop source-diving | P1-6 | — | not-started |
+| I4 | **Vault location pinned** — skill text + a loud refuse-if-inside-repo check in `vault.py` | P1-7 | — | not-started |
+| I5 | **Firing smoke test** — scripted walk of the skill's step sequence in a scratch clone via the mock worker; asserts clean tree + green gate end-to-end (hermetic suites missed P1-5/P1-7-class composition defects) | P1 theme 1 | A6 | not-started |
+
 ## Stage-gate flips (operational, evidence-gated — design §11)
 
 Not build increments: config/enforcement flips of machinery built above, each gated on the

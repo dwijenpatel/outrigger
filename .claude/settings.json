@@ -1,4 +1,8 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "python3 \"$CLAUDE_PROJECT_DIR\"/hooks/statusline_dump.py --out \"$CLAUDE_PROJECT_DIR\"/state/statusline-dump.json"
+  },
   "hooks": {
     "PreToolUse": [
       {

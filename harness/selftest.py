@@ -67,7 +67,11 @@ def check_hook_registration(settings_path: str = SETTINGS) -> list:
         return out
 
     pre, stop = commands("PreToolUse"), commands("Stop")
+    statusline_cmd = (doc.get("statusLine") or {}).get("command", "")
     checks = (
+        ("statusline shim registered (I9 — the live quota rung exists "
+         "whenever an interactive session ran)",
+         "statusline_dump.py" in statusline_cmd),
         ("git_guard registered for Bash",
          any("git_guard.py" in c and "Bash" in m for m, c in pre)),
         ("git_guard registered for file tools",

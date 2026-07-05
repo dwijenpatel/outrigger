@@ -122,8 +122,11 @@ refuses readiness against an unconfigured/drifted/absent vault (I4b), and
   bounds-checked, always-optimistic (sticky-`~`) assumption used only when
   no source yields a usable window; conservative-serial admissions only,
   never clears a preflight.
-- **P2-3:** partially addressed by the same step-3b documentation; still a
-  watch item for wall-clock impact.
+- **P2-3 FIXED (I9, operator-approved):** the statusline shim is registered
+  as project machinery in `settings.json` — every interactive session
+  auto-produces `state/statusline-dump.json`, so the live rung exists
+  without an operator chore; H8 staleness handling covers idle dumps.
+  Registration is selftest-checked.
 - **P2-1:** unchanged — still the pre-registered sandbox watch item.
 
 ## Themes so far

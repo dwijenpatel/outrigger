@@ -151,4 +151,20 @@ def profile_spawn_params(profile: str, tiers_doc: dict | None = None,
             f"profile {profile!r}: lenses must be a non-empty list, got {lenses!r}")
     resolved["validator_count"] = count
     resolved["lenses"] = list(lenses)
+
+    # I12: per-role split — the implementer may start below the profile's
+    # validation-side tier (loud, self-correcting failures: durable FAILs +
+    # the escalation ladder + the >40% break-even trip-wire). Test-author and
+    # validators always use the base params: their weakness fails SILENTLY,
+    # so downgrades there need canary proof (D4/H6), never a config edit.
+    impl_tier = entry.get("implementer_tier")
+    if impl_tier is not None:
+        resolved["implementer"] = validate_spawn(
+            tier=impl_tier, effort=entry.get("implementer_effort",
+                                             entry.get("effort")),
+            tiers_doc=tiers_doc)
+    else:
+        resolved["implementer"] = {"model": resolved["model"],
+                                   "effort": resolved["effort"],
+                                   "tier": resolved["tier"]}
     return resolved

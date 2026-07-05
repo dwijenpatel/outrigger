@@ -131,3 +131,46 @@ class ProfileSpawnParamsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ImplementerTierSplitTests(unittest.TestCase):
+    """I12 — the implementer may start below the profile's validation tier;
+    test-author/validators never downgrade by config."""
+
+    def profiles(self):
+        return {
+            "elevated": {"starting_tier": "standard", "effort": "medium",
+                         "validator_count": 2,
+                         "lenses": ["correctness", "repro"],
+                         "implementer_tier": "cheap"},
+            "routine": {"starting_tier": "cheap", "effort": "low",
+                        "validator_count": 1, "lenses": ["correctness"]},
+        }
+
+    def test_split_resolves_both_roles(self):
+        got = spawncheck.profile_spawn_params("elevated",
+                                              profiles=self.profiles())
+        self.assertEqual(got["tier"], "standard")          # validation side
+        self.assertEqual(got["implementer"]["tier"], "cheap")
+        self.assertNotEqual(got["implementer"]["model"], got["model"])
+        self.assertEqual(got["implementer"]["effort"], "medium")  # inherited
+
+    def test_no_override_mirrors_base(self):
+        got = spawncheck.profile_spawn_params("routine",
+                                              profiles=self.profiles())
+        self.assertEqual(got["implementer"]["model"], got["model"])
+        self.assertEqual(got["implementer"]["tier"], "cheap")
+
+    def test_invalid_implementer_tier_is_loud(self):
+        profiles = self.profiles()
+        profiles["elevated"]["implementer_tier"] = "bargain"
+        with self.assertRaises(spawncheck.SpawnValidationError):
+            spawncheck.profile_spawn_params("elevated", profiles=profiles)
+
+    def test_committed_config_resolves_the_experiment(self):
+        got = spawncheck.profile_spawn_params("critical")
+        self.assertEqual(got["tier"], "max")               # panel strength
+        self.assertEqual(got["implementer"]["tier"], "capable")  # one down
+        high = spawncheck.profile_spawn_params("high")
+        self.assertEqual(high["implementer"]["tier"], "standard")
+        self.assertNotEqual(high["implementer"]["tier"], "cheap")  # guardrail

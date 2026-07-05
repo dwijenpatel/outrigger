@@ -47,3 +47,28 @@ assumed from the primitive's prose-implied contract) — see
 3. If any row's behavior changed from this baseline, update this file (new dated section, don't
    overwrite) and re-check whether the spawn-code allowlist guard in §5.3 is still necessary or
    whether the primitive itself started validating.
+
+## 2026-07-05 addendum — surfaces for the next re-run (P3v2-6 follow-up)
+
+Pilot-3-v2 hit the `Agent`-path effort gap live (P3v2-6 → I24). A same-day
+official-docs check (claude-code-guide) adds unprobed surfaces and one
+conflict; none is trusted until measured, per this probe's own lesson
+(**acceptance ≠ application** — the invalid-effort row above was silently
+accepted too):
+
+1. **Agent-definition frontmatter `effort:`** — sub-agents docs support
+   `effort: low|medium|high|xhigh|max` in `.claude/agents/*.md` frontmatter,
+   overriding session effort for `Agent`-tool spawns of that agent type
+   (default: inherit). UNPROBED for application. If verified, pre-committed
+   variants (e.g. `implementer-max.md`) give the Agent path a per-spawn
+   effort rung with no mid-firing machinery edit. Probe: same hard task via
+   `effort: low` vs `effort: max` variants; compare thinking-token deltas
+   (benchmark round-2 method), never dispatch success.
+2. **`--effort` CLI flag / `effortLevel` settings key** — headless
+   `claude -p --effort` is already measured-applied (benchmark 2026-07 round
+   2: low→max scales Sonnet 4.2×, Opus 3.1×, Fable 2.4×); the flag also works
+   at interactive launch. Treat as the proven path; no new probe needed.
+3. **Conflict to re-check on version moves:** docs list Haiku 4.5 as
+   accepting low/medium/high/max (not xhigh); the local benchmark measured NO
+   behavioral change for haiku at any effort (round 1; CLI silently
+   tolerant). Measured wins for the tested build.

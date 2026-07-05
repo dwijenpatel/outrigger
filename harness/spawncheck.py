@@ -18,8 +18,11 @@ design §5.3's "one config table"). Per-profile spawn parameters come from
 I24 (P3v2-6): ``effort`` is validated for *records*. The portable Agent/Task
 spawn surface has no per-spawn effort control — workers inherit the session's
 effort — so a resolved ``effort`` is the requested param (telemetry), not an
-actuation. Only the Workflow spawn path threads per-agent effort (§5.3).
-Escalation that would raise effort must instead sharpen feedback, then bump tier.
+actuation. Per-spawn effort lives elsewhere: headless ``claude -p --effort``
+(measured-applied, benchmark 2026-07), agent-definition ``effort:`` frontmatter
+and Workflow ``opts.effort`` (docs/acceptance-verified, application unprobed —
+see the probe doc's 2026-07-05 addendum). Escalation that would raise effort
+must instead sharpen feedback, then bump tier.
 """
 
 from __future__ import annotations

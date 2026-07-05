@@ -332,7 +332,17 @@ wasted cheap attempt `[measured]`).
   `max`-effort rung; it correctly substituted a fresh same-tier worker with sharpened
   spec-grounded feedback, which landed the fix on attempt 2. The build-loop ladder is now
   stated in actuatable terms — feedback, then tier — with the effort rung reserved for
-  Workflow-path spawns. **Correction:** "invalid ids fail loud" does not hold as previously stated —
+  spawn paths that verifiably apply it. *(Same-day docs addendum)*: official docs also
+  support an `effort:` field in subagent **definition frontmatter** (`.claude/agents/*.md`),
+  overriding session effort for `Agent`-tool spawns of that agent type `[official]` — a
+  fourth surface, unprobed for application (the recurring effort theme: acceptance is
+  silent, application must be *measured*). If a probe verifies it, pre-committed variants
+  (e.g. an `effort: max` implementer definition) would give the `Agent` path a legal
+  per-spawn rung with no mid-firing machinery edit. Headless `claude -p --effort` remains
+  the one measured-applied path (benchmark round 2: low→max scales thinking 2.4–4.2× by
+  model). Docs further claim Haiku 4.5 accepts low/medium/high/max — this **conflicts**
+  with the local measurement (no behavioral change at any level, round 1); measured wins
+  for the tested build, re-probe on version moves. **Correction:** "invalid ids fail loud" does not hold as previously stated —
   an invalid `effort` string is **silently accepted** with no error, and an invalid `model` id
   fails only as an async `null` result + a workflow-level log entry, not a catchable throw.
   **The spawn code must therefore validate `(model, effort)` against an explicit allowlist

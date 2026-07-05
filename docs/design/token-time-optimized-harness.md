@@ -342,7 +342,17 @@ wasted cheap attempt `[measured]`).
   the one measured-applied path (benchmark round 2: low→max scales thinking 2.4–4.2× by
   model). Docs further claim Haiku 4.5 accepts low/medium/high/max — this **conflicts**
   with the local measurement (no behavioral change at any level, round 1); measured wins
-  for the tested build, re-probe on version moves. **Correction:** "invalid ids fail loud" does not hold as previously stated —
+  for the tested build, re-probe on version moves. *(2026-07-05 evening, I26)*: resolved —
+  **headless one-shot `claude -p` workers are now the loop's spawn path**: per-spawn
+  `--model` (concrete allowlisted id) and `--effort` (the measured-applied path) both bind,
+  `--json-schema` forces the role contract, and `worker_settings` binds per-worktree
+  (`.claude/settings.local.json`) — realizing §7 layer 6's divergent per-role policy, which
+  Agent-tool subagents structurally cannot do (they inherit the parent session wholesale).
+  Deny rules and blocking PreToolUse hooks survive `--dangerously-skip-permissions`
+  `[official]`, so the isolation stack holds headless. The Agent-tool path demotes to an
+  environment fallback (model-only, effort advisory, downgrade recorded). The escalation
+  ladder regains its effort rung: attempt 2 = same tier @ `max` + sharpened feedback;
+  attempt 3+ = tier up. **Correction:** "invalid ids fail loud" does not hold as previously stated —
   an invalid `effort` string is **silently accepted** with no error, and an invalid `model` id
   fails only as an async `null` result + a workflow-level log entry, not a catchable throw.
   **The spawn code must therefore validate `(model, effort)` against an explicit allowlist

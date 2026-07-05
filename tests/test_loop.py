@@ -228,3 +228,37 @@ class StatuslineDumpTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PauseRequestTests(unittest.TestCase):
+    """I11 — the graceful-pause flag: attributed, durable, fail-safe."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.path = os.path.join(self.dir.name, "state", "pause.request")
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_roundtrip(self):
+        self.assertIsNone(loop.pause_requested(self.path))
+        doc = loop.request_pause(self.path, "stepping away", "dwijen")
+        self.assertEqual(doc["requested_by"], "dwijen")
+        got = loop.pause_requested(self.path)
+        self.assertEqual(got["reason"], "stepping away")
+        self.assertIn("requested_at", got)
+        self.assertTrue(loop.clear_pause_request(self.path))
+        self.assertIsNone(loop.pause_requested(self.path))
+        self.assertFalse(loop.clear_pause_request(self.path))
+
+    def test_attribution_required(self):
+        with self.assertRaises(loop.LoopError):
+            loop.request_pause(self.path, "why", "  ")
+
+    def test_corrupt_request_still_pauses_fail_safe(self):
+        os.makedirs(os.path.dirname(self.path))
+        with open(self.path, "w") as fh:
+            fh.write("not json{")
+        got = loop.pause_requested(self.path)
+        self.assertIsNotNone(got)
+        self.assertIn("pausing anyway", got["reason"])

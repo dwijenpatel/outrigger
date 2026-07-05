@@ -103,6 +103,54 @@ def run_marker_live(path: str) -> dict | None:
     return doc if pid > 0 and _pid_alive(pid) else None
 
 
+DEFAULT_PAUSE_REQUEST_PATH = os.path.join("state", "pause.request")
+
+
+def request_pause(path: str, reason: str, requested_by: str) -> dict:
+    """I11 — flag a graceful pause from ANY session/terminal. The loop checks
+    this at every tick boundary and performs the same clean pause a governor
+    ``pause`` triggers. Attributed, like every operator judgment call."""
+    if not isinstance(requested_by, str) or not requested_by.strip():
+        raise LoopError("a pause request needs requested_by — operator "
+                        "judgment calls are attributed, never ambient")
+    doc = {"reason": (reason or "operator pause").strip(),
+           "requested_by": requested_by.strip(),
+           "requested_at": _utcnow_iso()}
+    parent = os.path.dirname(path) or "."
+    os.makedirs(parent, exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as fh:
+        json.dump(doc, fh, sort_keys=True)
+    os.replace(tmp, path)
+    return doc
+
+
+def pause_requested(path: str) -> dict | None:
+    """The loop's tick-boundary check. A torn/corrupt request still pauses
+    (fail toward the safe action — pausing is always recoverable)."""
+    try:
+        with open(path) as fh:
+            doc = json.load(fh)
+    except FileNotFoundError:
+        return None
+    except (json.JSONDecodeError, OSError):
+        return {"reason": "unreadable pause request — pausing anyway "
+                          "(fail-safe)", "requested_by": "unknown"}
+    return doc if isinstance(doc, dict) else {
+        "reason": "malformed pause request — pausing anyway (fail-safe)",
+        "requested_by": "unknown"}
+
+
+def clear_pause_request(path: str) -> bool:
+    """Cleared by the loop AFTER the pause completes — a request is never
+    consumed before the pause it asked for actually happened."""
+    try:
+        os.unlink(path)
+        return True
+    except FileNotFoundError:
+        return False
+
+
 def closure_hook_config(path: str, snapshot: str, ledger: str, events: str,
                         **extra) -> dict:
     """Write the Stop-hook closure config at firing start (H1). The hook reads

@@ -20,6 +20,16 @@
     "expected_skills": ["build-loop"]
   },
   {
+    "id": "pause-firing",
+    "prompt": "Pause the build loop gracefully — I need to step away.",
+    "expected_skills": ["build-pause"]
+  },
+  {
+    "id": "stop-firing-politely",
+    "prompt": "Wind down the current firing cleanly at the next boundary.",
+    "expected_skills": ["build-pause"]
+  },
+  {
     "id": "neg-explain-code",
     "prompt": "Explain what harness/governor.py does.",
     "expected_skills": []

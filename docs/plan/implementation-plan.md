@@ -162,6 +162,9 @@ precision-aware**. All gates fail closed; interlocks are inert outside a live fi
 | I20 | **H9 dual-covered ambiguity discharge**: `spec_ambiguities` entries may be `{text, corpus_covers}` objects; `corpus_covers: "both"` (the corpus passes under every reading — validated-wrong software impossible) discharges the entry to advisory on all profiles. Recorded, auditable (handoff rides the evidence store), reversible by re-authoring; test-author contract updated. Kills the P3v2-1 false-positive class: all 10 GL1 blockers were dual-covered in prose | P3v2-1 | H9 | done |
 | I21 | **Operator-adjudication protocol** (card-first, ask-second): blocker card with `asked_at` + `parked` ledger status written BEFORE any interactive ask; best-effort desktop notification (`tools/notify_operator.sh`); interactive ask only when parking leaves nothing admissible; `resolved{decision,by,at}` validated on the card — operator-wait becomes disk-derivable O2 telemetry (parked→resumed) | P3v2-1 | E3, H9 | done |
 | I22 | **git_guard command-boundary fix**: destructive-git gap classes exclude `\n` (a newline separates commands like `;`) — an `echo "... clean ..."` line plus a later `--abbrev-ref` no longer matches `git clean -f` across lines; destructive lines inside compounds still caught | P3v2-2 | C2 | done |
+| I23 | **Pause responsiveness**: `loop.acknowledge_pause` writes `state/pause.ack` (receipt: request + seen_at + draining list + policy) BEFORE the drain; the flag is checked at every stage boundary, not just tick start; workers spawn in background with polling (a foreground spawn deafens the orchestrator for the attempt's whole runtime); build-pause sets operator expectations — ack ≤ one poll interval, full pause ≤ longest in-flight attempt (attempts are atomic: drain, never kill, zero rework), and live-firing pauses go through the flag from a second terminal (in-session messages starve until the turn yields) | P3v2-8 | I11 | done |
+| I24 | **Escalation ladder in tool-actuatable terms**: the portable `Agent`/`Task` spawn surface has no per-spawn `effort` (session-inherited) — ladder restated as attempt 2 = fresh worker + sharpened spec-grounded feedback (same tier; proven on GL1), attempt 3+ = tier-up (implementer only); recorded effort = requested param (telemetry, not actuation); `max`-effort rung reserved for Workflow-path spawns | P3v2-6 | I18 | done |
+| I25 | **Firing-scoped burn rate**: `fraction_rate(since_ts=run-marker acquired_at)` — readings from prior firings (or pre-clock-correction stamps) never resolve a rate; fresh firings stay conservative until ~10 min of their own readings (the pre-registered expectation) | P3v2-3 | I17 | done |
 | I5 | **Firing smoke test** — scripted walk of the skill's step sequence in a scratch clone via the mock worker; asserts clean tree + green gate end-to-end (hermetic suites missed P1-5/P1-7-class composition defects) | P1 theme 1 | A6 | not-started |
 
 ## Stage-gate flips (operational, evidence-gated — design §11)
@@ -351,7 +354,8 @@ schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
   Next: **the pilot firing** (see Next up).
 - **2026-07-05 (pilot-3-v2 mid-firing review):** The rerun on instrument v2 resumed GL1
   exactly per kickoff (parked→in_progress off the resolved card, no re-adjudication), then
-  stalled **8h25m** on an interactive H9 ask (12:15Z→20:40Z) — Package A's routine→high raise
+  stalled on an interactive H9 ask (**8h25m as stamped**, 12:15Z→20:40Z; the firing session's
+  clock-jump finding P3v2-3 later revised the true wait to ≲85 min) — Package A's routine→high raise
   had silently armed the spec-ambiguity gate against GL1's carried-over handoff (10 blockers,
   all dual-covered in prose). Root-caused into four increments, all merged upstream while the
   firing continues (sync at the next firing boundary): **I20** (dual-covered discharge — the
@@ -363,3 +367,17 @@ schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
   cross-line over-match, found live by the firing session). 542 tests passing (was 521).
   Findings ledgered as P3v2-1/P3v2-2 in
   [../research/pilot-3-observations.md](../research/pilot-3-observations.md).
+- **2026-07-05 (pilot-3-v2 close + boundary sync):** GL1 **built and merged** — the design's
+  first live end-to-end win: the held-out corpus (I14's first real run) caught a `get_db`
+  contract violation that visible tests AND all 3 blind opus validators missed (P3v2-5);
+  attempt 2 (fresh worker + sharpened feedback, same tier) landed 41/41 held-out, 3/3
+  verdicts, merged with stamp. GL1 cost ≈ 260,659 tokens over 2 attempts, panel spend ≈ 63%
+  (P3v2-7, the first W9 datapoint). The operator's pause — typed into the firing session —
+  starved ~17 min behind a foreground worker (P3v2-8), but the clean pause itself was
+  exemplary (rich resume marker, marker released, nothing in flight). The firing session's
+  clock-jump finding (P3v2-3) corrected P3v2-1's stall magnitude (8h25m stamped → ≲85 min
+  true). Three more increments merged: **I23** (pause ack/drain/stage-boundary
+  checks/background spawns), **I24** (escalation ladder in actuatable terms — the Agent
+  path has no effort rung), **I25** (firing-scoped `fraction_rate`). Session findings
+  P3v2-3..8 folded upstream. 545 tests. **test1 synced at the pause boundary** (arm change
+  recorded in the ledger); next: overnight resume from GL2 with the unattended-mode kickoff.

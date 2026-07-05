@@ -582,10 +582,21 @@ message behavior `[measured]` even allows deliberate window alignment to the ope
   ledger **before** any interactive prompt — the card is the question; a prompt is one
   delivery vehicle for it. Interactive asks are legal only when parking leaves nothing
   admissible, and a best-effort desktop notification (`tools/notify_operator.sh`) fires on
-  every operator-blocking event. Pilot-3-v2 held an unnoticed interactive prompt for 8h25m
-  with no card on disk and the ledger claiming `in_progress` — a dead session would have
-  lost the question entirely. `parked→resumed` timestamps make operator-wait a measured
-  wall-clock cost (O2), and a full quota window can reset unused inside such a stall.
+  every operator-blocking event. Pilot-3-v2 held an unnoticed interactive prompt (first
+  measured 8h25m; ≲85 min after the P3v2-3 clock correction — unbounded either way, which
+  is the point) with no card on disk and the ledger claiming `in_progress` — a dead session
+  would have lost the question entirely. `parked→resumed` timestamps make operator-wait a
+  measured wall-clock cost (O2).
+- **Pause = acknowledge, drain, park — never kill, never deaf** *(2026-07-05 amendment,
+  I23/P3v2-8)*: worker attempts are atomic — disk-is-memory holds at handoff boundaries,
+  not mid-attempt — so killing an in-flight attempt trades latency for rework. A pause
+  request is acknowledged on disk (`state/pause.ack`) the moment the loop sees it; new
+  admissions stop; in-flight attempts drain to their handoffs; then the clean pause runs.
+  The orchestrator must stay responsive enough to see the flag at all: workers spawn in
+  the background and the flag is checked at every stage boundary, so pause latency is one
+  poll interval to acknowledge and the longest in-flight attempt to land. The flag file
+  (writable from any terminal) is the operator's channel into a live firing — a message
+  typed into the firing session itself starves until the turn yields.
 - **Spec-ambiguity blockers** *(2026-07-04 evening amendment)*: the spec is the one shared
   input blind validation cannot audit — spec↔intent divergence is validated-wrong-software.
   The test-author already surfaces spec ambiguities in its handoff; on **high/critical

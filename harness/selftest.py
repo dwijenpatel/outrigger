@@ -209,14 +209,15 @@ def run_selftests() -> dict:
                       "ok": blocked_read["isolation_ok"] is True,
                       "stderr": blocked_read["detail"][:200]})
 
-        # -- D1 isolation declaration completeness --------------------------------
-        with open(os.path.join(REPO_ROOT, "harness", "config",
-                               "vault-isolation.json")) as fh:
-            declared = json.load(fh)
-        missing = _vault.validate_isolation(declared)
-        cases.append({"case": "isolation declaration covers all six layers",
-                      "expected": "no missing layers", "got": str(missing or "ok"),
-                      "ok": not missing, "stderr": ""})
+        # -- D1/I4 committed vault config coherence --------------------------------
+        # unconfigured (template) is fine — firings refuse until configured;
+        # a *configured* config must survive every drift/typo check (P2-3)
+        declared = _vault.load_vault_config(REPO_ROOT)
+        cfg_result = _vault.check_vault_config(declared, REPO_ROOT)
+        cases.append({"case": "I4 committed vault config coherent",
+                      "expected": "unconfigured template OR fully valid",
+                      "got": cfg_result["why"][:120],
+                      "ok": cfg_result["ok"], "stderr": ""})
 
         # -- H1 closure Stop-hook mode, both directions ---------------------------
         project = os.path.join(root, "project")

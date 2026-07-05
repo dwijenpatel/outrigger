@@ -148,6 +148,26 @@ globs) had no test.
 to the gate machinery step, the PreToolUse hook, and H10's worker denies;
 tests added; applied to the live pilot repo pre-firing.
 
+### P2-3 🟡 The vault location was set by hand-editing a security config — nothing would have caught a slip
+
+The operator moved the pilot's vault to an absolute outside-repo path
+(correctly — the P1-7 guidance) by hand-editing
+`harness/config/vault-isolation.json`. The edit was clean, but the review
+established that **no machinery validates that file**: `validate_isolation`
+only checks fields are non-empty, so a relative path, an in-repo path, or
+deny rules naming a different directory than `vault_path` would all pass
+silently — and each one voids an isolation layer. (Reviewer note for
+honesty: the initial review misread wrapped diff output as a `./`-prefixed
+denyRead typo; the actual edit was correct. The class of error is real even
+though this instance wasn't.)
+**Fixed (I4):** the config is now generated, never hand-edited —
+`python3 -m harness.vault configure --vault-path /abs/path` regenerates
+layers 1–3 from the path; `check` refuses relative paths, in-repo paths,
+and any drift from the regenerated form; the committed template ships
+**unconfigured** (vault_path null) and the build-loop refuses to fire
+until `check` passes (step 2b); committed-config coherence rides the
+selftest.
+
 ---
 
 ## Themes so far

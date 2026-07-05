@@ -29,13 +29,13 @@ class IsolationConfigTests(unittest.TestCase):
         missing = vault.validate_isolation({})
         self.assertEqual(set(missing), set(vault.REQUIRED_LAYERS))
 
-    def test_committed_declaration_is_complete(self):
-        cfg = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "harness", "config",
-            "vault-isolation.json")
-        with open(cfg) as fh:
-            doc = json.load(fh)
-        self.assertEqual(vault.validate_isolation(doc), [])
+    def test_committed_config_is_coherent(self):
+        # I4: the template ships unconfigured (fine — firings refuse);
+        # if someone configures it, every drift check must hold
+        repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        doc = vault.load_vault_config(repo)
+        result = vault.check_vault_config(doc, repo)
+        self.assertTrue(result["ok"], result["why"])
 
     def test_strict_flags_must_be_exact(self):
         doc = {"worker_settings": vault.isolation_settings(".vault"),
@@ -139,7 +139,8 @@ class SelfTestHarnessTests(unittest.TestCase):
         self.assertTrue(report["ok"])
         # sanity: the suite exercises all gates + canary + declaration
         names = " ".join(c["case"] for c in report["cases"])
-        for token in ("C1", "C2", "C3", "C4", "canary", "six layers"):
+        for token in ("C1", "C2", "C3", "C4", "canary",
+                      "I4 committed vault config"):
             self.assertIn(token, names)
 
 
@@ -211,3 +212,99 @@ class EvidenceLeakageTests(unittest.TestCase):
             [{"lens": "a", "verdict": "PASS", "evidence": ["ok"],
               "intent": "t"}], entries)
         self.assertEqual(clean["mentions"], 0)
+
+
+class VaultConfigEnforcementTests(unittest.TestCase):
+    """I4/P2-3 — the vault config is generated + machine-checked; every
+    human-error class observed or near-missed in the pilots is refused."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.repo = os.path.join(self.dir.name, "repo")
+        os.makedirs(os.path.join(self.repo, "harness", "config"))
+        self.outside = os.path.join(self.dir.name, "the-vault")
+        self.cfg_path = os.path.join(self.repo, "harness", "config",
+                                     "vault-isolation.json")
+        with open(self.cfg_path, "w") as fh:
+            json.dump({"_meta": {}, "structural_layers": {
+                "config_out_of_scope": "x", "egress_control": "x",
+                "role_processes": "x"},
+                "vault_path": None, "worker_settings": None}, fh)
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def check(self):
+        return vault.check_vault_config(
+            vault.load_vault_config(self.repo), self.repo)
+
+    def test_unconfigured_is_coherent_but_not_fireable(self):
+        result = self.check()
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["configured"])
+        self.assertIn("refuse until configured", result["checks"][0]["detail"])
+
+    def test_configure_produces_a_passing_config(self):
+        vault.configure_vault(self.repo, self.outside)
+        result = self.check()
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["configured"])
+
+    def test_relative_vault_path_refused(self):
+        with self.assertRaises(vault.VaultError):
+            vault.configure_vault(self.repo, ".vault")
+
+    def test_inside_repo_vault_refused(self):
+        with self.assertRaises(vault.VaultError) as ctx:
+            vault.configure_vault(self.repo,
+                                  os.path.join(self.repo, "vaultdir"))
+        self.assertIn("inside the repo", str(ctx.exception))
+
+    def test_hand_edit_drift_refused(self):
+        # the P2-3 near-miss: a typo'd denyRead that validate_isolation's
+        # non-empty check would have waved through
+        vault.configure_vault(self.repo, self.outside)
+        doc = vault.load_vault_config(self.repo)
+        doc["worker_settings"]["sandbox"]["denyRead"] = ["./typo" + self.outside]
+        with open(self.cfg_path, "w") as fh:
+            json.dump(doc, fh)
+        result = self.check()
+        self.assertFalse(result["ok"])
+        self.assertIn("regenerate", result["why"])
+
+    def test_mismatched_deny_rules_refused(self):
+        vault.configure_vault(self.repo, self.outside)
+        doc = vault.load_vault_config(self.repo)
+        doc["vault_path"] = self.outside + "-other"
+        with open(self.cfg_path, "w") as fh:
+            json.dump(doc, fh)
+        result = self.check()
+        self.assertFalse(result["ok"])
+
+    def test_configure_preserves_structural_layers(self):
+        vault.configure_vault(self.repo, self.outside)
+        doc = vault.load_vault_config(self.repo)
+        self.assertEqual(doc["structural_layers"]["egress_control"], "x")
+        # and the result is idempotent
+        vault.configure_vault(self.repo, self.outside)
+        self.assertTrue(self.check()["ok"])
+
+    def test_cli_exit_codes(self):
+        import subprocess
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        unconfigured = subprocess.run(
+            [sys.executable, "-m", "harness.vault", "check",
+             "--repo", self.repo], capture_output=True, text=True,
+            timeout=30, cwd=repo_root)
+        self.assertEqual(unconfigured.returncode, 2)
+        self.assertIn("NOT fireable", unconfigured.stderr)
+        configured = subprocess.run(
+            [sys.executable, "-m", "harness.vault", "configure",
+             "--repo", self.repo, "--vault-path", self.outside],
+            capture_output=True, text=True, timeout=30, cwd=repo_root)
+        self.assertEqual(configured.returncode, 0)
+        good = subprocess.run(
+            [sys.executable, "-m", "harness.vault", "check",
+             "--repo", self.repo], capture_output=True, text=True,
+            timeout=30, cwd=repo_root)
+        self.assertEqual(good.returncode, 0)

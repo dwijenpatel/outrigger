@@ -185,6 +185,127 @@ def scrub(text: str, entries: dict) -> str:
     return text
 
 
+# -- I4: vault config is generated + machine-checked, never trusted from hand-edits
+
+
+DEFAULT_CONFIG_RELPATH = os.path.join("harness", "config",
+                                      "vault-isolation.json")
+
+
+def load_vault_config(repo_root: str, config_path: str | None = None) -> dict:
+    path = config_path or os.path.join(repo_root, DEFAULT_CONFIG_RELPATH)
+    try:
+        with open(path) as fh:
+            doc = json.load(fh)
+    except FileNotFoundError:
+        raise VaultError(f"no vault config at {path}") from None
+    except json.JSONDecodeError as exc:
+        raise VaultError(f"vault config {path} corrupt: {exc}") from None
+    if not isinstance(doc, dict):
+        raise VaultError(f"vault config {path}: not an object")
+    return doc
+
+
+def check_vault_config(doc: dict, repo_root: str) -> dict:
+    """P2-3 — the checks a hand-edit skips. Returns {"ok", "configured",
+    "checks", "why"}. Unconfigured (vault_path null) is reported distinctly:
+    fine for a template repo, refused at firing time. A configured path must
+    be **absolute**, **outside the repo**, and the worker_settings must equal
+    exactly what ``isolation_settings(vault_path)`` regenerates — any drift
+    (typo'd denyRead, deny rules naming a different path) is loud."""
+    checks = []
+
+    def check(name, ok, detail):
+        checks.append({"check": name, "ok": ok, "detail": detail})
+        return ok
+
+    def finish(configured):
+        ok = all(c["ok"] for c in checks)
+        failing = next((c for c in checks if not c["ok"]), None)
+        return {"ok": ok, "configured": configured, "checks": checks,
+                "why": (f"{failing['check']}: {failing['detail']}"
+                        if failing else
+                        ("vault config valid" if configured else
+                         "vault unconfigured — run `python3 -m harness.vault "
+                         "configure --vault-path /abs/path-outside-repo` "
+                         "before any firing"))}
+
+    vault_path = doc.get("vault_path")
+    if vault_path in (None, ""):
+        check("configured", True,
+              "vault_path is null — template state; firings refuse until "
+              "configured")
+        return finish(False)
+    if not isinstance(vault_path, str):
+        check("vault_path", False, "vault_path must be a string or null")
+        return finish(True)
+    if not os.path.isabs(vault_path):
+        check("vault_path_absolute", False,
+              f"{vault_path!r} is relative — a relative vault path binds to "
+              f"whatever cwd a worker happens to have (fail-closed)")
+        return finish(True)
+    check("vault_path_absolute", True, vault_path)
+
+    real_vault = os.path.realpath(vault_path)
+    real_repo = os.path.realpath(repo_root)
+    inside = real_vault == real_repo or \
+        os.path.commonpath([real_vault, real_repo]) == real_repo
+    if inside:
+        check("vault_outside_repo", False,
+              f"{vault_path!r} resolves inside the repo — an in-repo vault "
+              f"dirties the tree and rides git history into worker "
+              f"worktrees (P1-7)")
+        return finish(True)
+    check("vault_outside_repo", True, "outside the repo tree")
+
+    expected = isolation_settings(vault_path)
+    if doc.get("worker_settings") != expected:
+        check("worker_settings_regenerable", False,
+              "worker_settings differ from isolation_settings(vault_path) — "
+              "hand-edited drift (typo'd denyRead, mismatched deny rules); "
+              "regenerate with `python3 -m harness.vault configure`")
+        return finish(True)
+    check("worker_settings_regenerable", True,
+          "exactly the generated layers 1–3")
+
+    missing = validate_isolation(doc)
+    if missing:
+        check("six_layers", False, f"missing/misconfigured layers: {missing}")
+        return finish(True)
+    check("six_layers", True, "all six layers declared")
+    return finish(True)
+
+
+def configure_vault(repo_root: str, vault_path: str,
+                    config_path: str | None = None) -> dict:
+    """The one sanctioned way to set the vault location: regenerates
+    layers 1–3 from ``vault_path``, preserves ``_meta`` and
+    ``structural_layers``, refuses anything ``check_vault_config`` would
+    refuse. Hand-editing the config is exactly the human-error class this
+    replaces."""
+    path = config_path or os.path.join(repo_root, DEFAULT_CONFIG_RELPATH)
+    try:
+        existing = load_vault_config(repo_root, path)
+    except VaultError:
+        existing = {}
+    doc = {
+        "_meta": existing.get("_meta", {}),
+        "structural_layers": existing.get("structural_layers", {}),
+        "vault_path": vault_path,
+        "worker_settings": isolation_settings(vault_path),
+    }
+    result = check_vault_config(doc, repo_root)
+    if not result["ok"] or not result["configured"]:
+        raise VaultError(f"refusing to write an invalid vault config: "
+                         f"{result['why']}")
+    tmp = path + ".tmp"
+    with open(tmp, "w") as fh:
+        json.dump(doc, fh, indent=2, sort_keys=True)
+        fh.write("\n")
+    os.replace(tmp, path)
+    return result
+
+
 def verdict_verbosity(verdicts: list, entries: dict) -> dict:
     """H7 — the leakage budget's verdict-verbosity line: how many vault
     identifiers appear in verdict text. Mentions are counted post-scrub (each
@@ -253,3 +374,52 @@ def check_heldout_drop(recorded: dict, current: dict) -> dict:
     return {"ok": ok, "dropped": dropped, "mutated": mutated, "added": added,
             "why": ("held-out corpus intact" if ok else
                     "held-out tests dropped/mutated outside the authoring path")}
+
+
+# -- CLI (I4) ----------------------------------------------------------------------
+
+
+def _cli(argv=None) -> int:
+    import argparse
+    import sys
+    p = argparse.ArgumentParser(
+        description="Vault config: machine-checked, never hand-edited (I4)")
+    sub = p.add_subparsers(dest="cmd", required=True)
+    check_p = sub.add_parser("check", help="validate the committed config; "
+                                           "exit 2 unless configured + valid")
+    check_p.add_argument("--repo", default=".")
+    check_p.add_argument("--config")
+    cfg_p = sub.add_parser("configure", help="the one sanctioned way to set "
+                                             "the vault location")
+    cfg_p.add_argument("--repo", default=".")
+    cfg_p.add_argument("--config")
+    cfg_p.add_argument("--vault-path", required=True,
+                       help="absolute path OUTSIDE the repo")
+    args = p.parse_args(argv)
+
+    if args.cmd == "configure":
+        try:
+            result = configure_vault(args.repo, args.vault_path,
+                                     config_path=args.config)
+        except VaultError as exc:
+            print(f"configure refused: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(result, indent=2))
+        return 0
+
+    try:
+        doc = load_vault_config(args.repo, args.config)
+    except VaultError as exc:
+        print(f"vault config unreadable: {exc} (fail-closed)", file=sys.stderr)
+        return 2
+    result = check_vault_config(doc, args.repo)
+    print(json.dumps(result, indent=2))
+    if not result["ok"] or not result["configured"]:
+        print(f"vault NOT fireable: {result['why']}", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_cli())

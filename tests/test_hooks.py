@@ -96,6 +96,26 @@ class DestructiveGitTests(unittest.TestCase):
     def test_non_git_commands_ignored(self):
         self.assertIsNone(hooks.check_destructive_git("rm -rf build/"))
 
+    def test_patterns_never_span_command_lines(self):
+        # P3v2-2 repro: "clean" inside an echo string + "-ref" on a later line
+        # matched the git-clean pattern across newlines and blocked a safe
+        # worktree setup. A newline is a command boundary, same as `;`.
+        compound = (
+            'set -e\n'
+            'WT=/tmp/wt/GL1-scaffold\n'
+            'mkdir -p /tmp/wt\n'
+            'git worktree add -b task/GL1-scaffold "$WT" main\n'
+            'echo "--- clean check ---"\n'
+            'git -C "$WT" rev-parse --abbrev-ref HEAD')
+        self.assertIsNone(hooks.check_destructive_git(compound))
+
+    def test_destructive_line_inside_compound_still_caught(self):
+        compound = ('git worktree add -b task/x /tmp/wt main\n'
+                    'git clean -fd')
+        self.assertIsNotNone(hooks.check_destructive_git(compound))
+        self.assertIsNotNone(hooks.check_destructive_git(
+            "echo setup\ngit push --force origin main"))
+
     def test_script_blocks_with_exit_2(self):
         out = run_hook("git_guard.py", {"tool_name": "Bash",
                                         "tool_input": {"command": "git push -f"}})

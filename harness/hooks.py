@@ -102,16 +102,20 @@ def check_prefix_edit(tool_name: str, tool_input: dict,
 
 # -- C2: destructive git + machinery paths (gates, fail-closed) -----------------
 
+# A newline separates shell commands exactly like `;` — every gap class below
+# excludes it, or a compound command false-positives across its own lines
+# (pilot-3-v2 finding P3v2-2: an `echo "... clean ..."` line plus a later
+# `--abbrev-ref` matched the git-clean pattern and blocked a safe worktree setup).
 DESTRUCTIVE_GIT_PATTERNS = (
-    (r"push\s+[^|;&]*(--force\b|-f\b|--force-with-lease)", "force push"),
-    (r"push\s+[^|;&]*--delete", "remote branch deletion"),
-    (r"reset\s+[^|;&]*--hard", "hard reset discards work"),
-    (r"clean\s+[^|;&]*-[a-z]*f", "git clean -f deletes untracked files"),
-    (r"checkout\s+[^|;&]*--\s+\.", "checkout -- . discards the working tree"),
-    (r"restore\s+[^|;&]*(--worktree|\s--\s+\.)", "restore discards edits"),
-    (r"branch\s+[^|;&]*-D\b", "force branch deletion"),
+    (r"push\s+[^|;&\n]*(--force\b|-f\b|--force-with-lease)", "force push"),
+    (r"push\s+[^|;&\n]*--delete", "remote branch deletion"),
+    (r"reset\s+[^|;&\n]*--hard", "hard reset discards work"),
+    (r"clean\s+[^|;&\n]*-[a-z]*f", "git clean -f deletes untracked files"),
+    (r"checkout\s+[^|;&\n]*--\s+\.", "checkout -- . discards the working tree"),
+    (r"restore\s+[^|;&\n]*(--worktree|\s--\s+\.)", "restore discards edits"),
+    (r"branch\s+[^|;&\n]*-D\b", "force branch deletion"),
     (r"filter-branch|filter-repo", "history rewrite"),
-    (r"update-ref\s+[^|;&]*-d", "ref deletion"),
+    (r"update-ref\s+[^|;&\n]*-d", "ref deletion"),
     (r"reflog\s+expire", "reflog expiry destroys recovery points"),
     (r"stash\s+(drop|clear)", "stash deletion"),
     (r"rebase\s", "rebase rewrites task-branch history mid-loop"),
@@ -125,7 +129,7 @@ def check_destructive_git(command: str) -> str | None:
     if not re.search(r"\bgit\b", command):
         return None
     for pattern, why in DESTRUCTIVE_GIT_PATTERNS:
-        if re.search(r"\bgit\b[^|;&]*" + pattern, command):
+        if re.search(r"\bgit\b[^|;&\n]*" + pattern, command):
             return f"destructive git blocked: {why} (`{command.strip()}`)"
     return None
 

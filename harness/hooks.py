@@ -130,7 +130,11 @@ def check_destructive_git(command: str) -> str | None:
     return None
 
 
-#: Paths a task branch may never edit: the loop's own machinery (§7).
+#: Paths a task branch may never edit: the loop's own machinery (§7), and —
+#: I6 (pilot-2 finding P2-2) — the ratified plan itself: the spec is the
+#: panel's immutable shared context; an implementer that can edit the spec
+#: it is judged against defeats blind validation. Plan changes go through
+#: ratification (the content-bound stamp), never through a task branch.
 MACHINERY_GLOBS = (
     "harness/**",
     "hooks/**",
@@ -138,6 +142,7 @@ MACHINERY_GLOBS = (
     ".claude/**",
     "docs/plan/**",
     "docs/design/**",
+    "plan/**",
 )
 
 #: Branches where machinery edits are legitimate (the loop itself merges here;

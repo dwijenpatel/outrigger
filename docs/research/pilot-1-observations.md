@@ -133,6 +133,21 @@ crew visibility + immutable occurrence-date, delete semantics) and a tax
 question. PLAN.md carries a D1–D24 decisions log and a phased OUT list.
 The P1-8 fix held; the failure mode did not recur.
 
+### P2-2 🔴 (caught pre-firing) The ratified plan was editable by the workers judged against it
+
+Pre-firing review: the pilot's `plan/` dir (specs, ledger, floors — the
+plan-build skill's own default output location) was not in
+`MACHINERY_GLOBS`, so a task-branch implementer could file-tool-edit its
+own spec; the gate's machinery step would not have blocked the diff, and
+the ratification hash is only checked at firing start. Blind validation
+assumes the spec is immutable shared context — this hole would have let
+the judged party amend the contract. Same lesson as P1-5/P1-9 at the
+policy level: the *composition* (plan-build's output dir × machinery
+globs) had no test.
+**Fixed (I6):** `plan/**` added to MACHINERY_GLOBS — flows automatically
+to the gate machinery step, the PreToolUse hook, and H10's worker denies;
+tests added; applied to the live pilot repo pre-firing.
+
 ---
 
 ## Themes so far

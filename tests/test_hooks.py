@@ -130,6 +130,25 @@ class MachineryPathTests(unittest.TestCase):
     def test_non_machinery_paths_pass_on_task_branches(self):
         self.assertIsNone(hooks.check_machinery_paths(
             "Edit", {"file_path": "src/app.py"}, branch="task/t42"))
+        self.assertIsNone(hooks.check_machinery_paths(
+            "Edit", {"file_path": "pilot/greenlane/app/models.py"},
+            branch="task/GL4"))
+
+    def test_task_branch_cannot_edit_the_ratified_plan(self):
+        # I6/P2-2: the spec is the panel's immutable shared context — an
+        # implementer must not be able to edit the contract it is judged
+        # against; plan changes go through ratification, not task branches
+        for path in ("plan/specs/GL5-schedules-generator.md",
+                     "plan/tasks.json", "plan/floors.json"):
+            got = hooks.check_machinery_paths(
+                "Edit", {"file_path": path}, branch="task/GL5")
+            self.assertIn("machinery-path edit blocked", got, path)
+
+    def test_worker_settings_deny_the_plan_dir(self):
+        from harness import loop
+        denies = loop.worker_settings()["permissions"]["deny"]
+        self.assertIn("Edit(plan/**)", denies)
+        self.assertIn("Write(plan/**)", denies)
 
 
 class RatifiedConfigTests(unittest.TestCase):

@@ -90,9 +90,15 @@ def start_early_safe(task_id: str, ledger: _ledger.Ledger, state: dict) -> bool:
 
 def window_phase(occupancy: float | None,
                  fresh_below: float = DEFAULT_FRESH_BELOW,
-                 tail_above: float = DEFAULT_TAIL_ABOVE) -> str:
+                 tail_above: float = DEFAULT_TAIL_ABOVE,
+                 reset_headroom_clears: bool = False) -> str:
     """fresh | mid | tail | unknown. 'unknown' occupancy is treated by the tick
-    like 'tail' (cannot admit heavy work against an unmeasured window)."""
+    like 'tail' (cannot admit heavy work against an unmeasured window).
+
+    I17: ``reset_headroom_clears`` — the governor's ``reset_headroom``
+    verdict. A binding window about to reset with projected-at-reset
+    occupancy under pause is a SOFT constraint: tail demotes to mid.
+    Unknown occupancy is never waived (nothing to project from)."""
     if occupancy is None:
         return "unknown"
     if not 0 <= fresh_below < tail_above:
@@ -101,7 +107,7 @@ def window_phase(occupancy: float | None,
     if occupancy < fresh_below:
         return "fresh"
     if occupancy > tail_above:
-        return "tail"
+        return "mid" if reset_headroom_clears else "tail"
     return "mid"
 
 
@@ -119,7 +125,8 @@ def tick(ledger: _ledger.Ledger, log: _ledger.EventLog,
          pipeline_warmup_tokens: float = 0.0,
          degrade: float = _admission.DEFAULT_DEGRADE,
          fresh_below: float = DEFAULT_FRESH_BELOW,
-         tail_above: float = DEFAULT_TAIL_ABOVE) -> dict:
+         tail_above: float = DEFAULT_TAIL_ABOVE,
+         reset_headroom_clears: bool = False) -> dict:
     """One scheduler tick. Pure decision — starts nothing itself.
 
     ``pipeline_warmup_tokens`` is the measured per-pipeline cold-prefix cost
@@ -144,7 +151,8 @@ def tick(ledger: _ledger.Ledger, log: _ledger.EventLog,
     safe = [t for t in candidates if start_early_safe(t, ledger, state)]
     held = [t for t in candidates if t not in safe]
 
-    phase = window_phase(occupancy, fresh_below, tail_above)
+    phase = window_phase(occupancy, fresh_below, tail_above,
+                         reset_headroom_clears)
     cp = critical_path_lengths(ledger)
 
     def forecast(tid):

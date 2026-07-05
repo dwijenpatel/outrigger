@@ -1,0 +1,6 @@
+{
+  "_meta": {
+    "purpose": "I17 operator fallback for reset instants when the live rungs lack resets_at. weekly_reset_anchor: ISO datetime of ANY known weekly reset (read it off /usage once); it repeats every 7 days. The 5-hour window anchors at first message and has no reliable operator-side anchor - live rungs only. Live resets_at always wins over this file."
+  },
+  "weekly_reset_anchor": null
+}

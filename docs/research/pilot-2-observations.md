@@ -239,6 +239,31 @@ spend; window-phase tail correctly capped slots to 1 and the orchestrator
 declined to force the operator's cap-3 against it; credential posture held
 (checked env, never touched the Keychain).
 
+## Fix log — tick-1 findings batch (2026-07-05, parent)
+
+- **P2-10 FIXED (I14):** `vault.materialize` (manifest-driven, hash-verified)
+  + gate step 6b runs the corpus itself — full log vault-side, scrubbed tail
+  in-repo, fail-closed on missing vault/empty manifest/hash drift.
+- **P2-11 FIXED (I14):** `vault.record_replay` meters every gate-side
+  held-out execution; the skill forbids out-of-gate corpus runs.
+- **P2-12 FIXED (I15):** validated `task_spawn`/`task_aborted`/`task_parked`
+  events + `runlog.worker_event()` builder; `attempt` validated everywhere.
+- **P2-13 FIXED (I16):** risk_floor + heldout_tests required on every
+  profile's manifest; plan-build carries the floors↔profiles reconciliation
+  rule (scaffold-task trap decided at planning time).
+- **P2-15 (dissolved):** the suspected model-attribution bug was a misread —
+  per-attempt records were exemplary (haiku fail ×2 → sonnet pass, correct
+  models throughout; the "haiku pass" was the validator's own record).
+- **P2-16 (observation, n=1):** GL1 break-even datapoint — floor-tier
+  attempts cost 79k tokens/12min before the standard-tier 28.5k/4min
+  success. First real input to the I12 >40% trip-wire; no action yet.
+- **I17 (operator ask):** reset-time awareness — `resets_in_s` on every
+  decision (live resets_at; operator `weekly_reset_anchor` fallback config,
+  rolls +7d, live always wins), `fraction_rate` measured ceiling-free from
+  the governor's own log, `reset_headroom` projection, and the scheduler
+  waives tail-capping when the projection clears pause (degrade/pause still
+  bind; anything unknown stays conservative).
+
 ## Themes so far
 
 1. **Composition defects keep outrunning hermetic tests** (P2-4 joins

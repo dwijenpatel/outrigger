@@ -226,3 +226,17 @@ class WindowPhaseTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ResetHeadroomPhaseTests(unittest.TestCase):
+    """I17 — imminent-reset headroom demotes tail to mid; unknown never waived."""
+
+    def test_tail_waived_only_with_headroom(self):
+        from harness import scheduler
+        self.assertEqual(scheduler.window_phase(0.62), "tail")
+        self.assertEqual(scheduler.window_phase(
+            0.62, reset_headroom_clears=True), "mid")
+        self.assertEqual(scheduler.window_phase(
+            None, reset_headroom_clears=True), "unknown")
+        self.assertEqual(scheduler.window_phase(
+            0.1, reset_headroom_clears=True), "fresh")

@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import os
 import sys
 
 from . import runlog as _runlog
@@ -214,7 +215,8 @@ def resolve(statusline_doc: dict | None = None, oauth_doc: dict | None = None,
 
 def decide(occupancy: Occupancy, degrade: float = DEFAULT_DEGRADE,
            pause: float = DEFAULT_PAUSE, mode: str = "observe",
-           age_margin_scale: float = DEFAULT_AGE_MARGIN_SCALE) -> dict:
+           age_margin_scale: float = DEFAULT_AGE_MARGIN_SCALE,
+           now_ts: float | None = None) -> dict:
     """Threshold decision. status: ok | degrade | pause | unknown.
 
     ``unknown`` means no window produced a fraction (estimate rung without ceilings) —
@@ -252,10 +254,14 @@ def decide(occupancy: Occupancy, degrade: float = DEFAULT_DEGRADE,
     else:
         binding, worst, status = None, None, "unknown"
 
+    reset_info = {}
+    if now_ts is not None:
+        reset_info = resets_in_s(occupancy, now_ts)
     return {
         "event": GOVERNOR_EVENT,
         "status": status,
         "binding_window": binding,
+        "resets_in_s": reset_info,
         "occupancy": worst,
         "windows": occupancy.windows,
         "source": occupancy.source,
@@ -266,6 +272,127 @@ def decide(occupancy: Occupancy, degrade: float = DEFAULT_DEGRADE,
         "mode": mode,
         "enforced": mode == "enforce" and status not in ("ok",),
     }
+
+
+# -- I17: reset-time awareness ------------------------------------------------------
+# The 5-hour reset arrives live via the statusline/oauth ``resets_at``; the
+# weekly reset is fixed per account, so an operator-supplied anchor covers it
+# when the live feed lacks one. A binding window about to reset is a SOFT
+# constraint: if the occupancy projected AT the reset stays under pause, the
+# scheduler's tail-phase capping is waived (degrade/pause still bind).
+
+RESET_CONFIG_RELPATH = os.path.join("harness", "config", "window-resets.json")
+
+
+def next_weekly_reset(anchor_iso: str, now_ts: float) -> float:
+    """Roll a known weekly-reset anchor forward to the next occurrence.
+    The anchor is ANY past (or future) reset instant in ISO form — the
+    operator reads it off /usage once; it repeats every 7 days."""
+    anchor = _iso_to_epoch(anchor_iso)
+    week = 7 * 86400.0
+    if anchor > now_ts:
+        return anchor
+    periods = int((now_ts - anchor) // week) + 1
+    return anchor + periods * week
+
+
+def _iso_to_epoch(ts: str) -> float:
+    return _dt.datetime.fromisoformat(
+        ts.replace("Z", "+00:00")).timestamp()
+
+
+def load_reset_config(repo_root: str = ".",
+                      path: str | None = None) -> dict:
+    """Operator fallback config: {"weekly_reset_anchor": "<ISO>" | null}.
+    Missing file or null anchor = no fallback (never guessed)."""
+    cfg_path = path or os.path.join(repo_root, RESET_CONFIG_RELPATH)
+    try:
+        with open(cfg_path) as fh:
+            doc = json.load(fh)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def apply_weekly_reset_fallback(occ: Occupancy, anchor_iso: str | None,
+                                now_ts: float) -> Occupancy:
+    """Fill seven_day/seven_day_sonnet resets_at from the operator anchor
+    when the live reading lacks them. Live data always wins."""
+    if not anchor_iso:
+        return occ
+    try:
+        nxt = next_weekly_reset(anchor_iso, now_ts)
+    except ValueError:
+        return occ  # unparseable anchor: no fallback, never a crash
+    for window in ("seven_day", "seven_day_sonnet"):
+        if window in occ.windows and window not in occ.resets_at:
+            occ.resets_at[window] = nxt
+    return occ
+
+
+def resets_in_s(occ: Occupancy, now_ts: float) -> dict:
+    """Seconds until each window's reset, from whatever resets_at carries."""
+    out = {}
+    for window, at in (occ.resets_at or {}).items():
+        if isinstance(at, (int, float)) and not isinstance(at, bool):
+            out[window] = max(0.0, float(at) - now_ts)
+    return out
+
+
+def fraction_rate(decisions: list, window: str,
+                  min_span_s: float = 600.0,
+                  max_age_s: float = 6 * 3600.0,
+                  now_ts: float | None = None) -> float | None:
+    """Occupancy burn rate (fraction/second) for one window, measured from
+    the governor's own decision log — live (non-optimistic) readings only,
+    so ceilings are never needed. None = not enough data (conservative)."""
+    now = now_ts if now_ts is not None else __import__("time").time()
+    points = []
+    for d in decisions:
+        if d.get("event") != GOVERNOR_EVENT or d.get("optimistic"):
+            continue
+        frac = (d.get("windows") or {}).get(window)
+        ts = d.get("ts")
+        if not isinstance(frac, (int, float)) or isinstance(frac, bool) \
+                or not isinstance(ts, str):
+            continue
+        try:
+            t = _iso_to_epoch(ts)
+        except ValueError:
+            continue
+        if now - t <= max_age_s:
+            points.append((t, float(frac)))
+    if len(points) < 2:
+        return None
+    points.sort()
+    (t0, f0), (t1, f1) = points[0], points[-1]
+    if t1 - t0 < min_span_s:
+        return None
+    return (f1 - f0) / (t1 - t0)
+
+
+def reset_headroom(occupancy_frac: float | None,
+                   window_resets_in_s: float | None,
+                   rate_per_s: float | None,
+                   pause: float = DEFAULT_PAUSE) -> dict:
+    """Does the binding window's imminent reset neutralize tail-phase
+    capping? Clears only when EVERY input is known and the projection at
+    reset time stays under pause — anything unknown is conservative."""
+    if occupancy_frac is None or window_resets_in_s is None \
+            or rate_per_s is None:
+        return {"clears": False, "projected": None,
+                "why": "insufficient reset/rate data — conservative "
+                       "(tail rules apply)"}
+    projected = occupancy_frac + max(rate_per_s, 0.0) * window_resets_in_s
+    if projected < pause:
+        return {"clears": True, "projected": projected,
+                "why": f"projected occupancy at reset "
+                       f"{projected:.2f} < pause {pause:.2f} "
+                       f"(resets in {window_resets_in_s / 3600:.1f}h) — "
+                       f"tail capping waived; degrade/pause still bind"}
+    return {"clears": False, "projected": projected,
+            "why": f"projected occupancy at reset {projected:.2f} would "
+                   f"reach pause {pause:.2f} — tail rules apply"}
 
 
 def assumed_occupancy(fraction: float, acked_by: str) -> Occupancy:
@@ -422,6 +549,10 @@ def _cli(argv=None):
                         "yields a usable window; requires --acked-by")
     p.add_argument("--acked-by",
                    help="operator name attributing --assume-occupancy")
+    p.add_argument("--weekly-reset",
+                   help="I17: ISO anchor of any known weekly reset instant "
+                        "(operator-supplied; overrides "
+                        "harness/config/window-resets.json); rolls +7d")
     p.add_argument("--log", help="append the decision to this JSONL file")
     args = p.parse_args(argv)
 
@@ -463,7 +594,10 @@ def _cli(argv=None):
     # produced a usable window fraction
     if args.assume_occupancy is not None and (occ is None or not occ.windows):
         occ = assumed_occupancy(args.assume_occupancy, args.acked_by or "")
-    decision = decide(occ, degrade=args.degrade, pause=args.pause, mode=args.mode)
+    anchor = args.weekly_reset or load_reset_config().get("weekly_reset_anchor")
+    occ = apply_weekly_reset_fallback(occ, anchor, now_ts)
+    decision = decide(occ, degrade=args.degrade, pause=args.pause,
+                      mode=args.mode, now_ts=now_ts)
     if args.log:
         log_decision(args.log, decision)
     print(json.dumps(decision, indent=2))

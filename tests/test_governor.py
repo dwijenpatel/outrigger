@@ -358,3 +358,69 @@ class BootstrapAndSourceRobustnessTests(unittest.TestCase):
             capture_output=True, text=True, timeout=30)
         self.assertIn('"statusline"', got.stdout)
         self.assertIn("degrade", got.stdout)
+
+
+class ResetAwareTests(unittest.TestCase):
+    """I17 — reset instants flow into decisions; imminent-reset headroom is
+    computed, never assumed."""
+
+    def occ(self, pct=62, resets_at=None):
+        doc = {"rate_limits": {"seven_day": {"used_percentage": pct}}}
+        if resets_at is not None:
+            doc["rate_limits"]["seven_day"]["resets_at"] = resets_at
+        return governor.read_statusline(doc)
+
+    def test_decide_reports_resets_in_s(self):
+        decision = governor.decide(self.occ(resets_at=2000.0), now_ts=1000.0)
+        self.assertAlmostEqual(decision["resets_in_s"]["seven_day"], 1000.0)
+        no_data = governor.decide(self.occ(), now_ts=1000.0)
+        self.assertEqual(no_data["resets_in_s"], {})
+
+    def test_next_weekly_reset_rolls_forward(self):
+        anchor = "2026-07-01T09:00:00+00:00"
+        anchor_ts = governor._iso_to_epoch(anchor)
+        week = 7 * 86400
+        nxt = governor.next_weekly_reset(anchor, anchor_ts + 10 * 86400)
+        self.assertAlmostEqual(nxt, anchor_ts + 2 * week)
+        future = governor.next_weekly_reset(anchor, anchor_ts - 5)
+        self.assertAlmostEqual(future, anchor_ts)
+
+    def test_weekly_fallback_fills_only_missing(self):
+        anchor = "2026-07-01T09:00:00+00:00"
+        occ = self.occ()  # no live resets_at
+        governor.apply_weekly_reset_fallback(occ, anchor, 
+                                             governor._iso_to_epoch(anchor) + 1)
+        self.assertIn("seven_day", occ.resets_at)
+        live = self.occ(resets_at=123.0)
+        governor.apply_weekly_reset_fallback(live, anchor, 0.0)
+        self.assertEqual(live.resets_at["seven_day"], 123.0)  # live wins
+
+    def test_fraction_rate_from_decision_log(self):
+        decisions = [
+            {"event": "governor_decision", "optimistic": False,
+             "ts": "2026-07-05T10:00:00Z", "windows": {"seven_day": 0.60}},
+            {"event": "governor_decision", "optimistic": False,
+             "ts": "2026-07-05T11:00:00Z", "windows": {"seven_day": 0.62}},
+            {"event": "governor_decision", "optimistic": True,  # ignored
+             "ts": "2026-07-05T11:30:00Z", "windows": {"seven_day": 0.99}},
+        ]
+        now = governor._iso_to_epoch("2026-07-05T11:00:00Z")
+        rate = governor.fraction_rate(decisions, "seven_day", now_ts=now)
+        self.assertAlmostEqual(rate, 0.02 / 3600)
+        self.assertIsNone(governor.fraction_rate(decisions[:1], "seven_day",
+                                                 now_ts=now))
+
+    def test_reset_headroom_verdicts(self):
+        # 0.62, resets in 20h, burning 0.02/h → projected 1.02 → blocked...
+        blocked = governor.reset_headroom(0.62, 20 * 3600, 0.02 / 3600)
+        self.assertFalse(blocked["clears"])
+        # ...but resets in 10h → projected 0.82 < 0.95 → clears
+        clears = governor.reset_headroom(0.62, 10 * 3600, 0.02 / 3600)
+        self.assertTrue(clears["clears"])
+        self.assertIn("tail capping waived", clears["why"])
+        # unknown anything → conservative
+        self.assertFalse(governor.reset_headroom(None, 100, 0.0)["clears"])
+        self.assertFalse(governor.reset_headroom(0.62, None, 0.0)["clears"])
+        self.assertFalse(governor.reset_headroom(0.62, 100, None)["clears"])
+        # negative measured rate (post-reset artifact) never inflates headroom
+        self.assertTrue(governor.reset_headroom(0.62, 3600, -0.5)["clears"])

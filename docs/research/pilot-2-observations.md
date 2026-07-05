@@ -129,6 +129,30 @@ refuses readiness against an unconfigured/drifted/absent vault (I4b), and
   Registration is selftest-checked.
 - **P2-1:** unchanged — still the pre-registered sandbox watch item.
 
+### P2-6 🔴 (blind run) The I9 statusline registration never fired — $CLAUDE_PROJECT_DIR is hooks-only
+
+Blind-run pilot: step 0 all green, but no `state/statusline-dump.json`
+existed at preflight → conservative mode → the session (correctly) stopped
+at the step-3b bootstrap question. Root cause confirmed against the
+official statusline docs: statusline commands receive only COLUMNS/LINES —
+**`$CLAUDE_PROJECT_DIR` is not set** (it is a hooks-only variable), so the
+I9 command's path expanded empty and the shim never ran. The project dir
+IS available, but in the statusline's stdin JSON (`workspace.project_dir`).
+**Fixed (I9b):** the shim's `--out` is now optional — omitted (or carrying
+an unexpanded `$`), it resolves `<project>/state/statusline-dump.json` from
+the input JSON itself; the settings command becomes
+`cd "${CLAUDE_PROJECT_DIR:-.}" && python3 hooks/statusline_dump.py`.
+Lesson for the ledger: I9 was registered but never *observed to fire*
+before shipping — registration checks prove presence, not execution; the
+I5 smoke test should exercise the statusline path with a synthetic stdin.
+
+### P2-7 🟡 (blind run) Skill-budget call signature required source-diving
+
+The skill said `harness.loop.skill_budget_check` without its required
+argument; the session had to read the source to build the call (P1-6's
+turn-economy lesson again, one function at a time). Fixed: the skill now
+carries the exact one-liner.
+
 ## Themes so far
 
 1. **Composition defects keep outrunning hermetic tests** (P2-4 joins

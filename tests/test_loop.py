@@ -186,6 +186,37 @@ class StatuslineDumpTests(unittest.TestCase):
             occ = governor.read_statusline(dumped)
             self.assertAlmostEqual(occ.windows["five_hour"], 0.41)
 
+    def test_shim_resolves_out_from_input_json_when_no_flag(self):
+        # I9b/P2-6: statusline commands don't get $CLAUDE_PROJECT_DIR — the
+        # project dir rides the input JSON; --out is optional
+        with tempfile.TemporaryDirectory() as root:
+            doc = {"workspace": {"project_dir": root},
+                   "rate_limits": {"five_hour": {"used_percentage": 12.0}}}
+            proc = subprocess.run(
+                [sys.executable,
+                 os.path.join(REPO_ROOT, "hooks", "statusline_dump.py")],
+                input=json.dumps(doc), capture_output=True, text=True,
+                timeout=30)
+            self.assertEqual(proc.returncode, 0)
+            self.assertIn("5h 12%", proc.stdout)
+            with open(os.path.join(root, "state",
+                                   "statusline-dump.json")) as fh:
+                self.assertIn("_captured_at", json.load(fh))
+
+    def test_shim_ignores_unexpanded_env_var_in_out(self):
+        # the exact P2-6 failure shape: an --out carrying a literal '$VAR'
+        # falls back to input-JSON resolution instead of writing to '/state'
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "sldump", os.path.join(REPO_ROOT, "hooks", "statusline_dump.py"))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        got = mod.resolve_out("$CLAUDE_PROJECT_DIR/state/x.json",
+                              {"workspace": {"project_dir": "/proj"}})
+        self.assertEqual(got, "/proj/state/statusline-dump.json")
+        self.assertEqual(mod.resolve_out("/explicit/out.json", {}),
+                         "/explicit/out.json")
+
     def test_shim_never_breaks_the_session(self):
         proc = subprocess.run(
             [sys.executable,

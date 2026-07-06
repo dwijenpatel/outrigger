@@ -257,3 +257,122 @@ pauses to the flag from a second terminal.
   GL3∥GL4 after GL2), plus new: preflight-at-firing-start first live run
   (I19 check 7), pause-ack live use (I23), fresh test-author handoffs under
   I20 (do they mark `corpus_covers`?).
+
+---
+
+# Leg 2 — GL2-only, new (headless I26) arm shakedown — 2026-07-05T23:03Z→06T00:17Z (operator attending)
+
+Resumed `greenlane-pilot3-v2` from the seq-7 marker on the **new machinery
+arm** (I19–I26 + `harness.smoketest` synced at the GL1 pause boundary). Start
+gates all green: plan-ready **7/7** (I19 preflight green — GL1's resolved cards
+adjudicate the carried blockers), selftest **30/30**, **smoketest 17/17** (I5
+composition proof, first live use), vault valid, skill budget 762/15000,
+preflight NORMAL (live statusline rung 1s old). GL2 was the sole runnable.
+
+**The arm never completed a single productive worker** — the window was over
+budget and the governor was right at every turn. Five findings:
+
+## P3v2-9 🔴 `headless_worker_cmd` emits `--json-schema <PATH>`; CLI 2.1.201 wants inline JSON
+
+`loop.headless_worker_cmd(json_schema_path=...)` builds `--json-schema
+harness/config/schemas/handoff.json`; `claude` 2.1.201 parses the flag value as
+inline JSON → `Error: --json-schema is not valid JSON: Unrecognized token '/'`,
+exit 1, empty stdout. Orchestrator workaround (no machinery edit): pass
+`--json-schema "$(cat <schema>)"`. **Upstream fix:** `headless_worker_cmd`
+should inline the file's contents (or the CLI should accept a path).
+
+## P3v2-10 🔴 `parse_worker_result` → `parsed=None` on a *compliant* worker (fenced result + null structured_output)
+
+Real CLI (2.1.201) leaves `structured_output=null` (the `--json-schema` flag did
+not tee a validated object) **and** the model returns its handoff JSON fenced in
+```` ```json … ``` ```` inside `result`, so `json.loads(result)` fails →
+`parsed=None`. Per the skill, `parsed=None` == contract violation → ladder, so
+**every honoring worker would spuriously escalate**. Workaround: prompt for raw
+JSON (no fences) **and** fence-strip `result` before concluding a violation.
+**Upstream fix:** strip code fences in `parse_worker_result` before `json.loads`.
+
+## P3v2-11 🔴 `failures.load_patterns(loop.HEADLESS_FAILURE_PATTERNS)` raises (tuple vs list)
+
+The skill's documented death-classify incantation raises
+`FailureConfigError('pattern table must be a JSON list')`:
+`HEADLESS_FAILURE_PATTERNS` is a **tuple**, `load_patterns` requires a **list**.
+Workaround: `load_patterns(list(...))`. **Upstream fix:** make the constant a
+list, or accept any sequence.
+
+## P3v2-12 ✅→🔴 The governor was RIGHT: proceed-under-degrade hit a hard Fable-5 429 on the first call
+
+The between-task governor read the live rung as **seven_day 0.82 / five_hour
+0.63 → degrade**; `scheduler.tick` **deferred** GL2 (`admission.admit`
+hard-gates `occupancy≥degrade`, independent of reset_headroom/phase; I17 was
+conservative anyway per I25 — only one governor reading since this firing's
+marker). Card-first adjudication (I21): card + parked-truth + notify **before**
+the ask. Operator overrode → proceed. The fresh test-author (**fable-5**, the
+critical base + the 4-lens panel model) died on its **first call**:
+`api_error_status=429`, *"You're out of usage credits … Fable 5"*, num_turns=1,
+**0 tokens**, cost 0. `classify` → retryable, but it is **credit exhaustion**,
+not transient overload. **The governor's degrade hold was vindicated
+end-to-end.**
+
+## P3v2-13 🔴 The Opus substitute HUNG 38 min with no watchdog and no liveness signal
+
+Operator then authorized substituting **opus-4-8** for the fable roles
+(shakedown-only, no-merge). The opus test-author **hung ~38 min**: 7.35s
+cumulative CPU, 0% CPU in `sleep`, open-but-idle TCP to `api:443`, **0 bytes
+out, `.gl2_heldout` never created**. Diagnosed by `ps` (CPU flat) + `lsof`
+(idle API sockets); killed via `TaskStop`. The *"opus is unaffected"* premise
+was **false** — under the same over-degrade window that 429'd fable-5, opus was
+throttled into an indefinite backoff **stall**. Two machinery gaps: **(a)** the
+only worker time-bound is `--max-turns`, which never fires on a **pre-compute
+hang** — no client-side wall-clock watchdog on the spawn path, so a
+quota-stalled worker burns unbounded wall-clock silently; **(b)** no
+heartbeat/liveness from a headless worker (`Vitals` sees no steps because none
+arrive) — detection took manual `ps`/`lsof` forensics. **Upstream fix:** a
+per-worker wall-clock deadline + a no-progress kill; optionally surface a
+periodic liveness ping.
+
+## Leg-2 close status
+
+- **Ledger:** GL1 done+merged (`745b8fb`), 1/10; GL2 **parked** on the
+  Fable-5 credit wall (card `state/blockers/GL2-fable5-credit-exhaustion.json`,
+  with `substitution_outcome`); 8 not_started. No new merge this leg.
+- **Records:** run-log carries the full honest trail — `task_spawn`×3
+  (fable-5 test-author, opus-substitute test-author) + `task_aborted`×2
+  (429, then hang) with requested params + attempt; ledger events seq 8–11
+  (admit-by-override → park → resume-under-substitute → re-park); governor-log
+  + scheduler-log (deferral tick 2 + operator_override_admission).
+- **Quota:** seven_day 0.82 (over the 0.80 degrade line), five_hour 0.63;
+  weekly reset ~2026-07-06T00:59:59Z. **Fable-5 credits exhausted.**
+- **Decision (operator, attending):** clean-pause + re-fire after the window
+  resets and fable-5 credits return.
+- **Arm verdict:** the headless spawn/harvest **mechanism** works (proven on a
+  haiku probe: exit 0, usage + `total_cost_usd` harvested, spawn interlock
+  correctly gated on the admission stamp), but the arm needs three integration
+  fixes (P3v2-9/-10/-11) and a worker watchdog (P3v2-13) before it is
+  production-trustworthy — and it cannot be exercised end-to-end until the
+  quota window has headroom.
+
+## Upstream resolution (same night, merged before the re-fire)
+
+- **P3v2-9** → **I29**: `headless_worker_cmd` inlines the schema file's
+  contents for `--json-schema` (loud when unreadable).
+- **P3v2-10** → **I29**: `parse_worker_result` strips one outer code fence
+  before parsing `result`; `structured_output`-null-on-2.1.201 documented.
+- **P3v2-11** → **I29**: `failures.load_patterns` accepts tuples.
+- **P3v2-12** → **I28**: **Fable 5 removed from the machinery** (operator
+  decision — the model-specific weekly cap is far below the general windows
+  AND fable is the operator's primary interactive model, so machinery spend
+  starves interactive work). `max` temporarily aliases `capable` (opus);
+  fable is off the allowlist entirely; tier-up saturates at opus (attempt-3
+  from capable parks instead). Reintroduction = one tiers.json line, gated
+  on the cap rising or interactive usage reliably dropping. Plus a
+  PERMANENT classify pattern for `out of usage credits` ("park until the
+  window resets; substitution does not dodge the window"). Economics
+  recorded in token-economics §2c.
+- **P3v2-13** → **I29**: `run_headless_worker` — every worker runs under a
+  client wall-clock deadline (default 45 min; 3× profile P95 when
+  calibrated) that kills the process group and returns the death
+  structured. Heartbeat/liveness pings from headless workers remain future
+  work (the deadline covers the observed failure mode).
+- The GL2 leg's operator constraint ("shakedown-substitute, no-merge")
+  dissolves under I28: opus IS the critical routing now — the re-fire runs
+  GL2 real and merges through the gate.

@@ -142,6 +142,8 @@ precision-aware**. All gates fail closed; interlocks are inert outside a live fi
 | I1 | **`state/` gitignored** — the loop's own bookkeeping must not dirty the tree `require_clean` judges | P1-5 | — | done |
 | I2 | **Planning surface**: `plan-build` skill (grilling-method interview — one question at a time with a recommended answer, explore-don't-ask, determinacy bar = a spec-only test-author needs no guesses, hard ratification stop) + `harness/planning.py` (content-bound ratification stamp; `plan_ready` gate: ledger/specs/floors/snapshot/ratification all fail-closed) + build-loop step 0 refuses to fire without it; routing canaries; repo CLAUDE.md | P1-8 | — | done |
 | I3 | **Harness reference doc** ([docs/reference.md](../reference.md)) — one page of shapes (lifecycle CLIs in order, plan/state file maps, worker spawn + return contracts, gate call, record shapes); kept honest by `tests/test_reference.py`, which resolves every documented `harness.*` symbol and CLI so drift goes red in the suite | P1-6 | — | done |
+| I28 | **Fable 5 removed from the machinery** (operator decision, P3v2-12): model-specific weekly cap far below the general windows + fable is the operator's primary interactive model — machinery spend starves interactive work. tiers.json `max` aliases `capable` (opus); allowlist refuses `claude-fable-5`; reverse map first-wins so bare opus attributes to `capable`; tier-up saturates at opus (attempt-3 from capable parks); reintroduction = one config line, gated on cap/interactive-usage change | P3v2-12 | I26 | done |
+| I29 | **Headless runner hardening**: `--json-schema` inlined (P3v2-9); fence-tolerant `parse_worker_result` (P3v2-10); `load_patterns` accepts tuples (P3v2-11); `out of usage credits` → PERMANENT park-until-reset (P3v2-12); `run_headless_worker` wall-clock deadline kills the process group — a quota-stalled worker never burns unbounded wall-clock (P3v2-13) | P3v2-9..13 | I26 | done |
 | I27 | **Plans pin run conventions**: `plan/conventions.json` (`heldout_cmd` at minimum) — plan-build interviews for it; build-loop's gate step reads it from the plan instead of rediscovering it mid-firing (pilot-3-v2 found greenlane's convention via 14 fixture errors) | P3v2-4 | I2, I14 | done |
 | I4 | **Vault config generated + machine-checked** (`vault configure|check` CLI): vault_path must be absolute + outside the repo; worker_settings must equal the regenerated layers 1–3 (hand-edit drift refused); template ships unconfigured and **firings refuse until configured** (build-loop step 2b); committed-config coherence in the selftest | P1-7, P2-3 | — | done |
 | I6 | **`plan/**` is machinery** — an implementer must not edit the spec it is judged against (blind validation's shared context is immutable); MACHINERY_GLOBS gains `plan/**`, which flows to the gate step, the PreToolUse hook, and H10 worker denies automatically | P2-2 | — | done |
@@ -398,3 +400,18 @@ schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
   on our own worker path. 552 tests; selftest 30/30; smoke green in parent AND in test1
   post-sync (plan-ready 7/7). Next: attended GL2-only short pilot on the new arm, then the
   overnight run on the fresh weekly window.
+- **2026-07-05/06 (leg 2: the quota wall, and de-fabling):** The GL2-only shakedown never
+  completed a productive worker — and proved half the protocol stack doing so. Start gates
+  all green (first live smoketest 17/17, plan-ready 7/7); the governor's degrade hold
+  (seven_day 0.82) DEFERRED GL2; the operator overrode via a carded I21 adjudication
+  (3-minute round-trip — vs the ≥25-min unbounded stall the protocol replaced); the fresh
+  fable-5 test-author then died `429 out-of-usage-credits` on its FIRST call (0 tokens) —
+  **the governor was right** — and the operator-authorized opus substitute HUNG 38 min at
+  0% CPU on window backoff until manually killed. Ledger truthful throughout; clean pause
+  with resume preconditions. Five findings (P3v2-9..13) → **I29** (schema inlining,
+  fence-tolerant parse, tuple patterns, credits→PERMANENT-park, `run_headless_worker`
+  wall-clock deadline) and — operator decision — **I28: Fable 5 removed from the machinery**
+  (model-specific weekly cap + it is the operator's interactive model; `max` aliases
+  `capable`; reintroduction gated). 559 tests; smoke green; synced to test1 at the paused
+  boundary. Re-fire: GL2 real (opus IS the critical routing now) on a fresh weekly window,
+  orchestrator session on a non-fable model.

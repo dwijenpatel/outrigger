@@ -282,6 +282,37 @@ class PauseRequestTests(unittest.TestCase):
                 [])
 
 
+class PermissionModeTests(unittest.TestCase):
+    """I30 — a firing must know (when the build tells it) what mode it runs in."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.path = os.path.join(self.dir.name, "statusline-dump.json")
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def _write(self, doc):
+        with open(self.path, "w") as fh:
+            json.dump(doc, fh)
+
+    def test_reads_the_mode_when_present(self):
+        self._write({"permission_mode": "auto", "rate_limits": {}})
+        self.assertEqual(loop.permission_mode(self.path), "auto")
+        self._write({"permission_mode": "default"})
+        self.assertEqual(loop.permission_mode(self.path), "default")
+        self.assertNotIn("default", loop.FIRING_PERMISSION_MODES)
+        self.assertNotIn("acceptEdits", loop.FIRING_PERMISSION_MODES)
+
+    def test_absence_is_unknown_never_wrong(self):
+        self._write({"rate_limits": {}})  # 2.1.201: field not emitted
+        self.assertIsNone(loop.permission_mode(self.path))
+        self.assertIsNone(loop.permission_mode(
+            os.path.join(self.dir.name, "missing.json")))
+        self._write({"permission_mode": ""})
+        self.assertIsNone(loop.permission_mode(self.path))
+
+
 class HeadlessWorkerTests(unittest.TestCase):
     """I26 — the spawn path where model AND effort verifiably bind."""
 

@@ -103,6 +103,28 @@ def run_marker_live(path: str) -> dict | None:
     return doc if pid > 0 and _pid_alive(pid) else None
 
 
+#: I30 — modes in which a firing can actually run: the loop is arbitrary-Bash
+#: heavy, and only these auto-approve it. ``acceptEdits`` still prompts on
+#: Bash; ``default``/``manual`` floods the operator with prompts immediately.
+FIRING_PERMISSION_MODES = ("auto", "bypassPermissions")
+
+
+def permission_mode(dump_path: str) -> str | None:
+    """I30 (P3v2-14) — the session's permission mode as the statusline stdin
+    reports it (``permission_mode``, official docs 2.1.200+). Returns None
+    when the dump is missing or the field is absent — build 2.1.201's dump
+    measurably lacks it, so **absence means 'unknown', never 'wrong'**: the
+    check is fail-closed on a WRONG mode and advisory on an unknown one (the
+    kickoff's ``--permission-mode auto`` launch flag is the prevention)."""
+    try:
+        with open(dump_path) as fh:
+            doc = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return None
+    mode = doc.get("permission_mode")
+    return mode if isinstance(mode, str) and mode else None
+
+
 DEFAULT_PAUSE_REQUEST_PATH = os.path.join("state", "pause.request")
 
 

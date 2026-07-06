@@ -144,9 +144,11 @@ def run_smoke(workdir: str, repo_src: str | None = None) -> dict:
     step("bootstrap_assumption", assumed_ok,
          "acked assumption is attributed, never ambient")
 
-    # 3. statusline shim: EXECUTION proof via synthetic stdin (P2-6/P2-8)
+    # 3. statusline shim: EXECUTION proof via synthetic stdin (P2-6/P2-8) —
+    # including the permission_mode field (I30; ships in newer CLIs)
     stdin_doc = json.dumps({
         "workspace": {"project_dir": clone},
+        "permission_mode": "auto",
         "rate_limits": {"five_hour": {"used_percentage": 10},
                         "seven_day": {"used_percentage": 30}}})
     proc = subprocess.run([py, os.path.join(clone, "hooks",
@@ -154,8 +156,11 @@ def run_smoke(workdir: str, repo_src: str | None = None) -> dict:
                           input=stdin_doc, cwd=clone,
                           capture_output=True, text=True)
     dump_path = os.path.join(state, "statusline-dump.json")
-    step("statusline_shim", os.path.isfile(dump_path),
-         "shim executed on synthetic stdin; dump landed at the resolved path")
+    step("statusline_shim",
+         os.path.isfile(dump_path)
+         and _loop.permission_mode(dump_path) == "auto",
+         "shim executed on synthetic stdin; dump at the resolved path; "
+         "permission_mode readable through loop.permission_mode (I30)")
     proc = subprocess.run(
         [py, "-m", "harness.governor", "--statusline-json", dump_path],
         cwd=clone, capture_output=True, text=True)

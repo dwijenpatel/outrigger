@@ -17,6 +17,7 @@ suite goes red.
 | Marker + stop-gate | `harness.loop.acquire_run_marker` → `harness.loop.closure_hook_config` (immediately) · release via `harness.loop.release_run_marker` |
 | Resume | `harness.loop.resume_context` — artifacts only, never a summary |
 | Pause | operator: `harness.loop.request_pause` (any terminal) · loop: `harness.loop.pause_requested` at every stage boundary → `harness.loop.acknowledge_pause` → drain → clean pause → `harness.loop.clear_pause_request` |
+| Permission mode | `harness.loop.permission_mode` (statusline dump; None = unknown on this build) vs `harness.loop.FIRING_PERMISSION_MODES` — wrong mode = stop before real work; launch with `claude --permission-mode auto` |
 
 ## Plan artifacts (`plan/`)
 

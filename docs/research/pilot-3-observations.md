@@ -376,3 +376,18 @@ periodic liveness ping.
 - The GL2 leg's operator constraint ("shakedown-substitute, no-merge")
   dissolves under I28: opus IS the critical routing now — the re-fire runs
   GL2 real and merges through the gate.
+
+## P3v2-14 🟡 (operator-side) Default-mode firings flood the operator with permission prompts
+
+A firing is arbitrary-Bash heavy; launched in `default`/`manual` mode it
+prompts almost immediately and frequently — the operator had to remember
+"Auto mode on" before every kickoff. Facts established: the mode is
+**operator-only** (no tool/slash/hook lets a session change it); project- and
+local-scope `permissions.defaultMode: "auto"` is deliberately **ignored**
+(v2.1.142+ — repos must not grant themselves auto); official docs (2.1.200+)
+list a `permission_mode` field in the statusline stdin, but the 2.1.201 dump
+**measurably lacks it** (docs-vs-build conflict; measured wins, re-check on
+version moves). → **I30**: kickoff blocks pin the launch line
+(`claude --model <m> --permission-mode auto`) and build-loop step 0 checks
+`loop.permission_mode(dump)` — fail-closed STOP on a wrong mode, advisory on
+None — live the moment the CLI ships the field.

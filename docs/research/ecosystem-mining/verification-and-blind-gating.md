@@ -1,0 +1,126 @@
+# Verification & TDD in the wild — and the blind-validator gap
+
+**Date:** 2026-07-06
+**Method:** 11 cloned popular repos mined by parallel analysts; file paths cite the clones at `/Users/dwijen/repos/`. Star/activity figures are as reported by the analysts (GitHub API where noted, README badges otherwise — flagged where unverifiable).
+
+## Headline findings
+
+1. **The reward-hacking hole is universal: 11 of 11 repos let the agent that writes the code see — and edit — the tests that judge it.** No repo has implementer/validator context separation, held-out tests, or a clean-checkout merge gate. This is a verified absence, not an inference: analysts grepped each repo for test-integrity guards, vaults, and separation mechanisms.
+2. **Three repos have partial defenses, and each partial defense has a documented hole its own maintainer knows about** (no-mistakes' new-test-file tripwire ignores *modified* tests; planning-with-files documents an AcceptanceCheck gate that no shipped script implements; ruflo's ADR admits its fitness function "reduces to beats-npm-test — gameable").
+3. **"Add a blind validator via PR" is the wrong shape for most targets.** The highest-star repos either merge zero external PRs (mattpocock/skills), reject 94% (superpowers), refuse new pipeline steps by design (no-mistakes), or are ~97% single-author (ruflo). What lands as PRs are *small tamper-tripwires piggybacking on existing precedent*. The full vault model works as a standalone tool riding these projects' extension points.
+
+## The failure mode under test
+
+An agent told to "loop until tests pass" has two ways to go green: fix the code, or weaken the test. The operator's harness closes this structurally: a validator with no access to the implementer's context authors held-out tests from the spec, stores them in a vault **outside the repo**, and merges gate on a clean-checkout run. The question for each repo below: how does it verify agent-written code, where exactly is the blindness missing, and what is the minimal PR-shaped fix versus standalone-only territory?
+
+## Scoreboard
+
+| Repo (stars, as reported) | Verification model | Test author = implementer? | Held-out tests? | Tamper tripwire? | Clean-checkout gate? |
+|---|---|---|---|---|---|
+| gstack (n/a) | 7 parallel review specialists + adversarial subagent + Codex cross-model | yes | no | no | no (worktrees exist, unused for this) |
+| mattpocock/skills (158.5k) | /tdd red-green discipline, two-axis review | yes | no | no | no |
+| no-mistakes (trending) | 9-step pre-push pipeline in disposable worktree | yes (fix rounds) | no | **partial** — new test files only | worktree-isolated but same tests |
+| everything-claude-code (50k+ claimed) | verification-loop 6-phase gate, tdd-workflow, eval-harness | yes | no | no (grep empty) | no |
+| karpathy-skills (n/a) | prose exhortation only | yes | no | no | no |
+| caveman (85.6k) | deterministic validator on LLM *output*, committed eval snapshots | n/a (not a code-verification product) | no | no | no |
+| planning-with-files (15.3k claimed) | Stop-hook gate on plan artifact | self-reported `Status: complete` | no | **plan** attestation (SHA-256), not tests | no |
+| alirezarezvani/claude-skills (~5–7k) | tdd-guide, ship-gate, self-eval | yes | no | no | no |
+| superpowers (n/a; official marketplaces) | SDD: fresh reviewer subagent per task, "Do Not Trust the Report" | yes | no | social, not structural | no (review-package diffs BASE..HEAD) |
+| career-ops (55k claimed) | conventional CI on own code; fact-checks user claims in prompts | yes | no | no | no |
+| ruflo (63k) | witness manifests, frozen eval, red/blue, canary | yes | **tamper-evident, not hidden** | Ed25519 witness markers | no |
+
+Reading: the ecosystem's best defenses are *tamper-evidence* (ruflo, planning-with-files) and *social adversarialism* (superpowers, gstack). Nobody has *context separation*. The vault + blind validator remains ecosystem-unique.
+
+## Per-repo: verification model, the hole, minimal PR shape
+
+### 1. gstack — deepest same-context review stack
+- **Model:** `/review` dispatches up to 7 fresh-context specialist subagents in parallel with fingerprint dedup and confidence gating, plus an always-on Claude adversarial subagent and optional Codex cross-model pass (`/Users/dwijen/repos/gstack/review/SKILL.md` Steps 4–5.7). `/qa` drives a real browser and writes a regression test per fix. The project evals its own prompts with a 3-tier harness under hermetic env (`test/helpers/hermetic-env.ts`) — the carve/size numbers are measured and test-pinned; the 810x productivity claims are author-run marketing (`docs/ON_THE_LOC_CONTROVERSY.md` is honest about this).
+- **The hole:** the session that wrote the code writes and fixes its tests; even the adversarial subagents read the implementation diff. Fresh context ≠ blind: reviewers see the answer they're grading.
+- **PR shape:** opt-in blind-validation specialist or `/qa` mode — validator authors tests from the `/office-hours`/`/spec` design doc only, runs them via `lib/worktree.ts` clean checkouts. Ingredients all exist; precedent at `review/SKILL.md` line 1698 (fixture-summary-mode anti-gaming rule). Effort **L**: `.tmpl` edits, 8-host regen, tier-1 tests, and the maintainer will want a catch-rate eval. Real but expensive; community-PR "waves" mean latency.
+- **Standalone fallback:** blind-validator skill pack referencing gstack's specialist JSON schema.
+
+### 2. mattpocock/skills — names the failure mode, ships no defense
+- **Model:** `/tdd` (`skills/engineering/tdd/SKILL.md`) enforces red-before-green and explicitly names the **tautological-test anti-pattern** ("passes by construction and can never disagree with the code"); `/code-review` runs Standards and Spec axes in parallel non-sharing subagents; `/diagnosing-bugs` gates on pasted red-command output.
+- **The hole:** same agent, same context, writes tests and implementation; the anti-pattern is named in prose with zero structural backing. Absence of any interview→held-out-test flow confirmed.
+- **PR shape:** none viable. GitHub search shows **exactly zero merged external human PRs in the repo's history** (2 bot merges) across 456+ PRs and 13.6k forks; no CONTRIBUTING.md. Issue-first is the only channel — he implements ideas himself.
+- **Standalone:** the strongest distribution target in the set — a blind-validation skill pack on skills.sh (`npx skills add <you>/<repo>`), positioned as the adversarial complement to `/tdd` and `/implement`, borrowing his own tautological-test wording as the motivation.
+
+### 3. no-mistakes — a merge gate product with a half-built tripwire
+- **Model:** the whole product is a pre-push verification pipeline in a disposable worktree; mechanism claims verified in source, efficacy unmeasured ("Kill all the slop" has no numbers). It ships the ecosystem's only deterministic anti-reward-hack guard: `detectNewTestFiles` (`internal/pipeline/steps/common_diff.go`) forces human approval when a fixing agent writes **new** test files.
+- **The hole, precisely:** (a) the tripwire ignores **modified** existing tests — an agent that edits a test to pass sails through; (b) the same agent config reviews and fixes (`sctx.Agent` in `review.go`); (c) review runs once *before* test, so later fix commits are never re-reviewed; (d) an auto-fix whose re-check passes completes with no human look at the diff (`executor.go` line 343); (e) worktree confinement is prompt-steering, "not OS-level sandbox enforcement" (`internal/agent/steering.go`).
+- **PR shape — best small bet in the whole survey:** extend the tripwire to modified test files during fix rounds (diff test paths round-start vs post-fix, emit ask-user finding). Effort **S**, pattern to copy is in the same file, fits the maintainer's "fixed pipeline, strengthen existing steps" constraint, and ~10 external contributors have merged before. Second PR: `agents.review` per-step agent selection (**M**) — the cheapest reviewer/fixer separation, a natural follow-on to just-landed ordered fallbacks (#379). Note: PRs must be raised *through* no-mistakes itself (CONTRIBUTING.md + CI check).
+- **Standalone:** `commands.test` is a user-supplied shell command run first in the test step (`docs/reference/repo-config.md`) — a held-out vault CLI configured as `commands.test` gives every no-mistakes user blind validation with zero upstream changes. This is the cleanest integration seam found anywhere in the survey. "Add a blind validation step" as a PR would be rejected on stated design grounds (`docs/.../concepts/pipeline.md` lists new steps as intentionally non-configurable).
+
+### 4. everything-claude-code — verification breadth, zero tamper protection
+- **Model:** `skills/verification-loop/SKILL.md` (6-phase gate), `skills/tdd-workflow/` (80% coverage mandate), `skills/eval-harness/SKILL.md` (pass@k vs pass^k framing — prescriptive markdown, no runner). The "997 internal tests" are structural hook tests, not agent-behavior evals.
+- **The hole:** grep for test-integrity guards comes up empty; everything trusts the implementing agent.
+- **PR shape:** a PreToolUse **test-integrity guard hook** — block/warn on Edit|Write to test files while an implement-phase flag is set, mirroring existing `pre-write-doc-warn.js` and dev-server-block patterns, gated by `ECC_HOOK_PROFILE`. Effort **M**; hooks are exactly the category CONTRIBUTING.md solicits, and it would be the first tamper protection in a 50k-star config collection. Hooks are deterministic (their own doctrine: "hooks fire 100%, skills ~50–80%") — the right enforcement layer for this. **Caution:** the local clone is the marshall0524 fork, ~4 months stale; target upstream `affaan-m/everything-claude-code` and re-check structure first.
+
+### 5. andrej-karpathy-skills — the demand signal, in prose
+- **Model:** advisory only. Principle 4 tells the model to convert tasks to verifiable goals and loop until tests pass (`CLAUDE.md` lines 45–61). Zero enforcement, zero measured evidence anywhere in the repo.
+- **The hole:** "loop until tests pass" with no prohibition on editing the test — the purest statement of the exposed surface, distributed to a large install base.
+- **PR shape:** a 3–5 line "never weaken or modify a test to make it pass; if a test seems wrong, stop and say so" clause across the three duplicated copies (CLAUDE.md, SKILL.md, `.cursor/rules/*.mdc` — which have already drifted) plus an EXAMPLES.md wrong/right pair showing a real reward-hacked test-edit diff. Effort **S** — the cheapest blind-validation-adjacent PR available, though the repo is ~2.5 months stale and maintainer attention has moved to Multica. Buys visibility, not technical depth.
+
+### 6. caveman — verification of output, not of code
+- **Model:** the relevant machinery verifies *LLM rewrites*, not software: `caveman-compress` gates every rewrite behind a deterministic structural validator with bounded cherry-pick repair (`skills/caveman-compress/scripts/validate.py`); evals commit snapshots for deterministic CI and honestly list fidelity as unmeasured ("a skill that replies k would score −99% and win").
+- **The hole/finding:** no adversarial or held-out testing; not a code-verification product, so blind validation is off-topic as a PR. The adjacent opportunity — a fidelity **judge arm** where the judge is separate from the producer (`evals/README.md` sketches it) — is the one place the researcher's producer/validator separation instinct applies. Absence of any TDD/gating machinery is the finding here.
+
+### 7. planning-with-files — a completion gate that trusts self-report, with the fix already designed
+- **Model:** the Stop-hook gate judges the plan artifact on disk, not the transcript (5-guard decision table, `scripts/check-complete.sh` lines 132–253), and plan bodies are SHA-256 attestation-gated against tampering (`scripts/attest-plan.sh`, `inject-plan.sh`).
+- **The hole, precisely:** "done" is the agent's own `Status: complete` line — a phase can be marked done with no work. The autonomous template *documents* per-phase **AcceptanceCheck** shell commands with an allowlist-at-attest-time security model ("the gate runs this command ONLY if allowlisted at attest time, NEVER from an unattested plan" — `templates/task_plan_autonomous.md` Phase 4), but grep confirms **no shipped script implements it**.
+- **PR shape — the most sanctioned opening in the survey:** wire AcceptanceCheck into `check-complete.sh --gate` + record the allowlist in `attest-plan.sh` + tests mirroring `tests/test_gate.py`. The security design is already written by the maintainer; the researcher just builds it. Effort **M** (parity tests force syncing mirrored script trees). Issue-first, sh-only. This is verification-against-artifact, not full blindness — but it converts self-report into command-verified completion, the first structural rung of the ladder.
+- **Evidence note:** their headline 96.7% benchmark measures file-pattern fidelity, author-run; their own eval shows the skill *costs* +68% tokens — admirably honest, still single-source.
+
+### 8. alirezarezvani/claude-skills — 354 skills, zero reward-hacking awareness
+- **Model:** tdd-guide (red-green with phase-validator scripts), ship-gate (8-category deploy audit as skill text), self-eval (matrix-locked scoring), spec-driven-workflow. All same-context self-checking. Effectiveness numbers throughout are unmeasured rules-of-thumb; the eval pipeline exists but results are never published.
+- **PR shape:** a new **blind-validation skill** (SKILL.md + reward-hacking evidence reference + one stdlib test-hash tamper-detector script). Effort **M**. Must be framed honestly as *discipline for a human-orchestrated split*, not enforced isolation — a single-agent skill cannot self-separate. Contributor docs are self-contradictory (205 vs 354 skills; "no PRs changing the skill count"), and merged PRs get rewritten post-merge; treat as a mid-tier target.
+
+### 9. superpowers — the closest analog, socially mitigated, PR-hostile
+- **Model:** the strongest verification culture surveyed. TDD Iron Law with delete-code-written-before-tests; `verification-before-completion` requires fresh command output plus a red-green regression check (revert fix → must fail → restore); SDD dispatches a fresh reviewer subagent per task whose template says "Do Not Trust the Report" and that "a stated rationale never downgrades a finding's severity" (`skills/subagent-driven-development/task-reviewer-prompt.md`). Implementer reports must include RED and GREEN command output. Eval culture is real (N=5 gates, no-guidance controls, measured $13/run cost decomposition), though headline v6 speed claims are author-run.
+- **The hole, in their own architecture:** the implementer authors its own tests; the reviewer *reads* them but never authors independent ones. A subtly self-serving test suite passes review. Mitigation is social ("don't trust"), not structural (can't see). No vault, no clean-checkout gate (`review-package` diffs BASE..HEAD from the same tree).
+- **PR shape:** effectively none for the core — CLAUDE.md states a 94% rejection rate, bans new core skills, and requires before/after eval evidence for any skill-content change. The **sanctioned path is a standalone plugin** via obra/superpowers-marketplace: a `superpowers-blind-review` plugin slotting into SDD — validator subagent authors held-out tests from the task brief *before* implementation, stores them outside the worktree, gates task completion on a clean-checkout run. Effort **L**, but it reuses the harness's vault/gate design nearly verbatim, and this audience (TDD-obsessed, evidence-demanding) is the best-qualified early-adopter pool in the ecosystem.
+
+### 10. career-ops — off-topic for code verification; absence noted
+- **Model:** conventional and thorough for its own code (framework-free 500+ check `test-all.mjs`, CI data-contract guards); the interesting verification is prompt-layer *fact-checking of the user* (verify metric claims against `cv.md` before coaching, `modes/interview/practice.md`). No adversarial or blind validation anywhere; implementers author their own in-repo editable tests. Not a candidate for the blind-validator play; its value to this study is the batch rate-limit machinery (covered in the scheduling doc).
+
+### 11. ruflo — tamper-EVIDENT is not context-SEPARATED
+- **Model:** the heaviest verification engineering surveyed: Ed25519 witness manifests attesting the load-bearing line of every fix per-OS (`verification/README.md`); a frozen human eval set whose SHA-256 is **pinned as a constant in code** (`harness-frozen-eval.ts`); red/blue adversarial deltas, deterministic replay, seeded bootstrap-CI significance gating, canary-before-promotion (ADR-176). Evidence is bimodal: HNSW numbers measured with honest caveats; "89% routing accuracy" untraceable marketing.
+- **The hole, named by the maintainer:** "held-out" means a time-based split of self-benchmarking data; the frozen eval is public-but-tamper-evident, not hidden from the system evaluated. ADR-176's own "Honest gaps" section: fitness "reduces to beats-npm-test — gameable." Nothing in 35 plugins offers implementer/validator separation.
+- **PR shape:** none for blind validation — architectural, and ~97% of the last 1000 commits are one person under four aliases; branches rot at 464 commits/5 weeks. Standalone tool, optionally wrapped as a marketplace plugin.
+- **Steal instead of PR:** pin the vault manifest hash inside the harness's merge gate, exactly as `FROZEN_HUMAN_EVAL_HASH` does — tampering with the yardstick becomes a visible diff.
+
+## Cross-cutting patterns
+
+- **The ladder of defenses the ecosystem has climbed, and where it stops.** Rung 1: prose exhortation (karpathy, mattpocock's anti-pattern naming). Rung 2: fresh-context review of the diff (gstack specialists, superpowers reviewer, ECC verification-loop). Rung 3: deterministic tripwires on suspicious changes (no-mistakes' new-test-file guard — the only shipped one). Rung 4: tamper-evidence on artifacts (planning-with-files plan attestation, ruflo witness/frozen-hash). **Rung 5 — context separation with held-out tests and clean-checkout gating — is empty in all 11 repos.** Every repo that thought hard about this (superpowers' "Do Not Trust the Report", ruflo's ADR confessions, no-mistakes' tripwire) stopped one rung short of structure.
+- **Fresh context is repeatedly confused with blindness.** gstack, superpowers, and ECC's Ralphinho all give reviewers fresh contexts — but hand them the implementation diff and the implementer's tests. A reviewer who sees the answer grades the answer; only a validator who derives expectations from the spec can catch a test suite bent toward the code.
+- **Hooks beat skills for enforcement.** ECC's measured doctrine (hooks fire 100%, skills probabilistically) and planning-with-files' hook-gate architecture agree: any anti-reward-hack tripwire contributed as *skill prose* is advisory; the PR-shaped versions that matter are hooks (ECC), pipeline-step code (no-mistakes), or gate scripts (planning-with-files).
+- **Measured vs marketing:** treat as measured only gstack's carve/eval numbers, superpowers' cost decomposition and wording experiments, ruflo's HNSW-with-caveats, caveman's committed snapshots (with baseline-choice caveat), planning-with-files' own +68% token cost. Treat as marketing: all productivity multipliers, "50K+ stars"-class badges, every unpublished-eval effectiveness claim (claude-skills, ECC's illustrative pass@k numbers, no-mistakes' slop-killing).
+
+## What the operator's project adds
+
+Mapping cc-agent-harness assets onto verified gaps:
+
+1. **BLIND adversarial validation (asset #1) → the empty fifth rung.** Unique against all 11 repos. Three deployment shapes, in ascending ambition: (a) tamper-tripwire PRs that borrow the harness's threat model but not its architecture (no-mistakes modified-test guard; ECC test-integrity hook; karpathy prose clause); (b) artifact-verified completion (planning-with-files AcceptanceCheck — maintainer-designed, unimplemented); (c) the full vault + clean-checkout gate — standalone only, integrated via no-mistakes `commands.test`, a superpowers-marketplace plugin, and a skills.sh pack.
+2. **Spec-elicitation interview (asset #2) → the spec-source problem.** Blind validation needs a determinate spec to author held-out tests from. gstack has design docs, superpowers has specs, no-mistakes only has after-the-fact `--intent` recovery, most others have nothing. The plan-build interview is the upstream half of the same product: no determinate spec, no blind tests worth authoring. This coupling is the standalone tool's moat — none of the tripwire PRs replicate it.
+3. **Reward-hacking evidence (motivating data) → every PR body.** The single most reusable asset is the documented evidence of agents editing tests to pass. Superpowers demands "a real problem someone experienced"; gstack fixes "guards failing open"; no-mistakes built a tripwire for exactly this. Ready-made borrowable language exists: mattpocock's tautological-test wording, superpowers' "Do Not Trust the Report." Caveat per the operator's own memory rule: the harness's evidence is single-source; a small seeded demonstration (N tasks where an unguarded agent measurably weakens tests, with catch-rate for the guard) would clear the eval bars gstack and superpowers explicitly impose — and is reusable across every submission.
+4. **30x variance finding (asset #5) → why single-run verification gates are noise.** Independently corroborated by superpowers ("N=5 runs, not 1 — single-run gates were this campaign's weakest methodology") and ruflo (bootstrap-CI significance gating). Strengthens the case that a blind gate must be cheap enough to run per-merge, which the vault's held-out tests (deterministic, no LLM judge) are.
+
+## Verdict on the operator's hypothesis
+
+> "some of these projects are doing TDD to verify software development — is there an opportunity to enhance their existing functionality by adding a blind validator + held-out vault gating merges? That could be an open-source submission that creates real value by piggybacking on the original project's popularity."
+
+**The diagnosis is confirmed; the prescription needs surgery.**
+
+**Right:** every project doing TDD-style verification (gstack, mattpocock, no-mistakes, ECC, superpowers, claude-skills, ruflo) has the hole, and in three of them the maintainers' own documents acknowledge the gameability while stopping short of structural fixes. The value is real, the framing (reward-hacking evidence) matches these communities' existing anxieties, and there is no competing implementation anywhere in the surveyed ecosystem.
+
+**Wrong, as stated:** "adding a blind validator + held-out vault gating merges" *as a PR* fails on target-by-target mechanics, not on merit:
+- The vault must live **outside the repo** and gate on clean checkouts — infrastructure that prompt-pack projects (mattpocock, claude-skills, karpathy, ECC's skill layer) structurally cannot host in a SKILL.md.
+- The repos with real gating infrastructure refuse the shape: no-mistakes rejects new pipeline steps by stated design; superpowers rejects new core skills at a 94% rate and routes extensions to its marketplace; ruflo is a single-author firehose where architectural PRs get reimplemented.
+- The one full-blindness PR that is plausibly mergeable (gstack's opt-in specialist) is effort-L with an eval-evidence bar and wave-batched review latency — worth doing, but not the quick piggyback the hypothesis imagines.
+
+**The evidence-backed play is a split:**
+1. **Ship 2–4 small anti-reward-hack PRs that strengthen existing precedent** — in expected-value order: no-mistakes modified-test tripwire (S, precedented, active community merges); planning-with-files AcceptanceCheck (M, the maintainer already wrote the design); ECC test-integrity hook (M, solicited category, verify upstream freshness first); karpathy "don't game the verification" clause (S, visibility only). Each PR cites the reward-hacking evidence and plants the researcher's name on the threat model.
+2. **Build the full blind-validator + vault as a standalone tool**, with documented integrations as the distribution strategy: `commands.test` for no-mistakes users (zero upstream changes needed), a superpowers-marketplace plugin for the SDD flow, a skills.sh pack for the mattpocock audience. The standalone keeps the two halves the PRs can't carry — vault-external held-out tests authored from a determinate spec, and clean-checkout merge gating — and the spec-elicitation coupling no tripwire replicates.
+3. **Precondition for both tracks:** a small reproducible demonstration of the failure mode and the guard's catch-rate. Without it, the PRs argue from single-source anecdote against communities (gstack, superpowers) that explicitly demand eval evidence; with it, one artifact powers every submission and the standalone's README.
+
+One honest "bad idea" boundary: do **not** pitch blind validation to caveman or career-ops (wrong product category), and do not lead with mattpocock as a PR target (zero external merges in history) — those piggyback attempts would spend effort where the evidence says the door is closed.

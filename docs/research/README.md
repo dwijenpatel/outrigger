@@ -70,6 +70,14 @@ facts were re-verified by direct fetch of the official pages.
   included. Headline: correctness is saturated at prompt-scale coding; speed ranking inverts
   between thinking-heavy (Fable fastest) and tool-loop (Sonnet/Haiku fastest) regimes; token
   efficiency offsets most of the Fable/Opus per-token price premium.
+- [ecosystem-mining/](ecosystem-mining/README.md) — 2026-07-06 study of 11 popular cloned
+  ecosystem repos (gstack, superpowers, ruflo, no-mistakes, planning-with-files, caveman,
+  career-ops, …): per-repo profiles, five theme docs (verification/blind-gating, spec
+  elicitation, parallel decomposition, rate-window handling, memory/lessons), and a ranked
+  contribution-opportunities capstone. Headline: the reward-hacking hole (implementer can
+  edit its own judge tests) is universal at 11/11, window awareness is 0/11, the planning
+  interview is commoditized at 5/11 — the harness's blind-vault and window/cache assets
+  remain the unoccupied slices, now with named PR-sized insertion points.
 
 ## How this maps to the design doc
 

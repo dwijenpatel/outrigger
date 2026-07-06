@@ -391,3 +391,16 @@ version moves). → **I30**: kickoff blocks pin the launch line
 (`claude --model <m> --permission-mode auto`) and build-loop step 0 checks
 `loop.permission_mode(dump)` — fail-closed STOP on a wrong mode, advisory on
 None — live the moment the CLI ships the field.
+
+## P3v2-15 🟡 The reference page existed and the orchestrator source-dived anyway (discoverability)
+
+The GL2 re-fire session (leg 3) opened with exemplary resume judgment — it
+correctly dissolved the leg-2 workarounds (upstream fixes in its arm) and the
+fable half of the resume precondition (I28), and refused to act on a stale
+pre-reset degrade log, demanding a fresh live governor read. Then it spent
+minutes reading `harness/*.py` sources to re-derive API signatures — while
+`docs/reference.md` (I3, built for exactly this, honesty-tested) sat unread
+in its repo. Nothing pointed at it: the skill never mentioned the page.
+Docs that are not discoverable at the point of need save nothing.
+→ build-loop skill preamble now sends the orchestrator to the reference
+page FIRST, source-diving only for what the page lacks.

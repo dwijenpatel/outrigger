@@ -8,6 +8,8 @@ user-invocable: true
 
 You are the orchestrator for one operator-started firing. Deterministic machinery does everything it can; you supply judgment only where scripts cannot. **Mandatory invocations below are phase-gated: run them at the stated point, every time — never rely on remembering.**
 
+**API shapes: read [docs/reference.md](../../../docs/reference.md) FIRST** — one page, honesty-tested (the suite fails if it drifts from the code): lifecycle CLIs in order, plan/state file maps, worker spawn + return contracts, the gate call, record shapes. Source-dive only for what the page doesn't answer (P3v2-15: an orchestrator re-derived signatures from module sources at real window cost while the page sat unread in its repo).
+
 ## 0. Start (mandatory, in order)
 
 0. Permission mode (I30, P3v2-14): a firing is arbitrary-Bash heavy — in `default`/`manual` mode it floods the operator with permission prompts almost immediately. After your first message (the statusline dump self-refreshes per message), check `harness.loop.permission_mode('state/statusline-dump.json')`: a mode outside `harness.loop.FIRING_PERMISSION_MODES` (`auto`, `bypassPermissions`) means **STOP before any real work** — tell the operator to flip with Shift+Tab or relaunch `claude --permission-mode auto`, then re-invoke this skill. `None` = the field is absent on this build (verified missing on 2.1.201) or no dump yet: advisory only — say so and proceed; the kickoff's launch flag is the prevention. Note the mode cannot be changed programmatically — it is operator-only.

@@ -61,12 +61,16 @@ class FailureConfigError(ValueError):
 
 
 def load_patterns(doc) -> list:
-    """Validate a config pattern table (list of dicts). Returns compiled entries.
-    Bad config is a loud stop — a silently-dropped pattern would misclassify."""
+    """Validate a config pattern table (sequence of dicts). Returns compiled
+    entries. Bad config is a loud stop — a silently-dropped pattern would
+    misclassify. Accepts tuples too (P3v2-11: the documented incantation
+    ``load_patterns(loop.HEADLESS_FAILURE_PATTERNS)`` raised on a tuple)."""
     if doc is None:
         doc = []
     if isinstance(doc, str):
         doc = json.loads(doc)
+    if isinstance(doc, tuple):
+        doc = list(doc)
     if not isinstance(doc, list):
         raise FailureConfigError("pattern table must be a JSON list")
     compiled = []

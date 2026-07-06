@@ -306,10 +306,48 @@ class HeadlessWorkerTests(unittest.TestCase):
         self.assertIn("--dangerously-skip-permissions", joined)
         self.assertIn("--append-system-prompt You are the implementer.",
                       joined)
-        self.assertIn("--json-schema harness/config/schemas/handoff.json",
-                      joined)
+        # P3v2-9: the CLI parses --json-schema as INLINE JSON, not a path
+        schema_value = cmd[cmd.index("--json-schema") + 1]
+        self.assertEqual(json.loads(schema_value)["title"], "worker handoff")
         self.assertIn("--disallowedTools Edit,Write", joined)
         self.assertIn("--no-session-persistence", joined)
+        with self.assertRaises(LoopError):
+            loop.headless_worker_cmd("x", "claude-sonnet-5",
+                                     json_schema_path="/nope/missing.json")
+
+    def test_parse_strips_code_fences_from_a_compliant_worker(self):
+        # P3v2-10: fenced final JSON must not read as a contract violation
+        handoff = {"outcome": "pass", "summary": "s", "intent": "i",
+                   "key_changes_made": ["x"], "key_learnings": []}
+        fenced = "```json\n" + json.dumps(handoff, indent=1) + "\n```"
+        got = loop.parse_worker_result(json.dumps({"result": fenced}))
+        self.assertEqual(got["parsed"]["outcome"], "pass")
+
+    def test_headless_patterns_load_as_a_tuple(self):
+        # P3v2-11: the documented incantation must not raise on the tuple
+        from harness import failures
+        extras = failures.load_patterns(loop.HEADLESS_FAILURE_PATTERNS)
+        got = failures.classify(
+            'API Error: 429 {"error": "You\'re out of usage credits '
+            'for Fable 5"}', extra_patterns=extras)
+        self.assertEqual(got["class"], failures.PERMANENT)
+        self.assertIn("park", got["why"])
+
+    def test_run_headless_worker_enforces_the_wall_deadline(self):
+        import sys
+        hang = loop.run_headless_worker(
+            [sys.executable, "-c", "import time; time.sleep(60)"],
+            cwd=self.dir.name, timeout_s=1)
+        self.assertTrue(hang["timed_out"])
+        self.assertFalse(hang["ok"])
+        self.assertIsNone(hang["exit"])
+        self.assertLess(hang["wall_secs"], 30)
+        fine = loop.run_headless_worker(
+            [sys.executable, "-c", "print('{\"result\": \"done\"}')"],
+            cwd=self.dir.name, timeout_s=30)
+        self.assertTrue(fine["ok"])
+        self.assertEqual(fine["exit"], 0)
+        self.assertIn("result", fine["stdout"])
 
     def test_cmd_validates_against_the_allowlist(self):
         from harness.spawncheck import SpawnValidationError

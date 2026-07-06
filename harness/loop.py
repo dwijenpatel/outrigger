@@ -241,6 +241,9 @@ WORKER_OVERLAY_RELPATH = os.path.join(".claude", "settings.local.json")
 #: worker deaths. Max-turns exhaustion is an AGENT failure (feeds the
 #: escalation ladder at a fresh worker boundary), never an infra retry.
 HEADLESS_FAILURE_PATTERNS = (
+    {"pattern": r"out.of.usage.credits", "class": "permanent",
+     "why": "credit/window exhaustion — park until the window resets; model "
+            "substitution does not dodge the window (P3v2-12/13)"},
     {"pattern": r"max.?turns", "class": "permanent",
      "why": "worker exhausted --max-turns — agent-level failure; escalate at a "
             "fresh worker boundary (ladder), do not blind-retry"},
@@ -304,7 +307,15 @@ def headless_worker_cmd(prompt: str, model: str, *,
     if system_prompt:
         cmd += ["--append-system-prompt", system_prompt]
     if json_schema_path:
-        cmd += ["--json-schema", json_schema_path]
+        # P3v2-9: the CLI (2.1.201) parses the flag value as INLINE JSON, not
+        # a path — inline the file's contents, loud when unreadable.
+        try:
+            with open(json_schema_path) as fh:
+                schema_doc = json.load(fh)
+        except (OSError, json.JSONDecodeError) as exc:
+            raise LoopError(f"json_schema_path {json_schema_path!r} unreadable "
+                            f"or not JSON: {exc}")
+        cmd += ["--json-schema", json.dumps(schema_doc, sort_keys=True)]
     if disallowed_tools:
         cmd += ["--disallowedTools", ",".join(disallowed_tools)]
     if not session_persistence:
@@ -312,12 +323,29 @@ def headless_worker_cmd(prompt: str, model: str, *,
     return cmd
 
 
+def _strip_code_fences(text: str) -> str:
+    """P3v2-10 — a compliant worker's final JSON often arrives fenced in
+    ```json … ``` inside ``result``; strip one outer fence before parsing so
+    an honoring worker is never misread as a contract violation."""
+    body = text.strip()
+    if not body.startswith("```"):
+        return body
+    lines = body.splitlines()
+    if lines[-1].strip() == "```":
+        lines = lines[1:-1]
+    else:
+        lines = lines[1:]
+    return "\n".join(lines).strip()
+
+
 def parse_worker_result(output_text: str) -> dict:
     """Normalize a ``--output-format json`` worker document. Returns
     ``{result, parsed, structured_output, usage, total_cost_usd, session_id}``
     — ``parsed`` is the role contract's final-message JSON when the worker
-    honored it (else None: an agent-level failure for the ladder, not a
-    crash). Loud on output that is not the CLI's JSON document at all."""
+    honored it (fence-tolerant, P3v2-10; else None: an agent-level failure
+    for the ladder, not a crash). Loud on output that is not the CLI's JSON
+    document at all. Note: on CLI 2.1.201 ``structured_output`` stays null
+    even with ``--json-schema`` — the ``result`` parse is the working path."""
     try:
         doc = json.loads(output_text)
     except (TypeError, json.JSONDecodeError) as exc:
@@ -328,7 +356,7 @@ def parse_worker_result(output_text: str) -> dict:
     parsed = doc.get("structured_output")
     if parsed is None:
         try:
-            candidate = json.loads(doc["result"])
+            candidate = json.loads(_strip_code_fences(doc["result"]))
             parsed = candidate if isinstance(candidate, dict) else None
         except json.JSONDecodeError:
             parsed = None
@@ -338,6 +366,43 @@ def parse_worker_result(output_text: str) -> dict:
             "usage": usage if isinstance(usage, dict) else {},
             "total_cost_usd": doc.get("total_cost_usd"),
             "session_id": doc.get("session_id")}
+
+
+DEFAULT_WORKER_WALL_TIMEOUT_S = 2700  # 45 min — absent calibrated estimates
+
+
+def run_headless_worker(argv: list, cwd: str, env: dict | None = None,
+                        timeout_s: float = DEFAULT_WORKER_WALL_TIMEOUT_S) -> dict:
+    """I29 (P3v2-13) — run one headless worker under a wall-clock deadline.
+
+    ``--max-turns`` never fires on a pre-compute hang: a quota-stalled worker
+    sat 38 min at 0% CPU with an idle API socket and nothing killed it. Every
+    worker therefore runs under a client-side deadline (3× the profile's P95
+    wall estimate when calibrated; this default otherwise). On expiry the
+    whole process group is killed and the death is returned structured —
+    classify it and feed the ladder/park; never blind-retry a window stall."""
+    import signal
+    import subprocess
+    import time
+    start = time.monotonic()
+    proc = subprocess.Popen(argv, cwd=cwd, env=env, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, text=True,
+                            start_new_session=True)
+    try:
+        out, err = proc.communicate(timeout=timeout_s)
+        timed_out = False
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            proc.kill()
+        out, err = proc.communicate()
+        timed_out = True
+    wall = time.monotonic() - start
+    return {"ok": (not timed_out) and proc.returncode == 0,
+            "exit": None if timed_out else proc.returncode,
+            "timed_out": timed_out, "wall_secs": round(wall, 3),
+            "stdout": out or "", "stderr": err or ""}
 
 
 # -- claims-not-evidence resume -----------------------------------------------------

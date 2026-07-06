@@ -36,9 +36,10 @@ suite goes red.
 ```
 harness.loop.write_worker_overlay(worktree, vault_path)   # layer-6 binding
 harness.loop.headless_worker_cmd(prompt, model, effort=..., system_prompt=...,
-    json_schema_path=..., max_turns=..., disallowed_tools=[...])
-# run: Bash background, cwd=worktree, env=harness.loop.headless_env(...)
-harness.loop.parse_worker_result(stdout)  # {result, parsed, usage, total_cost_usd,...}
+    json_schema_path=..., max_turns=..., disallowed_tools=[...])  # schema inlined (P3v2-9)
+harness.loop.run_headless_worker(argv, cwd, env=harness.loop.headless_env(...),
+    timeout_s=...)  # wall-clock deadline; kills the process group (P3v2-13)
+harness.loop.parse_worker_result(stdout)  # fence-tolerant (P3v2-10)
 # deaths: harness.failures.classify(stderr, extra_patterns=
 #         harness.failures.load_patterns(list(harness.loop.HEADLESS_FAILURE_PATTERNS)))
 ```

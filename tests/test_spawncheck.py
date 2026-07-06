@@ -55,6 +55,28 @@ class ValidateSpawnTests(unittest.TestCase):
         self.assertEqual(out["tier"], "max")
         self.assertIsNone(out["effort"])
 
+    def test_aliased_tiers_resolve_bare_model_to_lowest_tier(self):
+        # I28: `max` aliases `capable` while fable is machinery-reserved —
+        # a bare model id must attribute to its lowest tier for telemetry.
+        doc = {"tiers": {"cheap": "model-c", "standard": "model-s",
+                         "capable": "model-p", "max": "model-p"},
+               "efforts": ["xhigh"], "extra_allowed_models": []}
+        out = spawncheck.validate_spawn(model="model-p", tiers_doc=doc)
+        self.assertEqual(out["tier"], "capable")
+        out = spawncheck.validate_spawn(tier="max", tiers_doc=doc)
+        self.assertEqual(out["model"], "model-p")
+        self.assertEqual(out["tier"], "max")
+
+    def test_machinery_cannot_spawn_fable(self):
+        # I28 on the REAL committed config: fable off the allowlist entirely;
+        # critical's max tier resolves to opus.
+        real = spawncheck.load_tiers()
+        self.assertNotIn("claude-fable-5", spawncheck.allowed_models(real))
+        with self.assertRaises(spawncheck.SpawnValidationError):
+            spawncheck.validate_spawn(model="claude-fable-5", tiers_doc=real)
+        got = spawncheck.profile_spawn_params("critical")
+        self.assertEqual(got["model"], "claude-opus-4-8")
+
     def test_extra_allowed_model_passes_with_no_tier(self):
         out = spawncheck.validate_spawn(model="model-legacy", tiers_doc=TIERS_DOC)
         self.assertIsNone(out["tier"])

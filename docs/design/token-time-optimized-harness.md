@@ -352,7 +352,17 @@ wasted cheap attempt `[measured]`).
   `[official]`, so the isolation stack holds headless. The Agent-tool path demotes to an
   environment fallback (model-only, effort advisory, downgrade recorded). The escalation
   ladder regains its effort rung: attempt 2 = same tier @ `max` + sharpened feedback;
-  attempt 3+ = tier up. **Correction:** "invalid ids fail loud" does not hold as previously stated —
+  attempt 3+ = tier up. *(2026-07-05 night, I28 — P3v2-12)*: **Fable 5 is removed from the
+  machinery.** It carries a model-specific weekly cap far below the general windows — hit
+  live: a critical test-author died `429 "out of usage credits … Fable 5"` on its FIRST
+  call (0 tokens) while the general windows read 0.82/0.63 — and it is the operator's
+  primary interactive model, so machinery spend directly starves interactive work. The
+  `max` tier temporarily aliases `capable` (opus): profiles and the ladder keep their
+  shape, tier-up saturates at opus (an attempt-3 tier-up from capable is a no-op — park
+  for the operator instead), and the allowlist no longer admits `claude-fable-5` at all.
+  Reintroduction is one tiers.json line, gated on the cap rising or interactive usage
+  reliably dropping. Firing orchestrator sessions likewise run non-fable models — an
+  orchestrator on a capped model cannot even emit its own turns. **Correction:** "invalid ids fail loud" does not hold as previously stated —
   an invalid `effort` string is **silently accepted** with no error, and an invalid `model` id
   fails only as an async `null` result + a workflow-level log entry, not a catchable throw.
   **The spawn code must therefore validate `(model, effort)` against an explicit allowlist

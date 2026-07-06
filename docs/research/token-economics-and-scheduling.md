@@ -115,6 +115,26 @@ Opus 4.8 / Sonnet 5 / Haiku 4.5) changes three §2/§1-adjacent conclusions
   scale, which is what makes horizon/regime the routing axis
   ([task-horizon-prediction.md](task-horizon-prediction.md)).
 
+## 2c. Model-specific weekly caps (added 2026-07-05, `[operator-observed]`)
+
+Fable 5 carries its **own weekly usage cap, significantly below the general
+5h/7d windows** — hit twice on 2026-07-05: the operator's interactive session,
+and a firing's critical test-author (`429 "out of usage credits … Fable 5"`,
+first call, 0 tokens) while the general windows read 0.82 seven-day / 0.63
+five-hour. Consequences adopted:
+
+1. **Per-model caps are invisible to the general windows** — the statusline
+   rung cannot see them coming; the governor's degrade hold happened to fire
+   first here (correlated pressure), but that is luck, not coverage.
+2. **Top-tier capacity is a separate, scarcer resource** shared with the
+   operator's interactive work — machinery spend on it starves the operator.
+   → **I28**: fable removed from the machinery (`max` aliases `capable`);
+   reintroduction gated on the cap rising or interactive usage dropping.
+3. Under an over-degrade *general* window, **opus workers stall in indefinite
+   API backoff rather than 429ing** (P3v2-13: 38-min zero-progress hang) —
+   window pressure degrades every model's workers, just with different
+   failure shapes. Substitution does not dodge a window; parking does.
+
 ## 3. Burn forecasting — a hard published ceiling (verified 3-0)
 
 `[measured; arXiv 2604.22750 "How Do AI Agents Spend Your Money?" — 8 frontier models incl.

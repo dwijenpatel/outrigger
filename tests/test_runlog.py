@@ -207,7 +207,7 @@ class WorkerEventTests(unittest.TestCase):
         self.assertEqual(rec["attempt"], 1)
         aborted = runlog.worker_event(runlog.TASK_ABORTED, "GL2",
                                       "test_author",
-                                      {"model": "claude-fable-5",
+                                      {"model": "claude-opus-4-8",
                                        "tier": "max", "effort": "high"})
         self.assertEqual(aborted["event"], "task_aborted")
 

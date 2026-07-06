@@ -96,7 +96,12 @@ def validate_spawn(model: str | None = None, tier: str | None = None,
                 f"model {model!r} conflicts with tier {tier!r} -> {tier_model!r}")
         model = tier_model
     else:
-        reverse = {v: k for k, v in doc["tiers"].items()}
+        # First tier wins when two tiers alias one model id (I28: `max`
+        # temporarily aliases `capable` while fable is machinery-reserved) —
+        # telemetry should attribute a bare model id to its lowest tier.
+        reverse: dict = {}
+        for tier_name, tier_model in doc["tiers"].items():
+            reverse.setdefault(tier_model, tier_name)
         resolved_tier = reverse.get(model)  # None for extra_allowed_models — fine
 
     if model not in allowed_models(doc):

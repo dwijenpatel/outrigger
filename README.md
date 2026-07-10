@@ -55,6 +55,7 @@ pipelines) and the two load-bearing rules on panel breadth and token-redundancy 
 | [docs/research/](docs/research/) | Primary-sourced research backing every design decision, with a confidence-tagged corpus and [an index](docs/research/README.md) — durable. |
 | [docs/plan/](docs/plan/) | The living implementation ledger tracking the design into code — disposable. |
 | [docs/reference.md](docs/reference.md) | One-page API reference for the firing lifecycle (asserted against the code by `tests/test_reference.py` — it fails if this page drifts). |
+| [docs/terminology.md](docs/terminology.md) | Every acronym and coined term across the design, plan, and research corpus — O0/O1/O2, the vault, blind validation, evidence tags, ID conventions. |
 | `harness/` | Pure-stdlib Python 3 library: ledger, scheduler, governor, admission, gate, vault, liveness, failures, calibration, and more — one module per increment in the plan. |
 | `harness/config/` | Tier tables, spawn allowlists, risk floors, vault-isolation config, gate-required-steps. |
 | `hooks/` | Zero-token enforcement scripts wired into `.claude/settings.json` (PreToolUse/Stop) — destructive-git blocking, merge/spawn interlocks, risk-floor checks, closure gate. |
@@ -84,6 +85,7 @@ python3 -m harness.smoketest   # zero-quota walk of the whole step sequence
 - [docs/research/README.md](docs/research/README.md) — research corpus index, confidence ledger, and open items.
 - [docs/plan/implementation-plan.md](docs/plan/implementation-plan.md) — what's built, what's next.
 - [docs/reference.md](docs/reference.md) — firing lifecycle, plan/state file shapes, worker return contracts.
+- [docs/terminology.md](docs/terminology.md) — the vocabulary. Start here if a term in any other doc is unfamiliar.
 - [CLAUDE.md](CLAUDE.md) — session notes for anyone (human or agent) working in this repo.
 
 ## License

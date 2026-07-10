@@ -7,6 +7,9 @@ confidence tags: `[official]` Anthropic docs, `[measured]` community/benchmark m
 data, `[contested]` conflicting evidence, `[folklore]` practitioner consensus; plus `[E]`
 established-in-source / `[I]` inference-synthesis for research-study claims.
 
+Unfamiliar term? [../terminology.md](../terminology.md) defines every acronym, coined term, and
+evidence tag used across this corpus (and the full tag legend).
+
 Compiled from four research efforts: a comparative state-of-the-art study and re-validation
 prior-art digest (**2026-07-03**), a targeted gap-filling deep-research pass on routing
 economics, burn forecasting, Claude Code/Max-plan mechanics, and vault isolation

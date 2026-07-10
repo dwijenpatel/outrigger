@@ -33,7 +33,7 @@ dual-objective optimization layer this document specifies.
 **Non-goals.** Portability off Claude Code (accepted coupling; model/tier indirection is the
 seam if a fork ever needs one). Multi-operator teams. Large brownfield codebases (the
 phased-ledger model is greenfield-shaped,
-[landscape-and-novelty.md §5](../research/external/landscape-and-novelty.md)). Auto-scheduled firings — whether a prior
+[landscape-and-novelty.md §5](../research/external/landscape/landscape-and-novelty.md)). Auto-scheduled firings — whether a prior
 firing is still alive cannot be judged reliably from a tool-call shell, so firings are
 operator-started and operator-stopped, removing the double-run failure mode entirely.
 
@@ -46,7 +46,7 @@ Lexicographic — never scalarized into one weighted score:
   hacking are measured behaviors (METR o3, DebugML's 28+ instances), ~31% of SWE-bench-Verified
   passes ride on tests too weak to catch a wrong fix, and a false "done" is the RLHF-default
   completion shape
-  ([correctness-and-verification-evidence.md §1](../research/external/correctness-and-verification-evidence.md)).
+  ([correctness-and-verification-evidence.md §1](../research/external/validation/correctness-and-verification-evidence.md)).
   **O0 is never traded for tokens or time.**
 - **O1 — token spend against the Max windows.** The budget is not $/task; it is two rolling
   allowances — the 5-hour window and the weekly caps — shared account-wide. Consequences:
@@ -84,7 +84,7 @@ utilization degrades — the long-session regime — which is why the harness st
 2. **Zero-token enforcement.** Everything safety- or budget-load-bearing runs as a **hook or
    script** — deterministic, model-free, un-skippable, costs no context. Prose guards burn
    tokens every turn *and* get skipped exactly when the loop is degraded
-   ([landscape-and-novelty.md §4](../research/external/landscape-and-novelty.md)). Command
+   ([landscape-and-novelty.md §4](../research/external/landscape/landscape-and-novelty.md)). Command
    hooks cost 0 tokens; prompt/agent hooks cost tokens and are reserved for rare gates
    `[official]`.
 3. **Context isolation is also compression.** Subagents exist for correctness (blind
@@ -95,7 +95,7 @@ utilization degrades — the long-session regime — which is why the harness st
    live on disk; any context can die at any moment and the loop resumes from files alone. This
    makes fresh-context workers (and orchestrator compaction) free in *correctness* terms, so
    the token optimizer can use them aggressively. Four mechanics keep that state trustworthy
-   under crashes and concurrency ([unattended-operation-prior-art.md §1](../research/external/unattended-operation-prior-art.md)):
+   under crashes and concurrency ([unattended-operation-prior-art.md §1](../research/external/unattended-operation/unattended-operation-prior-art.md)):
    ledgers and run-logs are **append-only event logs**; *current* state is always a **derived
    reconciliation** whose authoritative inputs are gate/run artifacts and git — never the last
    log line (after a resolved gate the tail still reads `needs-decision`); durable events are
@@ -202,7 +202,7 @@ operator's other usage, and agents measurably cannot self-throttle):
   estimate-rung data alone.
 
 Two driver/accounting rules ride the ladder
-([unattended-operation-prior-art.md §3](../research/external/unattended-operation-prior-art.md)):
+([unattended-operation-prior-art.md §3](../research/external/unattended-operation/unattended-operation-prior-art.md)):
 
 - **Failure taxonomy.** Agent-*reported* task failures continue the loop (they are the §5.3
   escalation signal); retryable infrastructure errors back off exponentially; permanent errors
@@ -310,7 +310,7 @@ wasted cheap attempt `[measured]`).
      start tier back up when telemetry crosses it. (This threshold is exactly the >40%-failure
      regime where published work says upfront routing should replace the cascade `[measured]`.)
 - **Effort axis** *(rewritten 2026-07-05 — local benchmark,
-  [token-economics-and-scheduling.md §2b](../research/external/token-economics-and-scheduling.md)):*
+  [token-economics-and-scheduling.md §2b](../research/external/economics/token-economics-and-scheduling.md)):*
   on the adaptive-thinking lineup (Fable 5 / Opus 4.8 / Sonnet 5) effort is a
   thinking-budget *ceiling* the model spends only when the task warrants —
   measured locally, easy tasks cost the same at every effort. So the harness
@@ -394,7 +394,7 @@ wasted cheap attempt `[measured]`).
   of the §5.3 duration-bucket predictor — buckets with **asymmetric loss**: the only
   expensive error is routing long/thinking work down, so when unsure, route up; validated
   against run-log telemetry at the same Stage-1 gate before any learned predictor replaces
-  the tags; [task-horizon-prediction.md](../research/external/task-horizon-prediction.md)). Chores
+  the tags; [task-horizon-prediction.md](../research/external/routing/task-horizon-prediction.md)). Chores
   route down freely; thinking-regime tasks never start below `standard`; long-horizon tasks
   keep their profile's base tier.
 - **Weekly-pool awareness:** with the model-specific weekly cap now on **Sonnet** rather than
@@ -415,12 +415,12 @@ wasted cheap attempt `[measured]`).
   *and* the per-task hot set is a small fraction of it; the small set a worker certainly uses
   is loaded eagerly / pinned non-deferred — deferral in the wrong regime measurably costs
   discovery turns and success, and Anthropic's own docs state the boundary
-  ([tool-surface-and-format-economics.md §2–3](../research/external/tool-surface-and-format-economics.md)).
+  ([tool-surface-and-format-economics.md §2–3](../research/external/tool-surface/tool-surface-and-format-economics.md)).
   `.claudeignore` tuned (measured up to ~85% context reduction `[measured]`). The replicated
   meta-finding governing all of this: **interface ergonomics — few, well-described, well-shaped
   tools — dominates the transport choice** `[measured, replicated]`.
 - **Serialization-format policy** (verified incl. local measurements on this harness's own
-  shapes, [tool-surface-and-format-economics.md §4](../research/external/tool-surface-and-format-economics.md)):
+  shapes, [tool-surface-and-format-economics.md §4](../research/external/tool-surface/tool-surface-and-format-economics.md)):
   never pretty-print into model context (+48–82% tokens for nothing); **compact JSON/JSONL** is
   the format for persisted state (ledger, run-log — semi-uniform shapes where tabular formats
   lose) and the *only* format models generate (schema-validated; TOON/CSV generation
@@ -436,7 +436,7 @@ wasted cheap attempt `[measured]`).
   unreliable — direction independently corroborated: Anthropic's own trigger-quality
   admissions, a ~15k-char skill-list budget that silently drops overflow, ~45–50% activation
   in an independent probe
-  ([harness-evaluation-prior-art.md §1, §5.1](../research/external/harness-evaluation-prior-art.md)).
+  ([harness-evaluation-prior-art.md §1, §5.1](../research/external/evaluation/harness-evaluation-prior-art.md)).
   Rules: few skills with short, tested descriptions; the installed inventory is checked
   against the list budget; **load-bearing procedures are invoked phase-gated in the
   orchestration prompt (deterministic text, immune to trigger recall), never
@@ -453,7 +453,7 @@ wasted cheap attempt `[measured]`).
 
 On a durable-FAIL re-validation, a naive loop re-authors held-out tests and re-reviews a
 ~95%-unchanged diff — pure token redundancy. Design (evidence base:
-[revalidation-reuse-and-leakage.md](../research/external/revalidation-reuse-and-leakage.md)):
+[revalidation-reuse-and-leakage.md](../research/external/validation/revalidation-reuse-and-leakage.md)):
 
 1. **Implementer-blind held-out vault.** Panel-authored held-out tests persist where the
    implementer's context/worktree can never see them; isolation is the OS-enforced six-layer
@@ -461,20 +461,20 @@ On a durable-FAIL re-validation, a naive loop re-authors held-out tests and re-r
    config + egress control + separate-process roles), not path convention — hidden tests have
    been exfiltrated from autograders via submitted code, and a Claude Code agent has
    autonomously disabled its own sandbox
-   ([isolation-and-sandboxing.md](../research/external/isolation-and-sandboxing.md)). Proven by a
+   ([isolation-and-sandboxing.md](../research/external/isolation/isolation-and-sandboxing.md)). Proven by a
    vault-canary read-attempt in the gate self-tests, not assumed.
 2. **Safe incremental re-validation.** On re-validation, **replay** the vault against the
    unchanged surface (zero re-authoring tokens) under the Ekstazi/TIA **safe-RTS property** —
    never skip a test the change could affect; full-run fallback for anything unanalyzable
-   ([revalidation-reuse-and-leakage.md §2](../research/external/revalidation-reuse-and-leakage.md)).
+   ([revalidation-reuse-and-leakage.md §2](../research/external/validation/revalidation-reuse-and-leakage.md)).
 3. **Fresh authoring on the changed surface is mandatory.** A replayed corpus is a regression
    floor, structurally unable to find a new hole (frozen corpus = saturated corpus; ~27% of
    real faults uncoupled from standard mutants —
-   [revalidation-reuse-and-leakage.md §4](../research/external/revalidation-reuse-and-leakage.md)). The
+   [revalidation-reuse-and-leakage.md §4](../research/external/validation/revalidation-reuse-and-leakage.md)). The
    vault shrinks re-authoring; it never eliminates it.
 4. **Leakage budget.** Reuse of a fixed hidden set across adaptive fix-iterations degrades it
    (Ladder/Thresholdout,
-   [revalidation-reuse-and-leakage.md §5](../research/external/revalidation-reuse-and-leakage.md)):
+   [revalidation-reuse-and-leakage.md §5](../research/external/validation/revalidation-reuse-and-leakage.md)):
    rate-limit replays, rotate/refresh the corpus, and keep **full fresh re-derivation on
    risk-floored surfaces** — exactly where a gamed frozen set is most dangerous.
 5. **Evidence artifacts are a leakage channel too** *(2026-07-04 evening amendment)*. The gate's
@@ -493,12 +493,12 @@ On a durable-FAIL re-validation, a naive loop re-authors held-out tests and re-r
 - No free-running reflection: reflection triggers on ground-truth events (an escape, a canary
   miss, a durable FAIL), never as open-ended synthesis (intrinsic self-correction *degrades*
   without external signal —
-  [correctness-and-verification-evidence.md §2](../research/external/correctness-and-verification-evidence.md)).
+  [correctness-and-verification-evidence.md §2](../research/external/validation/correctness-and-verification-evidence.md)).
 - **No implementer-side ceremony without paired proof.** Mandated process in worker prompts
   (workflow scripts, test-first mandates, guideline prose) is a candidate net-negative until a
   paired A/B clears it: mandated agent-authored TDD measured at +55% cost for null-to-negative
   quality on hidden tests, guideline prose slightly hurting, instruction load degrading
-  compliance ([harness-evaluation-prior-art.md §2, §5.2](../research/external/harness-evaluation-prior-art.md)).
+  compliance ([harness-evaluation-prior-art.md §2, §5.2](../research/external/evaluation/harness-evaluation-prior-art.md)).
   Validator-side rigor is exempt — governed by O0, never by this rule. The same evidence is
   *why* the vault is panel-authored and hidden: an implementer iterating against self-authored
   visible tests is the measured overfitting regime (21.8–33% visible-pass-hidden-fail,
@@ -538,7 +538,7 @@ These cut elapsed time without buying tokens; they are always on:
 6. **Turn economy on every worker-read surface.** Each extra turn re-sends the whole growing
    context, so follow-up-call elimination is a first-class accelerator — the decisive results
    in the tool-surface benchmarks were all turn-count stories
-   ([tool-surface-and-format-economics.md §1–2](../research/external/tool-surface-and-format-economics.md)).
+   ([tool-surface-and-format-economics.md §1–2](../research/external/tool-surface/tool-surface-and-format-economics.md)).
    Every status/verdict/gate artifact carries **pre-computed aggregates** (`count: N of T`,
    derived pass/fail roll-ups) so the obvious next question is pre-answered; empty results are
    **definitive** (`runnable: 0 (3 blocked, 2 parked)`), never ambiguous blanks that force a
@@ -581,7 +581,7 @@ pool of lease-held worktrees (env-setup hooks run once per pool member; **durabl
 survive worker death, so a pipeline that dies mid-run keeps its home for the disk-resume;
 teardown is **fail-closed** behind precise "landed" semantics — patch-ID containment after
 squash merges, refusal when the remote is unreachable — and per-risk opt-in flags, never a
-blanket force) ([unattended-operation-prior-art.md §4](../research/external/unattended-operation-prior-art.md)).
+blanket force) ([unattended-operation-prior-art.md §4](../research/external/unattended-operation/unattended-operation-prior-art.md)).
 This is an **O2 win only**: a stable pool-slot cwd stabilizes the cache key, but each commit
 still cold-starts the next session's prefix (git snapshot in the system prompt), so the
 per-pipeline *cache* warmup above stays in the admission cost.
@@ -645,15 +645,15 @@ message behavior `[measured]` even allows deliberate window alignment to the ope
 ## 7. The correctness floor (O0)
 
 The optimizers above are only safe on top of this floor, and the research says it is the
-differentiator ([landscape-and-novelty.md §2](../research/external/landscape-and-novelty.md)):
+differentiator ([landscape-and-novelty.md §2](../research/external/landscape/landscape-and-novelty.md)):
 
 - **Blind adversarial validation:** fresh-context validators; the spec is the only shared
   input; implementer reasoning never crosses (self-recognition causes self-preference —
-  [correctness-and-verification-evidence.md §2](../research/external/correctness-and-verification-evidence.md));
+  [correctness-and-verification-evidence.md §2](../research/external/validation/correctness-and-verification-evidence.md));
   held-out adversarial tests; the merge gate reproduced from a clean checkout
   (a `--require-clean` mode refuses a dirty tree).
 - **Vault isolation is a six-layer stack, not a flag** (design open question #3 closed;
-  [isolation-and-sandboxing.md](../research/external/isolation-and-sandboxing.md)): (1) sandbox
+  [isolation-and-sandboxing.md](../research/external/isolation/isolation-and-sandboxing.md)): (1) sandbox
   `denyRead` on the vault path (OS-enforced for Bash + children, macOS Seatbelt / Linux
   bubblewrap); (2) Read/Edit deny rules covering the built-in file tools (absolute precedence,
   symlink-resolving) — since the sandbox covers only Bash and the built-in tools bypass it;
@@ -669,11 +669,11 @@ differentiator ([landscape-and-novelty.md §2](../research/external/landscape-an
   the gate self-tests: the isolation is verified by a failing read, never assumed.
 - **Diverse-lens panels, all-must-pass;** consensus voting only for redundant panels
   (popularity-trap evidence,
-  [correctness-and-verification-evidence.md §3](../research/external/correctness-and-verification-evidence.md)).
+  [correctness-and-verification-evidence.md §3](../research/external/validation/correctness-and-verification-evidence.md)).
   *Amended 2026-07-04 evening:* model heterogeneity is **weak insurance, not a diversity
   mechanism** — LLM errors correlate strongly (~60% same-wrong-answer agreement when two models
   err, rising with capability, persisting across providers; judges favor similar models —
-  [§3 addendum](../research/external/correctness-and-verification-evidence.md)). N same-family validators
+  [§3 addendum](../research/external/validation/correctness-and-verification-evidence.md)). N same-family validators
   are not N independent draws. What de-correlates is **leverage diversity** (held-out execution,
   clean-checkout reproduction, distinct lenses on distinct artifacts) — marginal panel tokens
   buy a new lens or new leverage, never another same-family opinion. **Panel-correlation
@@ -699,7 +699,7 @@ differentiator ([landscape-and-novelty.md §2](../research/external/landscape-an
      (operator/machinery development) the interlock is inert.
   3. **Spawn interlock.** Worker spawns during a firing require a **fresh admission decision
      stamp** (governor + scheduler output) — the firstmate enforce-that-judgment-happened
-     pattern ([unattended-operation-prior-art.md §8](../research/external/unattended-operation-prior-art.md));
+     pattern ([unattended-operation-prior-art.md §8](../research/external/unattended-operation/unattended-operation-prior-art.md));
      "governor between tasks" stops being prose.
   4. **Mandatory-step manifest.** The gate loads a per-profile required-steps manifest from the
      ratified ref; a required input that is absent **fails closed** — "caller's choice" passes
@@ -712,7 +712,7 @@ differentiator ([landscape-and-novelty.md §2](../research/external/landscape-an
   (review-class findings default to 0 — always human); safe mechanical fixes are applied by
   the gate pipeline, never by the implementer being judged.
   *Amended 2026-07-04 evening — false FAILs are the symmetric, measured failure
-  ([correctness-and-verification-evidence.md §7](../research/external/correctness-and-verification-evidence.md):
+  ([correctness-and-verification-evidence.md §7](../research/external/validation/correctness-and-verification-evidence.md):
   ~79–83% of raw multi-agent findings killed by adversarial refutation; consensus endorsed a
   non-existent vulnerability, killed only by one empirical test):* error-severity findings from
   validator FAIL verdicts carry a **machine-replayable repro** (command + expectation) that the
@@ -728,13 +728,13 @@ differentiator ([landscape-and-novelty.md §2](../research/external/landscape-an
   fetch failure empties those fields rather than falling back to a stale copy). **Evidence
   directories:** each gated task commits its validation evidence (transcripts, probe outputs,
   gate captures) where it rides review — the durable input to the escapes log and
-  `docs/EVIDENCE.md` ([unattended-operation-prior-art.md §5](../research/external/unattended-operation-prior-art.md));
+  `docs/EVIDENCE.md` ([unattended-operation-prior-art.md §5](../research/external/unattended-operation/unattended-operation-prior-art.md));
   held-out execution output is the exception — it routes to the vault-side store and in-repo
   reports are manifest-scrubbed (§5.5 point 5), so evidence never becomes the leak around the
   vault.
 - **Self-reports are claims, not evidence** `[measured, replicated]`: agents cheat on ≥16% of
   successful long-horizon runs and fabricate execution they never performed
-  ([harness-evaluation-prior-art.md §5.3](../research/external/harness-evaluation-prior-art.md)) — so no
+  ([harness-evaluation-prior-art.md §5.3](../research/external/evaluation/harness-evaluation-prior-art.md)) — so no
   status transition, verdict, or resume decision is made from a model's own summary. The loop
   reconstructs from artifacts (git delta, gate outputs, ledger) before acting; "never
   summarize a run from memory" is a standing orchestrator rule.
@@ -758,9 +758,9 @@ differentiator ([landscape-and-novelty.md §2](../research/external/landscape-an
   committed ratification queue (`docs/PROPOSALS.md`); headless runs cannot edit their own
   machinery (self-modifying loops can encode a bypass of their own safeguards without
   "deciding" to —
-  [correctness-and-verification-evidence.md §5](../research/external/correctness-and-verification-evidence.md)).
+  [correctness-and-verification-evidence.md §5](../research/external/validation/correctness-and-verification-evidence.md)).
   Queue entries are **decision cards**
-  ([unattended-operation-prior-art.md §6](../research/external/unattended-operation-prior-art.md)):
+  ([unattended-operation-prior-art.md §6](../research/external/unattended-operation/unattended-operation-prior-art.md)):
   deterministic *Situation* → advisory triage (**cached per content revision** — one triage
   per revision, ever: spend control) → *Recommended action* → exactly-one-choice options; each
   card carries a **content hash**, and a ratification is **refused if the proposal changed
@@ -788,7 +788,7 @@ explicitly:
   auto-applied. Lever evaluations follow the **paired-arm template**: one lever = one arm,
   continuous metric (never binarized), paired per-task comparison, difficulty stratification
   defined out-of-sample, confirmatory-vs-exploratory labeling
-  ([harness-evaluation-prior-art.md §2](../research/external/harness-evaluation-prior-art.md)).
+  ([harness-evaluation-prior-art.md §2](../research/external/evaluation/harness-evaluation-prior-art.md)).
 - **Justification surface:** a committed evidence trail (`docs/EVIDENCE.md`, regenerated from
   telemetry) answers *is it catching real defects, is the cost justified, which features
   actually fire* — and drives subtraction: dormant non-insurance machinery gets flagged for
@@ -810,7 +810,7 @@ explicitly:
 | Pulled-forward task gets invalidated (wasted tokens) | `start-early-safe` predicate (`mayBeInvalidatedBy`); conservative default |
 | Parallel burst empties the window, then stalls | Admission rule forecast (P95 quantile, includes per-pipeline cache warmup); window-phase scheduling (§6.2) |
 | Router misroutes (worse than random on unfamiliar distribution) | Verified-FAIL escalation signal (not a learned scorer); >40% break-even trip-up; validate predictor features vs measured burn before flag-flip (§5.3) |
-| Subpar plan (worse than no plan) | Human approval gate on the plan document ([correctness-and-verification-evidence.md §4](../research/external/correctness-and-verification-evidence.md)); phase-close reflection re-scopes remaining phases |
+| Subpar plan (worse than no plan) | Human approval gate on the plan document ([correctness-and-verification-evidence.md §4](../research/external/validation/correctness-and-verification-evidence.md)); phase-close reflection re-scopes remaining phases |
 | Limits change under the harness (they did, 7+ times) | No hard-coded magnitudes; empirical ceiling calibration; §10.3 changelog discipline; re-check after 2026-07-13 promo expiry and the paused Agent-SDK regime change |
 | Concurrent firings | Manual trigger + advisory run marker + operator arbitration |
 | Reward hacking / stale-green | The whole §7 floor; hooks un-skippable at merge/stop points |
@@ -887,14 +887,14 @@ Cheapest proven lever first; each flip gated on the previous stage's telemetry.
   workspace effects, hold-open turns for cancellation paths) plus recorded-trace replay, so
   the loop/governor/ledger are e2e-testable at zero quota; re-recording real fixtures spends
   quota and is operator-gated
-  ([unattended-operation-prior-art.md §7](../research/external/unattended-operation-prior-art.md)).
+  ([unattended-operation-prior-art.md §7](../research/external/unattended-operation/unattended-operation-prior-art.md)).
   *Added 2026-07-04 evening:* **hook registration + interlocks + gate step-manifest** (the §7
   wiring amendments — enforcement is only real once registered and triggered) and the
   **firing preflight / staleness-aware governor** (§5.1). **Stage-0 exit criterion: a real
   pilot firing** — a small greenfield build at Stage-0 settings producing the first real
   run-log/canary/calibration data and operator-gated recorded traces to replace the mock rig's
   synthetic fixtures. No further machinery ships before the pilot; the apparatus has outrun
-  realized scale once already ([landscape-and-novelty.md §4.1](../research/external/landscape-and-novelty.md)).
+  realized scale once already ([landscape-and-novelty.md §4.1](../research/external/landscape/landscape-and-novelty.md)).
 - **Stage 1 (after the minimum task sample):** flip governor thresholds from observe-only to
   enforcing; per-profile effort via the Workflow spawn path, effort recorded in the run-log; the
   duration predictor, gated on (a) the simple starting-tier lever showing escapes ~0 and $/task
@@ -973,4 +973,4 @@ their mitigations; what remains of each is scheduled work, not uncertainty.
 *Resolved since the founding draft:* **vault sandbox enforcement** (the founding draft's open
 question #3) — the six-layer OS-enforced isolation stack, proven by a vault-canary
 read-attempt in the gate self-tests (§7;
-[isolation-and-sandboxing.md](../research/external/isolation-and-sandboxing.md)).
+[isolation-and-sandboxing.md](../research/external/isolation/isolation-and-sandboxing.md)).

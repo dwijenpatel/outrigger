@@ -1,17 +1,17 @@
 # Token economics & scheduling — routing, effort, forecasting, budget governance
 
 Evidence behind the design's O1 machinery
-([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md)):
+([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md)):
 model/effort tier routing (§5.3), the budget governor and window-aware admission (§5.1, §6.2),
 and the wall-clock/paid-parallelism tradeoffs (§6). Claude Code / Max-plan *mechanics* the
 governor is built on are a separate document
-([claude-code-and-max-plan-facts.md](claude-code-and-max-plan-facts.md)).
+([claude-code-and-max-plan-facts.md](../platform-facts/claude-code-and-max-plan-facts.md)).
 
 **Provenance:** deep-research workflow, 2026-07-04 — 5 search angles → 25 sources → 123 claims
 → top 25 through 3-vote adversarial verification (24 confirmed, 1 refuted). Findings below
 carry their vote where verified; single-extraction claims from live primary sources are tagged.
 Confidence: `[measured]` `[folklore]` `[E]`/`[I]`. Consolidated corrections and open items in
-[README.md](../README.md).
+[README.md](../../README.md).
 
 > **Operational aside worth recording.** This research run itself hit the account's 5-hour
 > session limit mid-verification, losing all 75 in-flight verifier votes — a live instance of
@@ -79,14 +79,14 @@ Confidence: `[measured]` `[folklore]` `[E]`/`[I]`. Consolidated corrections and 
 - **Effort-vs-tier cache asymmetry (2-1 vote, medium confidence):** ARES argues intra-model
   effort switching preserves the KV cache while cross-model switching forces re-encoding. **In
   Claude Code specifically this is moot *mid-session* — model and effort are both part of the
-  cache key** (see [claude-code-and-max-plan-facts.md §2](claude-code-and-max-plan-facts.md)),
+  cache key** (see [claude-code-and-max-plan-facts.md §2](../platform-facts/claude-code-and-max-plan-facts.md)),
   so any mid-session escalation of either busts the cache. The asymmetry survives only in the
   design's fresh-spawn-per-escalation path, where it is automatic. `[I]` Practical rule: prefer
   effort bumps before tier bumps, and always escalate at a worker respawn boundary.
 
 ## 2b. Local supersessions — the 2026 adaptive-thinking lineup (added 2026-07-05)
 
-The [local benchmark](../internal/model-speed-effort-benchmark-2026-07/README.md)
+The [local benchmark](../../internal/model-speed-effort-benchmark-2026-07/README.md)
 (`[measured, local, n=3/cell]` — 73 timed `claude -p` runs on Fable 5 /
 Opus 4.8 / Sonnet 5 / Haiku 4.5) changes three §2/§1-adjacent conclusions
 **for this lineup specifically**:
@@ -113,7 +113,7 @@ Opus 4.8 / Sonnet 5 / Haiku 4.5) changes three §2/§1-adjacent conclusions
   ladder passes through (Haiku ~3.5× cheaper than Sonnet). Correctness was
   **saturated at prompt scale** (36/36) — separation lives at horizon
   scale, which is what makes horizon/regime the routing axis
-  ([task-horizon-prediction.md](task-horizon-prediction.md)).
+  ([task-horizon-prediction.md](../routing/task-horizon-prediction.md)).
 
 ## 2c. Model-specific weekly caps (added 2026-07-05, `[operator-observed]`)
 
@@ -224,7 +224,7 @@ Claude Opus 4.7 / Sonnet 4.6, 4 environments incl. SWE-bench]`
   for *validation* structurally but for *implementation* only under the admission rule.
 - The single-agent-at-equal-budget result (arXiv 2604.02460) and its "MAS wins when context
   degrades" caveat are covered under
-  [correctness-and-verification-evidence.md §3](correctness-and-verification-evidence.md).
+  [correctness-and-verification-evidence.md §3](../validation/correctness-and-verification-evidence.md).
 
 ## 7. Net design implications (summary)
 

@@ -1,13 +1,13 @@
 # Correctness & verification evidence — why the O0 floor is built this way
 
 The empirical case behind the design's correctness machinery
-([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md) §7):
+([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md) §7):
 blind validation, diverse-lens panels, the human plan gate, durable state with external kill
 switches, governed self-modification, and the calibration probe.
 
 **Provenance:** external comparative study 2026-07-03 (two adversarial fact-check passes);
 `[E]` = established in the cited primary source, `[I]` = inference/synthesis. Corrections in
-the consolidated ledger ([README.md](../README.md)). **Extended 2026-07-04 (evening):** a targeted
+the consolidated ledger ([README.md](../../README.md)). **Extended 2026-07-04 (evening):** a targeted
 verifier-precision and error-correlation pass (§3 addendum, §7) run during the critique-refresh
 exercise; sources fetched directly, magnitudes tagged single-source where applicable.
 
@@ -153,7 +153,7 @@ academic results sharpen (and partially deflate) the "model heterogeneity" advic
   https://ghuntley.com/ralph/ — cost/output anecdotes ($297 MVP) are hype-tier.
 - From the 2026-07-04 pass, the budget-specific case for external enforcement: agents cannot
   self-manage token budgets — see
-  [token-economics-and-scheduling.md §4](token-economics-and-scheduling.md).
+  [token-economics-and-scheduling.md §4](../economics/token-economics-and-scheduling.md).
 
 ## 6. The genuinely novel piece — mutation testing aimed at the reviewer
 
@@ -217,7 +217,7 @@ escalation signal, so false FAILs trigger paid tier/effort escalations and full 
 they poison exactly the telemetry (>40% break-even trip-wire, catch-rate) the controller tunes
 on. The design's "verdicts quote reproduced behavior" rule is the right filter but is a
 *claimed* reproduction — and fabricated execution is a measured behavior
-([harness-evaluation-prior-art.md §5.3](harness-evaluation-prior-art.md)). The mechanization:
+([harness-evaluation-prior-art.md §5.3](../evaluation/harness-evaluation-prior-art.md)). The mechanization:
 error-severity findings carry a **machine-replayable repro** the gate re-executes in the clean
 checkout before a FAIL blocks ("killed only by a single empirical test", pointed at FAILs);
 non-replayable error findings downgrade to ask-user; the run-log counts unreproduced findings

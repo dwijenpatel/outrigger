@@ -5,7 +5,7 @@ Evidence base for *how workers and the orchestrator touch tools and data*: the A
 family), the MCP-vs-CLI/deferred-loading evidence landscape, and serialization-format token
 economics (TOON, toonformat.dev) — read against the design's §4 leverage map, §5.4 context
 hygiene, and §6.1 turn accelerators
-([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md)).
+([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md)).
 
 **Provenance:** kunchenguid repo survey 2026-07-04 (four-agent fan-out; shallow clones);
 **independent-confirmation pass 2026-07-04** (three adversarial web-verification agents,

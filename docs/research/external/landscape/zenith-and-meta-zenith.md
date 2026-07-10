@@ -2,7 +2,7 @@
 
 What Zenith is, what its RALPH-ablation experiment actually shows, what Meta-Zenith claims,
 and a point-by-point comparison against this design
-([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md)).
+([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md)).
 Zenith is the nearest published neighbor to this project found to date — closer than anything
 in [landscape-and-novelty.md](landscape-and-novelty.md) or
 [ecosystem-mining/](ecosystem-mining/README.md) — and it ships as working code.
@@ -78,7 +78,7 @@ up to orchestrator adjudication, then judgment. `[code]`
 This converges with two independent lines already in the corpus: METR RE-Bench's measured
 failure signature — agents "satisfice rather than optimize, often submitting before the time
 limit" and can't "notice whether making progress" (see
-[meta-harness-and-self-improving-harnesses.md §5](meta-harness-and-self-improving-harnesses.md))
+[meta-harness-and-self-improving-harnesses.md §5](../self-improvement/meta-harness-and-self-improving-harnesses.md))
 — and this design's §7 closure gate. Three groups independently landed on "premature
 completion is the dominant long-horizon failure; an independent end-gate is the fix."
 
@@ -113,8 +113,8 @@ Relative to this design: Zenith independently validates the *shape* (fresh-conte
 spec-shared validators, deterministic all-must-pass gates, evidence-not-claims) while lacking
 the *enforcement layer* (six-layer vault isolation, held-out authoring, clean-checkout gate
 reproduction, canaries/escapes calibration — see
-[correctness-and-verification-evidence.md](correctness-and-verification-evidence.md) and
-[isolation-and-sandboxing.md](isolation-and-sandboxing.md)). The ecosystem-mining finding
+[correctness-and-verification-evidence.md](../validation/correctness-and-verification-evidence.md) and
+[isolation-and-sandboxing.md](../isolation/isolation-and-sandboxing.md)). The ecosystem-mining finding
 (reward-hacking hole universal at 11/11 repos) extends to 12/12: **Zenith's implementer-side
 file access can reach validator-authored tests too.**
 
@@ -195,7 +195,7 @@ marketing]`:
 - Positioning within the field: Meta-Zenith is a productized instance of the "meta-harness"
   pattern (Lee et al. 2026, arXiv 2603.28052 — a coding agent searching over harness *code*,
   Pareto-frontier retention; see
-  [meta-harness-and-self-improving-harnesses.md](meta-harness-and-self-improving-harnesses.md)),
+  [meta-harness-and-self-improving-harnesses.md](../self-improvement/meta-harness-and-self-improving-harnesses.md)),
   specialized to generating *configurations of a fixed runtime* rather than arbitrary
   harness code.
 
@@ -263,7 +263,7 @@ human ratification of self-modification; event-log resume.
 
 - **Independent replication of the RALPH-ablation and FrontierSWE claims** — nothing
   independent exists yet (2026-07-09); watch for third-party evaluations before any design
-  decision leans on Zenith's effect sizes. (Ledgered in [README.md](../README.md) open items.)
+  decision leans on Zenith's effect sizes. (Ledgered in [README.md](../../README.md) open items.)
 - **Meta-Zenith's implementation is closed** — if II open-sources it, re-study: it is the
   nearest productized instance of task-conditional harness generation, this project's §12
   interest.

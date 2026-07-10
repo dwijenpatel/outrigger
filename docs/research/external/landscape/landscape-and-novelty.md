@@ -1,7 +1,7 @@
 # Landscape & novelty — the design vs. the field (2024–2026)
 
 How the harness design (specified in
-[../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md))
+[../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md))
 compares to 20+ contemporary coding agents, multi-agent frameworks, the spec-driven movement,
 and the strongest framework prior art — and what in it is genuinely novel.
 
@@ -11,8 +11,8 @@ agent-reliability + practitioner "folk loop" practice), each grounded in fetched
 sources, followed by two adversarial fact-checking passes that verified every load-bearing
 citation. `[E]` = established in the cited primary source; `[I]` = inference/synthesis.
 Corrections produced by the fact-check passes live in the consolidated ledger
-([README.md](../README.md)). Empirical evidence for *why* the core choices are right is in
-[correctness-and-verification-evidence.md](correctness-and-verification-evidence.md).
+([README.md](../../README.md)). Empirical evidence for *why* the core choices are right is in
+[correctness-and-verification-evidence.md](../validation/correctness-and-verification-evidence.md).
 
 ---
 
@@ -26,7 +26,7 @@ else builds: (1) a **blind adversarial validator** (fresh context, never sees th
 reasoning, authors held-out tests, reproduces the gate from a clean checkout), and (2) a
 **self-measuring verifier loop** (the escapes log as labeled ground truth + calibration-probe
 known-defect canaries — the latter verified as *ahead of the published literature*, see
-[correctness-and-verification-evidence.md §6](correctness-and-verification-evidence.md)), plus
+[correctness-and-verification-evidence.md §6](../validation/correctness-and-verification-evidence.md)), plus
 (3) **human-ratified self-modification** with mechanized, diff-inspecting risk floors. Durable
 resumable state and structural context isolation are real strengths with mature prior art
 (LangGraph ships both mechanisms — but no critic). The two fixable risks: load-bearing safety
@@ -95,7 +95,7 @@ non-deterministic, JS-only; company pivoted to "Agent Enablement" ~2026-01).
 - **Self-measuring verifier** — the escapes log (a committed, labeled set of defects the panel
   missed = exactly how you'd empirically calibrate a checker) + calibration canaries. `[E]`
   for the components; `[I]`+verified-absence for the composition
-  ([correctness-and-verification-evidence.md §6](correctness-and-verification-evidence.md)).
+  ([correctness-and-verification-evidence.md §6](../validation/correctness-and-verification-evidence.md)).
 - **Human-ratified self-modification + mechanized risk floors.** A propose/dispose ratification
   queue + merge-gate risk-floor and machinery checks inspecting the **actual diff paths**
   at the merge point. No framework provides this governance layer; Claude Code's auto-mode
@@ -174,7 +174,7 @@ on 2026-07-04.*
    are skill sentences; nothing intercepts a merge to demand a PASS gate report, nothing makes a
    spawn refuse without an admission decision (the corpus already holds the fix pattern:
    firstmate's spawn-refuses-without-routing-decision,
-   [unattended-operation-prior-art.md §8](unattended-operation-prior-art.md));
+   [unattended-operation-prior-art.md §8](../unattended-operation/unattended-operation-prior-art.md));
    **(c) the gate is skippable-by-omission** — every absent input (`test_cmd`, `vault_path`,
    `verdict_dir`, floors) yields a passing "caller's choice" step. Fixes = plan Phase H1–H3.
 2. **Apparatus vs. realized scale (med, re-aimed).** The apparatus grew to ~20 modules / 358
@@ -199,14 +199,14 @@ on 2026-07-04.*
   symmetric failure has measured high base rates (~79–83% of candidate findings killed by
   adversarial refutation; ten reviewers unanimously endorsing a non-existent OpenSSL vuln,
   killed only by one empirical test; judges misclassifying correct code —
-  [correctness-and-verification-evidence.md §7](correctness-and-verification-evidence.md)).
+  [correctness-and-verification-evidence.md §7](../validation/correctness-and-verification-evidence.md)).
   In this design one hallucinated FAIL blocks a merge, drives paid escalation, and poisons
   break-even telemetry; the repro-quoting rule is claimed-not-replayed. Fix: executable-repro
   findings replayed by the gate + a false-FAIL counter (plan H4).
 - **N2. Panel independence overestimated (med).** Errors correlate strongly across models —
   ~60% same-wrong-answer agreement when two models err, correlation *rising* with capability
   and persisting across providers; judges favor similar models
-  ([correctness-and-verification-evidence.md §3 addendum](correctness-and-verification-evidence.md)).
+  ([correctness-and-verification-evidence.md §3 addendum](../validation/correctness-and-verification-evidence.md)).
   A Claude-only panel is not N independent draws; model heterogeneity demotes to weak insurance.
   What de-correlates is leverage diversity. Fix: panel-wide canary aggregation as correlation
   telemetry + optional cross-provider validator card for critical profiles (plan H5).
@@ -214,7 +214,7 @@ on 2026-07-04.*
   solo-operator, pre-production: nothing discovers a merged-but-wrong change, so catch-rate
   reads optimistic exactly when discovery is weakest; canaries measure only the planted-defect
   distribution (~27% of real faults uncoupled from standard mutants,
-  [revalidation-reuse-and-leakage.md §4](revalidation-reuse-and-leakage.md)). Fix: deterministic
+  [revalidation-reuse-and-leakage.md §4](../validation/revalidation-reuse-and-leakage.md)). Fix: deterministic
   escape backfill + sampled escape-hunts + flip conditions requiring an *active* discovery
   channel (plan H6).
 - **N4. Held-out content leaks around the vault via evidence artifacts (low-med).** The gate
@@ -234,7 +234,7 @@ on 2026-07-04.*
 **Retracted (stands, reinforced):** "the validator panel over-buys" — the closest published
 analogue (Refute-or-Promote) independently converged on adversarial kill-mandates + empirical
 gates as the way to make panels precise; see
-[correctness-and-verification-evidence.md §3, §7](correctness-and-verification-evidence.md).
+[correctness-and-verification-evidence.md §3, §7](../validation/correctness-and-verification-evidence.md).
 
 ### 4.3 Commoditization update (2026-07-04, observed in the dev environment)
 

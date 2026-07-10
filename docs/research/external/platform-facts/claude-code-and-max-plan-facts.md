@@ -1,7 +1,7 @@
 # Claude Code & Max-plan facts — the mechanics the harness depends on
 
 The volatile, vendor-specific facts underneath the design's O1 machinery
-([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md) §5, §10):
+([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md) §5, §10):
 prompt-cache behavior, rate-window mechanics, quota introspection, usage credits, and the
 capacity/regime changelog. These are the facts most likely to change under the harness — the
 design's §10.3 volatility discipline exists because of this document's contents.
@@ -11,7 +11,7 @@ design's §10.3 volatility discipline exists because of this document's contents
 **re-verified by direct fetch of the official page on 2026-07-04** and carry
 `[official, re-fetched]`. Community measurements are `[measured]`; unanswered questions are
 `[contested]`. Related economics/routing evidence:
-[token-economics-and-scheduling.md](token-economics-and-scheduling.md).
+[token-economics-and-scheduling.md](../economics/token-economics-and-scheduling.md).
 
 ---
 

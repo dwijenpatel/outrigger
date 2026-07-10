@@ -3,7 +3,7 @@
 Prior-art survey of one practitioner's production stack for unattended / semi-attended agent
 operation (github.com/kunchenguid: **gnhf**, **firstmate**, **treehouse**, **no-mistakes**,
 **acpx**, **acp-mock**, **wheelhouse**, **m87**), read against the harness design
-([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md) §3.4
+([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md) §3.4
 disk-is-memory, §5.1 governor, §6.3 human latency, §7 floor, §9 failure modes). The repos form a
 deliberate, dogfooded stack: treehouse (worktree pool) → no-mistakes (merge gate) → gnhf
 (overnight loop) / firstmate (crew orchestrator) → acpx/acp-mock (agent transport + token-free
@@ -97,7 +97,7 @@ sharp edges filed down:
   `git status/log` + process checks before saying anything. `[E]` — the design's fresh-evidence
   rule (§7) extended to the orchestrator's own self-reports. Independent support for
   agent-self-report unreliability is in
-  [correctness-and-verification-evidence.md](correctness-and-verification-evidence.md) (METR
+  [correctness-and-verification-evidence.md](../validation/correctness-and-verification-evidence.md) (METR
   reward-hacking observations; false "done" as RLHF-default shape).
 
 ## 4. Worktree pool (treehouse)
@@ -123,7 +123,7 @@ sharp edges filed down:
   residue at Stage 2. Cache interaction stated precisely: a stable pool-slot cwd stabilizes the
   cache key (cache is per machine+directory), but commits still cold-start the next session's
   prefix (git snapshot is in the system prompt,
-  [claude-code-and-max-plan-facts.md](claude-code-and-max-plan-facts.md)) — so the pool's win
+  [claude-code-and-max-plan-facts.md](../platform-facts/claude-code-and-max-plan-facts.md)) — so the pool's win
   is environment setup and worktree churn (O2), *not* the §6.2 per-pipeline cache-warmup cost,
   which stays in the admission calculation.
 

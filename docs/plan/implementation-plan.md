@@ -14,9 +14,9 @@ are consumed by hooks and the build-loop skill, not exposed as polished command-
 
 *Re-derived 2026-07-04* against the amended design (13 amendments from the kunchenguid-stack
 survey + independent-confirmation pass; evidence in
-[../research/tool-surface-and-format-economics.md](../research/external/tool-surface-and-format-economics.md),
-[../research/unattended-operation-prior-art.md](../research/external/unattended-operation-prior-art.md),
-[../research/harness-evaluation-prior-art.md](../research/external/harness-evaluation-prior-art.md)).
+[../research/tool-surface-and-format-economics.md](../research/external/tool-surface/tool-surface-and-format-economics.md),
+[../research/unattended-operation-prior-art.md](../research/external/unattended-operation/unattended-operation-prior-art.md),
+[../research/harness-evaluation-prior-art.md](../research/external/evaluation/harness-evaluation-prior-art.md)).
 
 ## How to use this file
 
@@ -118,7 +118,7 @@ Layout: harness library modules in `harness/` (config in `harness/config/`), tes
 
 ### Phase H — Enforcement wiring + verifier-precision floor (2026-07-04 evening amendments)
 
-From the updated design critique ([../research/landscape-and-novelty.md §4](../research/external/landscape-and-novelty.md)):
+From the updated design critique ([../research/landscape-and-novelty.md §4](../research/external/landscape/landscape-and-novelty.md)):
 the C/D/E-series built the enforcement *logic*; Phase H makes it **wired, triggered, and
 precision-aware**. All gates fail closed; interlocks are inert outside a live firing.
 
@@ -246,7 +246,7 @@ schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
   policy (they are persisted state read by deterministic code); only *digest views* change
   shape (B4, F1). No rework of the stored formats is needed — verified against the local
   measurement in
-  [../research/tool-surface-and-format-economics.md §4.3](../research/external/tool-surface-and-format-economics.md).
+  [../research/tool-surface-and-format-economics.md §4.3](../research/external/tool-surface/tool-surface-and-format-economics.md).
 
 ## Session log
 
@@ -330,7 +330,7 @@ schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
 - **2026-07-04 (run 7, in progress):** Critique-refresh exercise (read-only) re-derived the
   design critique against the as-built system + fresh external evidence (correlated errors,
   false-FAIL base rates); research corpus and design amended (see
-  [../research/landscape-and-novelty.md §4](../research/external/landscape-and-novelty.md) and the
+  [../research/landscape-and-novelty.md §4](../research/external/landscape/landscape-and-novelty.md) and the
   design's 2026-07-04-evening amendments). **Phase H added** (H1–H10: enforcement wiring +
   verifier-precision floor) and execution begun. Also logged: this file's own status table
   went stale mid-run-6 (F/G done while marked not-started) — a live instance of the

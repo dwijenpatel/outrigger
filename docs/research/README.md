@@ -36,69 +36,42 @@ determines how much weight a claim can carry:
 
 | Directory | What's in it | How to weigh it |
 |---|---|---|
-| **[external/](external/)** | Vendor documentation, peer-reviewed and preprint literature, other people's systems and repos. | We did not run these experiments. Strongest when independently replicated or when a source concedes something against its own interest; weakest when a party benchmarks its own product. |
+| **[external/](external/)** | Vendor documentation, peer-reviewed and preprint literature, other people's systems and repos — **organized into 14 harness-design subtopic folders**, each with its own scoped README, holdings, and open questions. | We did not run these experiments. Strongest when independently replicated or when a source concedes something against its own interest; weakest when a party benchmarks its own product. |
 | **[internal/](internal/)** | Our own pilot firings, our own zero-quota benchmarks, our own committed telemetry. | We ran these — exactly reproducible, and exactly as biased as we are. Our recorded **defects** are strong evidence; our recorded **wins** are not. |
 | **[distilled/](distilled/README.md)** | The highly-reliable subset of both, and the grading method that decides what qualifies. | **Start here.** Everything in it is Tier A; everything else in the corpus is context. |
 
 ## The documents
 
-### External — the world's evidence
+### External — the world's evidence, by harness-design subtopic
 
-**By objective:**
+`external/` is organized as a **map of the coding-agent-harness design space**, not of what we
+happened to research first. Each folder's README states its scope, holdings, related material,
+and open questions. Empty-handed folders are deliberate: they mark subproblems the corpus has
+not yet covered, and they are the queue for the next research passes.
 
-- [landscape-and-novelty.md](external/landscape-and-novelty.md) — the design vs. 20+ contemporary agents
-  and frameworks; the comparison matrix; what is genuinely novel; the surviving design critique.
-- [meta-harness-and-self-improving-harnesses.md](external/meta-harness-and-self-improving-harnesses.md) —
-  Weng (2026) + ~40 primary sources on harnesses as the optimized object: the system families
-  with verified numbers, the meta-loop's price, **the gaming ledger** (every documented
-  evaluator-hack: STOP, DGM, Autodata, Anchored Self-Play, AZR), the RE-Bench long-horizon
-  failure signature, import candidates (two-split promotion rule, weakness mining, leakage
-  audits), and the novelty re-assessment.
-- [zenith-and-meta-zenith.md](external/zenith-and-meta-zenith.md) — the closest-neighbor harness
-  (Intelligent Internet, shipped code, studied from the local clone): architecture, the
-  independent terminal-reviewer stopping rule, the RALPH-ablation experiment (with caveats),
-  Meta-Zenith's task-family harness generation, benchmark-claim verification, side-by-side
-  vs this design, and candidate imports.
-- [correctness-and-verification-evidence.md](external/correctness-and-verification-evidence.md) — the O0
-  floor's evidence base: reward-hacking/stale-green threat, blind generator–verifier separation,
-  panel-diversity, the human plan gate, external kill switches, and the calibration-probe
-  novelty claim.
-- [token-economics-and-scheduling.md](external/token-economics-and-scheduling.md) — the O1/O2 evidence:
-  model/effort routing and cascades, burn forecasting, budget-awareness and early-abort,
-  admission-control theory/practice, and the multi-agent wall-clock exchange rate.
-- [revalidation-reuse-and-leakage.md](external/revalidation-reuse-and-leakage.md) — the held-out vault's
-  economics: safe regression-test selection, corpus persistence/freshness, and adaptive-reuse
-  leakage theory.
-- [tool-surface-and-format-economics.md](external/tool-surface-and-format-economics.md) — how workers
-  touch tools and data: AXI interface principles, MCP-vs-CLI and deferred-tool-loading
-  evidence (regime-split), TOON/serialization-format verification incl. local measurements on
-  this harness's own shapes.
-- [unattended-operation-prior-art.md](external/unattended-operation-prior-art.md) — one practitioner's
-  production stack for unattended agent operation: event-log/reconciled-state split,
-  zero-token supervision, worktree pooling, gate findings taxonomy, ratification-card UX,
-  token-free loop testing.
-- [harness-evaluation-prior-art.md](external/harness-evaluation-prior-art.md) — measuring the
-  machinery itself: skill-routing reliability, process-ceremony cost/benefit (paired-arm
-  methodology), validator/judge format patterns; with independent confirmation.
-- [task-horizon-prediction.md](external/task-horizon-prediction.md) — can task length be predicted
-  well enough to route models? METR horizons, effort-estimation literature, the 2026
-  difficulty-router papers (single-source, unverified), and the bucket/asymmetric-loss
-  version the harness adopts.
-**Vendor-fact references (most volatile — recheck on schedule):**
+Coverage: **● rich · ◐ moderate · ○ thin (no dedicated document)** — as of 2026-07-10.
 
-- [claude-code-and-max-plan-facts.md](external/claude-code-and-max-plan-facts.md) — prompt-cache
-  behavior, rate-window mechanics, quota introspection, usage credits, capacity/regime
-  changelog.
-- [isolation-and-sandboxing.md](external/isolation-and-sandboxing.md) — the six-layer stack proving the
-  implementer cannot read the vault (design open question #3).
-- [ecosystem-mining/](external/ecosystem-mining/README.md) — 2026-07-06 study of 11 popular cloned
-  ecosystem repos (gstack, superpowers, ruflo, no-mistakes, planning-with-files, caveman,
-  career-ops, …): per-repo profiles, five theme docs (verification/blind-gating, spec
-  elicitation, parallel decomposition, rate-window handling, memory/lessons), and a ranked
-  contribution-opportunities capstone. Headline: the reward-hacking hole (implementer can
-  edit its own judge tests) is universal at 11/11, window awareness is 0/11, the planning
-  interview is commoditized at 5/11 — the harness's blind-vault and window/cache assets
-  remain the unoccupied slices, now with named PR-sized insertion points.
+| Subtopic | Holdings | Coverage |
+|---|---|---|
+| [validation/](external/validation/README.md) — the correctness floor: blind validation, held-out testing, gates, verifier calibration, leakage theory | correctness-and-verification-evidence; revalidation-reuse-and-leakage | ● |
+| [self-improvement/](external/self-improvement/README.md) — harnesses as the optimized object; the gaming ledger; governance of self-modification | meta-harness-and-self-improving-harnesses | ● |
+| [economics/](external/economics/README.md) — token/quota budgeting, burn forecasting, admission control, parallelism's exchange rate | token-economics-and-scheduling | ● |
+| [landscape/](external/landscape/README.md) — whole-system comparative studies (span every subtopic; the thin folders' best current material lives here) | landscape-and-novelty; zenith-and-meta-zenith; ecosystem-mining/ | ● |
+| [platform-facts/](external/platform-facts/README.md) — the vendor substrate: cache, windows, quota surfaces, credits. **Most volatile; recheck on schedule** | claude-code-and-max-plan-facts | ● |
+| [isolation/](external/isolation/README.md) — sandboxing, deny rules, egress, per-role boundaries, documented escapes | isolation-and-sandboxing | ◐ |
+| [routing/](external/routing/README.md) — model/effort selection, task-horizon and difficulty prediction | task-horizon-prediction | ◐ |
+| [unattended-operation/](external/unattended-operation/README.md) — durable state, resume, pause/wake, liveness, supervision | unattended-operation-prior-art | ◐ |
+| [tool-surface/](external/tool-surface/README.md) — interface ergonomics, MCP-vs-CLI, deferred loading, serialization formats | tool-surface-and-format-economics | ◐ |
+| [evaluation/](external/evaluation/README.md) — measuring the machinery itself: paired-arm methodology, variance-aware gates | harness-evaluation-prior-art | ◐ |
+| [planning/](external/planning/README.md) — spec elicitation, plan representations, decomposition quality, re-planning | *none dedicated* | ○ |
+| [memory-and-context/](external/memory-and-context/README.md) — persistent memory, lessons, context engineering, promotion lifecycles | *none dedicated* | ○ |
+| [orchestration/](external/orchestration/README.md) — topologies, parallel implementation, handoffs, concurrency | *none dedicated* | ○ |
+| [human-in-the-loop/](external/human-in-the-loop/README.md) — ratification UX, adjudication latency, approval fatigue, escalation policy | *none dedicated* | ○ |
+
+**The imbalance is the finding.** Five of six ● folders orbit validation/correctness and its
+economics; the four ○ folders — planning, memory, orchestration, human-in-the-loop — are
+first-class harness subproblems with no dedicated research document. Their READMEs carry the
+seed questions for the next passes.
 
 ### Internal — evidence we generated ourselves
 
@@ -235,8 +208,8 @@ weighting.
 ladder on this basis.
 
 **From the 2026-07-04 independent-confirmation pass** (kunchenguid claims vs independent
-sources; details in [tool-surface-and-format-economics.md](external/tool-surface-and-format-economics.md)
-and [harness-evaluation-prior-art.md](external/harness-evaluation-prior-art.md)):
+sources; details in [tool-surface-and-format-economics.md](external/tool-surface/tool-surface-and-format-economics.md)
+and [harness-evaluation-prior-art.md](external/evaluation/harness-evaluation-prior-art.md)):
 
 - **TOON token savings on uniform tabular data:** replicated, but as a **20–40% band vs compact
   JSON**, tokenizer/shape-dependent (author's −37% is the optimistic end); loses to compact
@@ -272,8 +245,8 @@ and [harness-evaluation-prior-art.md](external/harness-evaluation-prior-art.md))
   ≥16% cheating on successful 8h+ runs; Transluce o3 fabrication elicitation).
 
 **From the 2026-07-04 critique-refresh pass** (details in
-[correctness-and-verification-evidence.md §3 addendum, §7](external/correctness-and-verification-evidence.md)
-and [landscape-and-novelty.md §4](external/landscape-and-novelty.md)):
+[correctness-and-verification-evidence.md §3 addendum, §7](external/validation/correctness-and-verification-evidence.md)
+and [landscape-and-novelty.md §4](external/landscape/landscape-and-novelty.md)):
 
 - **Cross-model error correlation:** two independent academic sources (arXiv 2506.07962, 350+
   models, ~60% same-wrong-answer agreement when both err, correlation rises with capability and

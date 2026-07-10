@@ -3,7 +3,7 @@
 What "meta-harness" means, what the self-improving-harness literature has actually
 demonstrated (with costs), every documented instance of a self-improvement loop gaming its
 evaluator, and what all of it confirms, extends, or challenges in this design
-([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md)).
+([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md)).
 
 **Provenance:** 2026-07-09 deep-research pass. Anchor source: Lilian Weng, *"Harness
 Engineering for Self-Improvement"* (lilianweng.github.io, 2026-07-04), read in full from a
@@ -14,7 +14,7 @@ its primary source. Six load-bearing papers read in full text (ADAS, STOP, Self-
 DGM, AlphaEvolve, Anchored Self-Play), RE-Bench and TTT-Discover in depth. Tags: `[E]`
 established in the cited source; `[I]` inference/synthesis; peer-review status noted where it
 matters. The closest *productized* instance (Meta-Zenith) is covered separately in
-[zenith-and-meta-zenith.md](zenith-and-meta-zenith.md).
+[zenith-and-meta-zenith.md](../landscape/zenith-and-meta-zenith.md).
 
 ---
 
@@ -46,7 +46,7 @@ absorbed into models ("many harness improvements will be internalized into core 
 behavior"), but "the interface with external context and tools should remain" — the
 prompt-engineering precedent: manual tricks faded, "but the need to specify goals,
 constraints, context, and evaluation did not disappear." Relevant to this corpus's standing
-commoditization watch ([landscape-and-novelty.md §4.3](landscape-and-novelty.md)).
+commoditization watch ([landscape-and-novelty.md §4.3](../landscape/landscape-and-novelty.md)).
 
 ## 2. The system families, and what each demonstrated
 
@@ -74,7 +74,7 @@ Three structural readings `[I]`:
    This is the empirical seed of task-conditional harness configuration — but note the only
    published configuration keys are *task family* and *model*, *not risk tier* (the
    risk-conditional-slimming idea remains this project's own extension; see
-   [zenith-and-meta-zenith.md §6](zenith-and-meta-zenith.md)).
+   [zenith-and-meta-zenith.md §6](../landscape/zenith-and-meta-zenith.md)).
 3. **The harness is not always the highest-leverage object:** TTT-Discover/UG-TTT reached
    SOTA discovery results by training weights at test time under a deliberately *fixed*
    scaffold. Where a deterministic verifier + continuous reward exist, weight-space search
@@ -97,7 +97,7 @@ The honest price list, from the papers' own disclosures `[E]`:
 - **Caching changes the economics of rich-history loops:** ACE's evolving-playbook contexts
   cost **−82.6% billed input tokens under prompt caching despite +117% raw tokens** (91.8%
   cache-served) `[E]` — independent confirmation of this corpus's cheap-cache-reads finding
-  ([claude-code-and-max-plan-facts.md §4](claude-code-and-max-plan-facts.md)): the
+  ([claude-code-and-max-plan-facts.md §4](../platform-facts/claude-code-and-max-plan-facts.md)): the
   *billable* unit is the miss, not the read.
 
 Design-relevant summary `[I]`: a Self-Harness-style *bounded* improvement loop (mine
@@ -261,7 +261,7 @@ gate), and cache-friendly rich-history loops (ACE).
   absence re-verified and strengthened; (iii) **human-ratified self-modification remains
   unpublished everywhere** — every loop in this literature accepts autonomously, and DGM's
   marker-removal hack (caught only by retrospective human review) is now the canonical
-  empirical argument *for* prospective ratification. Ledgered in [README.md](../README.md).
+  empirical argument *for* prospective ratification. Ledgered in [README.md](../../README.md).
 
 ## 7. Corrections & evidence notes from this pass
 
@@ -295,4 +295,4 @@ gate), and cache-friendly rich-history loops (ACE).
   in the design, not a convention.
 - **Does an original-request closure lens beat a frozen-snapshot closure gate?** — the
   Zenith-vs-this-design stopping-rule question is empirically testable on this project's own
-  pilots ([zenith-and-meta-zenith.md §9](zenith-and-meta-zenith.md)).
+  pilots ([zenith-and-meta-zenith.md §9](../landscape/zenith-and-meta-zenith.md)).

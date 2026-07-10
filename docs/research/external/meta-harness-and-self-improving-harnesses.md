@@ -3,7 +3,7 @@
 What "meta-harness" means, what the self-improving-harness literature has actually
 demonstrated (with costs), every documented instance of a self-improvement loop gaming its
 evaluator, and what all of it confirms, extends, or challenges in this design
-([../design/token-time-optimized-harness.md](../design/token-time-optimized-harness.md)).
+([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md)).
 
 **Provenance:** 2026-07-09 deep-research pass. Anchor source: Lilian Weng, *"Harness
 Engineering for Self-Improvement"* (lilianweng.github.io, 2026-07-04), read in full from a
@@ -261,7 +261,7 @@ gate), and cache-friendly rich-history loops (ACE).
   absence re-verified and strengthened; (iii) **human-ratified self-modification remains
   unpublished everywhere** — every loop in this literature accepts autonomously, and DGM's
   marker-removal hack (caught only by retrospective human review) is now the canonical
-  empirical argument *for* prospective ratification. Ledgered in [README.md](README.md).
+  empirical argument *for* prospective ratification. Ledgered in [README.md](../README.md).
 
 ## 7. Corrections & evidence notes from this pass
 

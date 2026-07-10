@@ -5,7 +5,7 @@ Friction, failures, and defects observed during the first real firing
 2026-07-04). Streamed in by the operator as they occur; triaged here against
 the machinery; fixes land in this repo and roll into the pilot-#2 clone.
 This is the "first real telemetry" the Stage-0 exit criterion exists to
-produce ([../plan/implementation-plan.md](../plan/implementation-plan.md)
+produce ([../plan/implementation-plan.md](../../plan/implementation-plan.md)
 Next up; design §11).
 
 **Status legend:** 🔴 defect (fix in this repo) · 🟡 friction (candidate

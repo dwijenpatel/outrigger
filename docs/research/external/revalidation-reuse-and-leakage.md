@@ -1,14 +1,14 @@
 # Re-validation reuse & leakage — prior art behind the held-out vault's economics
 
 The research behind the design's re-validation reuse decisions
-([../design/token-time-optimized-harness.md](../design/token-time-optimized-harness.md) §5.5):
+([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md) §5.5):
 safe incremental re-validation, corpus persistence and freshness, and the leakage budget for
 adaptive reuse of a hidden set. Load-bearing facts only — each theme lists the transferable
 pattern and its named tradeoff. *How* the vault is kept unreadable is a separate question,
 covered in [isolation-and-sandboxing.md](isolation-and-sandboxing.md).
 
 **Provenance:** prior-art digest, 2026-07-03. `[E]` = established in the cited primary source;
-`[I]` = inference/synthesis. Fidelity note in the consolidated ledger ([README.md](README.md)).
+`[I]` = inference/synthesis. Fidelity note in the consolidated ledger ([README.md](../README.md)).
 
 ---
 

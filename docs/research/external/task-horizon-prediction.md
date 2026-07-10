@@ -4,7 +4,7 @@ Evidence behind the design's duration-bucket predictor (§5.3, flagged behind
 Stage-1 validation) and the I18 regime-routing rework. Compiled 2026-07-05
 from an operator-run research pass; sources fetched by that session, not yet
 independently re-verified here — 2026 arXiv items are tagged accordingly.
-Companion: [model-speed-effort-benchmark-2026-07/](model-speed-effort-benchmark-2026-07/README.md)
+Companion: [model-speed-effort-benchmark-2026-07/](../internal/model-speed-effort-benchmark-2026-07/README.md)
 (the local measurement that makes horizon/regime the routing axis).
 
 ---

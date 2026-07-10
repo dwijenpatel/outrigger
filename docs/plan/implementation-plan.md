@@ -14,9 +14,9 @@ are consumed by hooks and the build-loop skill, not exposed as polished command-
 
 *Re-derived 2026-07-04* against the amended design (13 amendments from the kunchenguid-stack
 survey + independent-confirmation pass; evidence in
-[../research/tool-surface-and-format-economics.md](../research/tool-surface-and-format-economics.md),
-[../research/unattended-operation-prior-art.md](../research/unattended-operation-prior-art.md),
-[../research/harness-evaluation-prior-art.md](../research/harness-evaluation-prior-art.md)).
+[../research/tool-surface-and-format-economics.md](../research/external/tool-surface-and-format-economics.md),
+[../research/unattended-operation-prior-art.md](../research/external/unattended-operation-prior-art.md),
+[../research/harness-evaluation-prior-art.md](../research/external/harness-evaluation-prior-art.md)).
 
 ## How to use this file
 
@@ -118,7 +118,7 @@ Layout: harness library modules in `harness/` (config in `harness/config/`), tes
 
 ### Phase H — Enforcement wiring + verifier-precision floor (2026-07-04 evening amendments)
 
-From the updated design critique ([../research/landscape-and-novelty.md §4](../research/landscape-and-novelty.md)):
+From the updated design critique ([../research/landscape-and-novelty.md §4](../research/external/landscape-and-novelty.md)):
 the C/D/E-series built the enforcement *logic*; Phase H makes it **wired, triggered, and
 precision-aware**. All gates fail closed; interlocks are inert outside a live firing.
 
@@ -135,7 +135,7 @@ precision-aware**. All gates fail closed; interlocks are inert outside a live fi
 | H9 | **Spec-ambiguity blockers**: handoff schema gains `spec_ambiguities`; on high/critical profiles they become **blocker records parking the task before implementation spends tokens** (advisory `key_learnings` on lower profiles) | §6.3 amendment | E1, E3 | done |
 | H10 | **Worker-side unconditional machinery deny**: `worker_settings()` denies Edit/Write on machinery globs regardless of branch name, merged with the vault fragment — branch prefixes are a dev convenience, not a boundary a worker can adopt | §7 wiring amendment 5 | E2, D1 | done |
 
-### Phase I — pilot-1 fixes (seeded from [../research/pilot-1-observations.md](../research/pilot-1-observations.md))
+### Phase I — pilot-1 fixes (seeded from [../research/pilot-1-observations.md](../research/internal/pilot-1-observations.md))
 
 | ID | Increment | Source | Deps | Status |
 |---|---|---|---|---|
@@ -246,7 +246,7 @@ schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
   policy (they are persisted state read by deterministic code); only *digest views* change
   shape (B4, F1). No rework of the stored formats is needed — verified against the local
   measurement in
-  [../research/tool-surface-and-format-economics.md §4.3](../research/tool-surface-and-format-economics.md).
+  [../research/tool-surface-and-format-economics.md §4.3](../research/external/tool-surface-and-format-economics.md).
 
 ## Session log
 
@@ -330,7 +330,7 @@ schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
 - **2026-07-04 (run 7, in progress):** Critique-refresh exercise (read-only) re-derived the
   design critique against the as-built system + fresh external evidence (correlated errors,
   false-FAIL base rates); research corpus and design amended (see
-  [../research/landscape-and-novelty.md §4](../research/landscape-and-novelty.md) and the
+  [../research/landscape-and-novelty.md §4](../research/external/landscape-and-novelty.md) and the
   design's 2026-07-04-evening amendments). **Phase H added** (H1–H10: enforcement wiring +
   verifier-precision floor) and execution begun. Also logged: this file's own status table
   went stale mid-run-6 (F/G done while marked not-started) — a live instance of the
@@ -371,7 +371,7 @@ schema shapes. Previous pointer (B2) is done, as is all of Phases A–D.
   blocker lifecycle fields — operator-wait is now disk-derivable), **I22** (git_guard
   cross-line over-match, found live by the firing session). 542 tests passing (was 521).
   Findings ledgered as P3v2-1/P3v2-2 in
-  [../research/pilot-3-observations.md](../research/pilot-3-observations.md).
+  [../research/pilot-3-observations.md](../research/internal/pilot-3-observations.md).
 - **2026-07-05 (pilot-3-v2 close + boundary sync):** GL1 **built and merged** — the design's
   first live end-to-end win: the held-out corpus (I14's first real run) caught a `get_db`
   contract violation that visible tests AND all 3 blind opus validators missed (P3v2-5);

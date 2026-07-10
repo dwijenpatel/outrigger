@@ -1,7 +1,7 @@
 # Token economics & scheduling — routing, effort, forecasting, budget governance
 
 Evidence behind the design's O1 machinery
-([../design/token-time-optimized-harness.md](../design/token-time-optimized-harness.md)):
+([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md)):
 model/effort tier routing (§5.3), the budget governor and window-aware admission (§5.1, §6.2),
 and the wall-clock/paid-parallelism tradeoffs (§6). Claude Code / Max-plan *mechanics* the
 governor is built on are a separate document
@@ -11,7 +11,7 @@ governor is built on are a separate document
 → top 25 through 3-vote adversarial verification (24 confirmed, 1 refuted). Findings below
 carry their vote where verified; single-extraction claims from live primary sources are tagged.
 Confidence: `[measured]` `[folklore]` `[E]`/`[I]`. Consolidated corrections and open items in
-[README.md](README.md).
+[README.md](../README.md).
 
 > **Operational aside worth recording.** This research run itself hit the account's 5-hour
 > session limit mid-verification, losing all 75 in-flight verifier votes — a live instance of
@@ -86,7 +86,7 @@ Confidence: `[measured]` `[folklore]` `[E]`/`[I]`. Consolidated corrections and 
 
 ## 2b. Local supersessions — the 2026 adaptive-thinking lineup (added 2026-07-05)
 
-The [local benchmark](model-speed-effort-benchmark-2026-07/README.md)
+The [local benchmark](../internal/model-speed-effort-benchmark-2026-07/README.md)
 (`[measured, local, n=3/cell]` — 73 timed `claude -p` runs on Fable 5 /
 Opus 4.8 / Sonnet 5 / Haiku 4.5) changes three §2/§1-adjacent conclusions
 **for this lineup specifically**:

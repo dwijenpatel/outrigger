@@ -1,7 +1,7 @@
 # Isolation & sandboxing — proving the implementer cannot read the vault
 
 Evidence answering the design's open question #3
-([../design/token-time-optimized-harness.md](../design/token-time-optimized-harness.md) §12):
+([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md) §12):
 the concrete mechanism proving an implementer agent *cannot* read the held-out test vault
 (§5.5). The *economics* of vault reuse (safe RTS, freshness, leakage budget) are a separate
 document ([revalidation-reuse-and-leakage.md](revalidation-reuse-and-leakage.md)).
@@ -9,7 +9,7 @@ document ([revalidation-reuse-and-leakage.md](revalidation-reuse-and-leakage.md)
 **Provenance:** deep-research workflow, 2026-07-04; Claude Code sandbox/permission facts fetched
 from official docs, the escape incident from a vendor writeup. `[official]` = Anthropic docs;
 `[measured]` = reproduced incident; `[E]`/`[I]` as usual. Consolidated open items in
-[README.md](README.md).
+[README.md](../README.md).
 
 ---
 

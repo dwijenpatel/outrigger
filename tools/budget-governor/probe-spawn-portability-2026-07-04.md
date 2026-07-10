@@ -38,7 +38,7 @@ explicit allowlist before calling `agent()`/`Workflow`**, and must check `agent(
 `null` rather than relying on a catchable exception. This is a mechanized-validation gap of
 exactly the kind the design's own critique warns about (safety-relevant behavior must not be
 assumed from the primitive's prose-implied contract) — see
-[landscape-and-novelty.md §4](../../docs/research/landscape-and-novelty.md) risk #1.
+[landscape-and-novelty.md §4](../../docs/research/external/landscape-and-novelty.md) risk #1.
 
 ## Re-verification protocol
 

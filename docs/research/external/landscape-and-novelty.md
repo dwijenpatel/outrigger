@@ -1,7 +1,7 @@
 # Landscape & novelty — the design vs. the field (2024–2026)
 
 How the harness design (specified in
-[../design/token-time-optimized-harness.md](../design/token-time-optimized-harness.md))
+[../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md))
 compares to 20+ contemporary coding agents, multi-agent frameworks, the spec-driven movement,
 and the strongest framework prior art — and what in it is genuinely novel.
 
@@ -11,7 +11,7 @@ agent-reliability + practitioner "folk loop" practice), each grounded in fetched
 sources, followed by two adversarial fact-checking passes that verified every load-bearing
 citation. `[E]` = established in the cited primary source; `[I]` = inference/synthesis.
 Corrections produced by the fact-check passes live in the consolidated ledger
-([README.md](README.md)). Empirical evidence for *why* the core choices are right is in
+([README.md](../README.md)). Empirical evidence for *why* the core choices are right is in
 [correctness-and-verification-evidence.md](correctness-and-verification-evidence.md).
 
 ---

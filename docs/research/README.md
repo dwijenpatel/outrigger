@@ -29,67 +29,68 @@ identity-verified clusters (six load-bearing papers read in full text), and an e
 code+report study of Intelligent Internet's Zenith harness (local clone) with an external
 survey of its Meta-Zenith and benchmark claims.
 
+## Layout
+
+The corpus is split by **who produced the evidence**, because provenance is the first thing that
+determines how much weight a claim can carry:
+
+| Directory | What's in it | How to weigh it |
+|---|---|---|
+| **[external/](external/)** | Vendor documentation, peer-reviewed and preprint literature, other people's systems and repos. | We did not run these experiments. Strongest when independently replicated or when a source concedes something against its own interest; weakest when a party benchmarks its own product. |
+| **[internal/](internal/)** | Our own pilot firings, our own zero-quota benchmarks, our own committed telemetry. | We ran these — exactly reproducible, and exactly as biased as we are. Our recorded **defects** are strong evidence; our recorded **wins** are not. |
+
 ## The documents
+
+### External — the world's evidence
 
 **By objective:**
 
-- [landscape-and-novelty.md](landscape-and-novelty.md) — the design vs. 20+ contemporary agents
+- [landscape-and-novelty.md](external/landscape-and-novelty.md) — the design vs. 20+ contemporary agents
   and frameworks; the comparison matrix; what is genuinely novel; the surviving design critique.
-- [meta-harness-and-self-improving-harnesses.md](meta-harness-and-self-improving-harnesses.md) —
+- [meta-harness-and-self-improving-harnesses.md](external/meta-harness-and-self-improving-harnesses.md) —
   Weng (2026) + ~40 primary sources on harnesses as the optimized object: the system families
   with verified numbers, the meta-loop's price, **the gaming ledger** (every documented
   evaluator-hack: STOP, DGM, Autodata, Anchored Self-Play, AZR), the RE-Bench long-horizon
   failure signature, import candidates (two-split promotion rule, weakness mining, leakage
   audits), and the novelty re-assessment.
-- [zenith-and-meta-zenith.md](zenith-and-meta-zenith.md) — the closest-neighbor harness
+- [zenith-and-meta-zenith.md](external/zenith-and-meta-zenith.md) — the closest-neighbor harness
   (Intelligent Internet, shipped code, studied from the local clone): architecture, the
   independent terminal-reviewer stopping rule, the RALPH-ablation experiment (with caveats),
   Meta-Zenith's task-family harness generation, benchmark-claim verification, side-by-side
   vs this design, and candidate imports.
-- [correctness-and-verification-evidence.md](correctness-and-verification-evidence.md) — the O0
+- [correctness-and-verification-evidence.md](external/correctness-and-verification-evidence.md) — the O0
   floor's evidence base: reward-hacking/stale-green threat, blind generator–verifier separation,
   panel-diversity, the human plan gate, external kill switches, and the calibration-probe
   novelty claim.
-- [token-economics-and-scheduling.md](token-economics-and-scheduling.md) — the O1/O2 evidence:
+- [token-economics-and-scheduling.md](external/token-economics-and-scheduling.md) — the O1/O2 evidence:
   model/effort routing and cascades, burn forecasting, budget-awareness and early-abort,
   admission-control theory/practice, and the multi-agent wall-clock exchange rate.
-- [revalidation-reuse-and-leakage.md](revalidation-reuse-and-leakage.md) — the held-out vault's
+- [revalidation-reuse-and-leakage.md](external/revalidation-reuse-and-leakage.md) — the held-out vault's
   economics: safe regression-test selection, corpus persistence/freshness, and adaptive-reuse
   leakage theory.
-- [tool-surface-and-format-economics.md](tool-surface-and-format-economics.md) — how workers
+- [tool-surface-and-format-economics.md](external/tool-surface-and-format-economics.md) — how workers
   touch tools and data: AXI interface principles, MCP-vs-CLI and deferred-tool-loading
   evidence (regime-split), TOON/serialization-format verification incl. local measurements on
   this harness's own shapes.
-- [unattended-operation-prior-art.md](unattended-operation-prior-art.md) — one practitioner's
+- [unattended-operation-prior-art.md](external/unattended-operation-prior-art.md) — one practitioner's
   production stack for unattended agent operation: event-log/reconciled-state split,
   zero-token supervision, worktree pooling, gate findings taxonomy, ratification-card UX,
   token-free loop testing.
-- [harness-evaluation-prior-art.md](harness-evaluation-prior-art.md) — measuring the
+- [harness-evaluation-prior-art.md](external/harness-evaluation-prior-art.md) — measuring the
   machinery itself: skill-routing reliability, process-ceremony cost/benefit (paired-arm
   methodology), validator/judge format patterns; with independent confirmation.
-- [task-horizon-prediction.md](task-horizon-prediction.md) — can task length be predicted
+- [task-horizon-prediction.md](external/task-horizon-prediction.md) — can task length be predicted
   well enough to route models? METR horizons, effort-estimation literature, the 2026
   difficulty-router papers (single-source, unverified), and the bucket/asymmetric-loss
   version the harness adopts.
-- [pilot-1-observations.md](pilot-1-observations.md) — live triage ledger of the first real
-  firing's failures and friction (started 2026-07-04); the empirical feed for the
-  pilot-#2 amendments.
-
 **Vendor-fact references (most volatile — recheck on schedule):**
 
-- [claude-code-and-max-plan-facts.md](claude-code-and-max-plan-facts.md) — prompt-cache
+- [claude-code-and-max-plan-facts.md](external/claude-code-and-max-plan-facts.md) — prompt-cache
   behavior, rate-window mechanics, quota introspection, usage credits, capacity/regime
   changelog.
-- [isolation-and-sandboxing.md](isolation-and-sandboxing.md) — the six-layer stack proving the
+- [isolation-and-sandboxing.md](external/isolation-and-sandboxing.md) — the six-layer stack proving the
   implementer cannot read the vault (design open question #3).
-- [model-speed-effort-benchmark-2026-07/](model-speed-effort-benchmark-2026-07/README.md) —
-  `[measured]` local benchmark (2026-07-05, 73 timed `claude -p` runs) of Fable 5 / Opus 4.8 /
-  Sonnet 5 / Haiku 4.5: latency, throughput, token-spend variance, correctness, and relative
-  cost per solved coding task at xhigh effort; raw per-run JSONs and reproduction harness
-  included. Headline: correctness is saturated at prompt-scale coding; speed ranking inverts
-  between thinking-heavy (Fable fastest) and tool-loop (Sonnet/Haiku fastest) regimes; token
-  efficiency offsets most of the Fable/Opus per-token price premium.
-- [ecosystem-mining/](ecosystem-mining/README.md) — 2026-07-06 study of 11 popular cloned
+- [ecosystem-mining/](external/ecosystem-mining/README.md) — 2026-07-06 study of 11 popular cloned
   ecosystem repos (gstack, superpowers, ruflo, no-mistakes, planning-with-files, caveman,
   career-ops, …): per-repo profiles, five theme docs (verification/blind-gating, spec
   elicitation, parallel decomposition, rate-window handling, memory/lessons), and a ranked
@@ -97,6 +98,39 @@ survey of its Meta-Zenith and benchmark claims.
   edit its own judge tests) is universal at 11/11, window awareness is 0/11, the planning
   interview is commoditized at 5/11 — the harness's blind-vault and window/cache assets
   remain the unoccupied slices, now with named PR-sized insertion points.
+
+### Internal — evidence we generated ourselves
+
+Our own runs. Reproducible, and motivated: we want this design to work. Weigh the **defects**
+heavily (nobody fabricates their own bugs) and the **wins** lightly.
+
+- [pilot-1-observations.md](internal/pilot-1-observations.md) — live triage ledger of the first real
+  firing's failures and friction (started 2026-07-04); the empirical feed for the
+  pilot-#2 amendments.
+- [pilot-2-observations.md](internal/pilot-2-observations.md) — the second firing on the frozen
+  greenlane instrument: 16 ledger entries, 9 of which became machinery fixes; the P2-collision
+  incident; the first live proof that the held-out corpus catches what visible tests and blind
+  validators both miss. Terminated by design once the arm was confounded.
+- [pilot-3-observations.md](internal/pilot-3-observations.md) — the floors×profiles halt, the
+  headless-worker (I26) shakedown, and the quota-wall leg; source of I19–I30.
+- [pilot-2-artifacts/](internal/pilot-2-artifacts/) — raw committed telemetry from pilot #2:
+  `run-log.jsonl`, `ledger-events.jsonl`, `governor-log.jsonl`, verdicts, watch items. The
+  artifacts that make the pilot ledgers checkable rather than merely asserted.
+- [model-speed-effort-benchmark-2026-07/](internal/model-speed-effort-benchmark-2026-07/README.md) —
+  `[measured, local]` benchmark (2026-07-05, 73 timed `claude -p` runs) of Fable 5 / Opus 4.8 /
+  Sonnet 5 / Haiku 4.5: latency, throughput, token-spend variance, correctness, and relative
+  cost per solved coding task at xhigh effort; raw per-run JSONs and reproduction harness
+  included. Headline: correctness is saturated at prompt-scale coding; speed ranking inverts
+  between thinking-heavy (Fable fastest) and tool-loop (Sonnet/Haiku fastest) regimes; token
+  efficiency offsets most of the Fable/Opus per-token price premium.
+
+Three external documents are **mixed-provenance** — they carry internally-generated claims
+inside an external survey, tagged `[measured, local]`, `[in-tree]`, or `[operator-observed]`:
+`landscape-and-novelty.md` §4 (in-tree verification of our own working tree),
+`token-economics-and-scheduling.md` §2b/§2c (local supersessions; the Fable weekly-cap
+observation), and `tool-surface-and-format-economics.md` §4.3 (local tokenizer measurements).
+Those claims keep their `[measured, local]` / `[in-tree]` / `[operator-observed]` tags in place,
+so nothing is lost to the directory split.
 
 ## How this maps to the design doc
 
@@ -188,8 +222,8 @@ weighting.
 ladder on this basis.
 
 **From the 2026-07-04 independent-confirmation pass** (kunchenguid claims vs independent
-sources; details in [tool-surface-and-format-economics.md](tool-surface-and-format-economics.md)
-and [harness-evaluation-prior-art.md](harness-evaluation-prior-art.md)):
+sources; details in [tool-surface-and-format-economics.md](external/tool-surface-and-format-economics.md)
+and [harness-evaluation-prior-art.md](external/harness-evaluation-prior-art.md)):
 
 - **TOON token savings on uniform tabular data:** replicated, but as a **20–40% band vs compact
   JSON**, tokenizer/shape-dependent (author's −37% is the optimistic end); loses to compact
@@ -225,8 +259,8 @@ and [harness-evaluation-prior-art.md](harness-evaluation-prior-art.md)):
   ≥16% cheating on successful 8h+ runs; Transluce o3 fabrication elicitation).
 
 **From the 2026-07-04 critique-refresh pass** (details in
-[correctness-and-verification-evidence.md §3 addendum, §7](correctness-and-verification-evidence.md)
-and [landscape-and-novelty.md §4](landscape-and-novelty.md)):
+[correctness-and-verification-evidence.md §3 addendum, §7](external/correctness-and-verification-evidence.md)
+and [landscape-and-novelty.md §4](external/landscape-and-novelty.md)):
 
 - **Cross-model error correlation:** two independent academic sources (arXiv 2506.07962, 350+
   models, ~60% same-wrong-answer agreement when both err, correlation rises with capability and

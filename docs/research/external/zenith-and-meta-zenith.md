@@ -2,7 +2,7 @@
 
 What Zenith is, what its RALPH-ablation experiment actually shows, what Meta-Zenith claims,
 and a point-by-point comparison against this design
-([../design/token-time-optimized-harness.md](../design/token-time-optimized-harness.md)).
+([../design/token-time-optimized-harness.md](../../design/token-time-optimized-harness.md)).
 Zenith is the nearest published neighbor to this project found to date — closer than anything
 in [landscape-and-novelty.md](landscape-and-novelty.md) or
 [ecosystem-mining/](ecosystem-mining/README.md) — and it ships as working code.
@@ -263,7 +263,7 @@ human ratification of self-modification; event-log resume.
 
 - **Independent replication of the RALPH-ablation and FrontierSWE claims** — nothing
   independent exists yet (2026-07-09); watch for third-party evaluations before any design
-  decision leans on Zenith's effect sizes. (Ledgered in [README.md](README.md) open items.)
+  decision leans on Zenith's effect sizes. (Ledgered in [README.md](../README.md) open items.)
 - **Meta-Zenith's implementation is closed** — if II open-sources it, re-study: it is the
   nearest productized instance of task-conditional harness generation, this project's §12
   interest.

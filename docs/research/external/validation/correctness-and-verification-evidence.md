@@ -118,7 +118,9 @@ academic results sharpen (and partially deflate) the "model heterogeneity" advic
 ## 4. Plan-first has quantitative backing — and its key caveat justifies the human gate
 
 - Plan-then-code beats direct generation: **up to +25.4% relative Pass@1** (peer-reviewed, code
-  benchmarks). `[E]` https://arxiv.org/abs/2303.06689
+  benchmarks) — *"Self-planning Code Generation with LLMs,"* Jiang et al., ASE 2024. `[E]`
+  https://arxiv.org/abs/2303.06689 (function-level HumanEval/MBPP; does not transfer to
+  repo-scale — see external/planning/planning-and-decomposition-evidence.md §5)
 - **"A subpar plan hurts performance even more than no plan at all"** (SWE-style tasks). `[E]`
   https://arxiv.org/html/2604.12147v1 — **`[I]` this is the empirical justification for the
   human-approval gate on the technical plan**: the gate defends against the one thing worse than

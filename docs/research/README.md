@@ -35,7 +35,12 @@ verified papers and first-party docs, producing the two memory-and-context docum
 **planning pass (2026-07-10)** ran six Opus 4.8 clusters — can-LLMs-plan (LLM-Modulo/PlanBench),
 decomposition methods, classical planning + representations, requirements-engineering/spec-driven
 development, shipped products, and a does-it-pay/brownfield/evaluation synthesis — over ~40
-primary sources, producing the two planning documents.
+primary sources, producing the two planning documents. An **orchestration pass (2026-07-10)** ran
+six Opus 4.8 clusters — the does-multi-agent-pay adjudication (Anthropic vs Cognition; the
+equal-budget refutation), the MAST failure taxonomy, parallel code-generation, handoff/
+communication, shipped frameworks, and distributed-systems concurrency theory (with a source-level
+audit of the harness's own machinery that surfaced a latent merge-race bug) — producing the two
+orchestration documents.
 
 ## Layout
 
@@ -73,13 +78,14 @@ Coverage: **● rich · ◐ moderate · ○ thin (no dedicated document)** — a
 | [evaluation/](external/evaluation/README.md) — measuring the machinery itself: paired-arm methodology, variance-aware gates | harness-evaluation-prior-art | ◐ |
 | [memory-and-context/](external/memory-and-context/README.md) — persistent memory, lessons, context engineering, staleness, memory security | memory-architectures-and-benchmarks; memory-for-coding-harnesses | ● |
 | [planning/](external/planning/README.md) — spec elicitation, determinacy, decomposition quality, plan evaluation, re-planning, brownfield | planning-and-decomposition-evidence; spec-determinacy-and-practice | ● |
-| [orchestration/](external/orchestration/README.md) — topologies, parallel implementation, handoffs, concurrency | *none dedicated* | ○ |
+| [orchestration/](external/orchestration/README.md) — topologies, parallel implementation, handoffs, concurrency correctness | multi-agent-orchestration-evidence; concurrency-and-merge-correctness | ● |
 | [human-in-the-loop/](external/human-in-the-loop/README.md) — ratification UX, adjudication latency, approval fatigue, escalation policy | *none dedicated* | ○ |
 
 **The imbalance is the finding.** The ● folders long orbited validation/correctness and its
-economics; memory-and-context joined them on 2026-07-10, and planning the same day. The
-remaining ○ folders — orchestration and human-in-the-loop — are first-class harness subproblems
-with no dedicated research document. Their READMEs carry the seed questions for the next passes.
+economics; memory-and-context, planning, and orchestration joined them across 2026-07-10. The
+one remaining ○ folder — human-in-the-loop — is a first-class harness subproblem with no
+dedicated research document, disproportionately thin given that human ratification is the
+design's surviving novelty. Its README carries the seed questions for the next pass.
 
 ### Internal — evidence we generated ourselves
 

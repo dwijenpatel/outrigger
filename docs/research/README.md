@@ -38,6 +38,7 @@ determines how much weight a claim can carry:
 |---|---|---|
 | **[external/](external/)** | Vendor documentation, peer-reviewed and preprint literature, other people's systems and repos. | We did not run these experiments. Strongest when independently replicated or when a source concedes something against its own interest; weakest when a party benchmarks its own product. |
 | **[internal/](internal/)** | Our own pilot firings, our own zero-quota benchmarks, our own committed telemetry. | We ran these — exactly reproducible, and exactly as biased as we are. Our recorded **defects** are strong evidence; our recorded **wins** are not. |
+| **[distilled/](distilled/README.md)** | The highly-reliable subset of both, and the grading method that decides what qualifies. | **Start here.** Everything in it is Tier A; everything else in the corpus is context. |
 
 ## The documents
 
@@ -129,8 +130,20 @@ inside an external survey, tagged `[measured, local]`, `[in-tree]`, or `[operato
 `landscape-and-novelty.md` §4 (in-tree verification of our own working tree),
 `token-economics-and-scheduling.md` §2b/§2c (local supersessions; the Fable weekly-cap
 observation), and `tool-surface-and-format-economics.md` §4.3 (local tokenizer measurements).
-Those claims keep their `[measured, local]` / `[in-tree]` / `[operator-observed]` tags in place,
-so nothing is lost to the directory split.
+Those claims keep their tags in place, and are collected in
+[distilled/internal.md](distilled/internal.md), so nothing is lost to the directory split.
+
+### Distilled — the reliable subset
+
+- [distilled/README.md](distilled/README.md) — **the grading method.** Why `[official]` is not a
+  synonym for "true" (we have caught it wrong three times), why an admission against interest
+  beats a benchmark, and the two axes — **warrant × decay** — every fact is scored on.
+- [distilled/external.md](distilled/external.md) — Tier-A facts from the world: the mathematics,
+  the gaming ledger, the independently replicated findings, the official commitments, and an
+  explicit list of what to distrust.
+- [distilled/internal.md](distilled/internal.md) — Tier-A facts from our own runs: every
+  prediction our firings falsified, every defect we found in our own machinery, and an honest
+  grading of our wins by whether a committed artifact backs them.
 
 ## How this maps to the design doc
 

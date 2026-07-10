@@ -27,7 +27,11 @@ pass (2026-07-09)** added two documents: Lilian Weng's "Harness Engineering for
 Self-Improvement" (2026-07-04) plus all ~40 of its cited references analyzed in four
 identity-verified clusters (six load-bearing papers read in full text), and an exhaustive
 code+report study of Intelligent Internet's Zenith harness (local clone) with an external
-survey of its Meta-Zenith and benchmark claims.
+survey of its Meta-Zenith and benchmark claims. An **agent-memory pass (2026-07-10)**, seeded
+by an operator-supplied landscape survey (verified, corrected, not committed), ran six Opus 4.8
+clusters — foundations/surveys, production systems, an adversarial benchmark audit,
+experiential/procedural memory, shipped coding-agent practice, and memory security — over ~30
+verified papers and first-party docs, producing the two memory-and-context documents.
 
 ## Layout
 
@@ -63,15 +67,15 @@ Coverage: **● rich · ◐ moderate · ○ thin (no dedicated document)** — a
 | [unattended-operation/](external/unattended-operation/README.md) — durable state, resume, pause/wake, liveness, supervision | unattended-operation-prior-art | ◐ |
 | [tool-surface/](external/tool-surface/README.md) — interface ergonomics, MCP-vs-CLI, deferred loading, serialization formats | tool-surface-and-format-economics | ◐ |
 | [evaluation/](external/evaluation/README.md) — measuring the machinery itself: paired-arm methodology, variance-aware gates | harness-evaluation-prior-art | ◐ |
+| [memory-and-context/](external/memory-and-context/README.md) — persistent memory, lessons, context engineering, staleness, memory security | memory-architectures-and-benchmarks; memory-for-coding-harnesses | ● |
 | [planning/](external/planning/README.md) — spec elicitation, plan representations, decomposition quality, re-planning | *none dedicated* | ○ |
-| [memory-and-context/](external/memory-and-context/README.md) — persistent memory, lessons, context engineering, promotion lifecycles | *none dedicated* | ○ |
 | [orchestration/](external/orchestration/README.md) — topologies, parallel implementation, handoffs, concurrency | *none dedicated* | ○ |
 | [human-in-the-loop/](external/human-in-the-loop/README.md) — ratification UX, adjudication latency, approval fatigue, escalation policy | *none dedicated* | ○ |
 
-**The imbalance is the finding.** Five of six ● folders orbit validation/correctness and its
-economics; the four ○ folders — planning, memory, orchestration, human-in-the-loop — are
-first-class harness subproblems with no dedicated research document. Their READMEs carry the
-seed questions for the next passes.
+**The imbalance is the finding.** The ● folders long orbited validation/correctness and its
+economics; memory-and-context joined them on 2026-07-10. The remaining ○ folders — planning,
+orchestration, human-in-the-loop — are first-class harness subproblems with no dedicated
+research document. Their READMEs carry the seed questions for the next passes.
 
 ### Internal — evidence we generated ourselves
 

@@ -19,7 +19,12 @@ design critique against the as-built system (in-tree verification of hooks/gate/
 state at 358 passing tests) plus targeted fetches on verifier precision (false FAILs) and
 cross-model error correlation. The gap-filling pass used a fan-out → fetch → 3-vote adversarial
 verification workflow (24 of 25 top claims confirmed, 1 refuted); its three most design-changing
-facts were re-verified by direct fetch of the official pages.
+facts were re-verified by direct fetch of the official pages. A **meta-harness + closest-neighbor
+pass (2026-07-09)** added two documents: Lilian Weng's "Harness Engineering for
+Self-Improvement" (2026-07-04) plus all ~40 of its cited references analyzed in four
+identity-verified clusters (six load-bearing papers read in full text), and an exhaustive
+code+report study of Intelligent Internet's Zenith harness (local clone) with an external
+survey of its Meta-Zenith and benchmark claims.
 
 ## The documents
 
@@ -27,6 +32,17 @@ facts were re-verified by direct fetch of the official pages.
 
 - [landscape-and-novelty.md](landscape-and-novelty.md) — the design vs. 20+ contemporary agents
   and frameworks; the comparison matrix; what is genuinely novel; the surviving design critique.
+- [meta-harness-and-self-improving-harnesses.md](meta-harness-and-self-improving-harnesses.md) —
+  Weng (2026) + ~40 primary sources on harnesses as the optimized object: the system families
+  with verified numbers, the meta-loop's price, **the gaming ledger** (every documented
+  evaluator-hack: STOP, DGM, Autodata, Anchored Self-Play, AZR), the RE-Bench long-horizon
+  failure signature, import candidates (two-split promotion rule, weakness mining, leakage
+  audits), and the novelty re-assessment.
+- [zenith-and-meta-zenith.md](zenith-and-meta-zenith.md) — the closest-neighbor harness
+  (Intelligent Internet, shipped code, studied from the local clone): architecture, the
+  independent terminal-reviewer stopping rule, the RALPH-ablation experiment (with caveats),
+  Meta-Zenith's task-family harness generation, benchmark-claim verification, side-by-side
+  vs this design, and candidate imports.
 - [correctness-and-verification-evidence.md](correctness-and-verification-evidence.md) — the O0
   floor's evidence base: reward-hacking/stale-green threat, blind generator–verifier separation,
   panel-diversity, the human plan gate, external kill switches, and the calibration-probe
@@ -92,6 +108,8 @@ facts were re-verified by direct fetch of the official pages.
 | §4 skills/ToolSearch rows; §5.4 context hygiene; §6.1 turn accelerators | tool-surface-and-format-economics |
 | §3.4 disk-is-memory; §6.3 human latency; §9 failure modes | unattended-operation-prior-art |
 | §5.6 no-spend list; §7 self-measuring loop; §8 lever discipline | harness-evaluation-prior-art |
+| §8 self-modification governance; §7 hooks-over-prose; whole-design novelty (update) | meta-harness-and-self-improving-harnesses (gaming ledger, promotion rule, novelty re-assessment) |
+| §7 closure/stopping; §11 staging vs shipped neighbors | zenith-and-meta-zenith (terminal-reviewer lens, RALPH ablation); meta-harness-and-self-improving-harnesses §5 (RE-Bench) |
 
 ## Consolidated corrections & confidence ledger
 
@@ -136,6 +154,25 @@ Corrections produced by the fact-check passes, kept so future readers don't re-i
   only in the tool-loop regime; on thinking-heavy tasks the ranking inverts (Fable
   fastest, Haiku slowest) and Opus costs ≈Sonnet per solved task. Routing is
   regime-aware from I18 onward.
+- **Refined 2026-07-09 (meta-harness pass):** the landscape doc's "self-measuring verifier
+  ahead of the published literature" claim is narrowed — **Self-Harness (arXiv 2606.09498,
+  Jun 2026)** publishes a proposer-blind held-out promotion gate for harness
+  self-modification, and its verifier-grounded weakness mining is a published analog of the
+  escapes-log idea. Surviving distinctions, re-verified across ~40 additional sources:
+  per-task blind held-out validation of *implementation* work, **calibration canaries**
+  (still nowhere in the literature), and **human-ratified self-modification** (every
+  published loop accepts autonomously; DGM's detection-marker hack — caught only by
+  retrospective human lineage review — is the canonical argument for prospective
+  ratification). See meta-harness-and-self-improving-harnesses.md §6.
+- **Attribution (2026-07-09), so nobody re-imports the error:** *Autodata* = Kulikov et al.
+  2606.25996 (agentic data-scientist, Meta/FAIR); *Self-Harness* = Zhang et al. 2606.09498;
+  *Meta-Harness* = Lee et al. 2603.28052. An early working guess mapped Kulikov→Self-Harness;
+  Weng's post labels them correctly.
+- **Verified 2026-07-09:** Zenith's "#1 on Frontier SWE" and II-Agent's "75.57% GAIA" are
+  **self-administered first-party runs absent from the independent leaderboards** (official
+  FrontierSWE: Fable 5 first at 0.900, Zenith unlisted; HAL GAIA: top entry 74.55%,
+  II-Agent unlisted). The RALPH-ablation numbers are author-run, ~n=1 per cell. Mechanisms
+  are importable; effect sizes are not.
 
 **Absence-of-feature findings** (strong, but inherently harder to prove than a positive): Kiro
 closure gate; Spec Kit automated final gate; LangGraph built-in critic; any published
@@ -224,6 +261,13 @@ the TrueFoundry 10× caching case study (single unaudited vendor anecdote, gatew
   relying.
 - **Duration-bucket predictor features** — must be validated against measured burn before the
   §11 flag flips (human difficulty ratings only weakly track cost).
+- **Independent replication of the 2026-07-09 pass's single-source results** — Zenith's
+  RALPH-ablation + FrontierSWE self-run; Self-Harness and DGM headline numbers. Import the
+  mechanisms (two-split promotion rule, terminal-reviewer lens, weakness mining), not the
+  effect sizes, until replicated.
+- **Meta-Zenith and Meta-Harness code** — both closed/unreleased as of 2026-07-09; if either
+  ships, re-study as the base for any harness-variant search (task-family harness
+  generation; Pareto retention + leakage audits).
 
 ## Recheck schedule (these facts rot)
 
@@ -231,3 +275,6 @@ the TrueFoundry 10× caching case study (single unaudited vendor anecdote, gatew
 - Re-check the **paused Agent SDK plan change** (would move headless usage off rate windows onto
   a monthly dollar credit — see claude-code-and-max-plan-facts §6).
 - Re-verify any capacity magnitude after each Anthropic limit change; nothing is hard-coded.
+- Watch for third-party evaluations/reproductions of Zenith (none existed 2026-07-09) and for
+  a Meta-Zenith or Meta-Harness code release — either changes the §12 task-conditional
+  harness-configuration picture.

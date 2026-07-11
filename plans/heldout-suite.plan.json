@@ -1,0 +1,91 @@
+{
+  "contract": 1,
+  "goal": "Build v2 artifact #4, tools/heldout-suite/ — the deterministic held-out-suite lifecycle CLI (materialize an authoring workspace outside the repo, validate a suite against base under the fails-on-base policy, seal it into a spec-hash-bound manifest with a deny-fragment) plus the authoring role contract (ROLE.md) that any fresh-context agent can execute. This is design D2/D11 as a standalone artifact: the graded tests' lifecycle, with agent spawning explicitly out of scope (that is artifact #5's composition concern).",
+  "non_goals": [
+    "No model/agent spawning — the headless-spawn machinery and its vendor-build probing land in artifact #5, once, for both roles.",
+    "No boundary-verification probe (spawning an implementer-configured process to prove unreadability) — rejected at interview; the boundary is the spawner's to enforce.",
+    "No replay/leakage accounting — the M1/M2 budget is the composer's ledger concern; this artifact only gives replays a stable identity to account against.",
+    "No in-repo suite placement, ever."
+  ],
+  "constraints": [
+    "Pure stdlib Python 3; no imports from any other artifact in this repo (R5/D15).",
+    "materialize refuses an --out that resolves to a path inside the target repo (the v1 in-repo vault rode git history into worker worktrees).",
+    "Sealed suites are never silently overwritten — retirement moves them aside with a timestamp, preserving evidence.",
+    "Landing goes branch -> merge-gate run + verify -> --ff-only merge (dogfood), with the gate report appended to docs/research/internal/v2-ledger.jsonl."
+  ],
+  "decisions": [
+    {
+      "q": "Scope cut: is #4 the end-to-end test-author (including headless claude -p authoring spawn), or the deterministic suite lifecycle with the authoring agent supplied by composition?",
+      "a": "Deterministic lifecycle only (materialize/validate/seal + ROLE.md). Spawning is #5's concern, where the headless-contract probing happens once for both implementer and test-author roles."
+    },
+    {
+      "q": "Isolation posture: where does the suite live and who enforces that the implementer cannot read it?",
+      "a": "Outside the repo (CLI refuses in-repo --out as a sound check). The boundary itself is owned by whatever spawns the implementer (OS/deny config; deny rules have absolute precedence and resolve symlinks per distilled section 4, vendor-build decay). seal emits a ready-to-merge deny-fragment file so the composer wires the boundary from a file contract."
+    },
+    {
+      "q": "Fails-on-base policy: how strict is validate about the suite's teeth?",
+      "a": "At least one test must fail against base; the manifest records the exact failed/passed split. Base-passing tests are legitimate regression guards. ImportError on not-yet-existing modules counts as failing. Necessary-not-sufficient, stated plainly in the contract."
+    },
+    {
+      "q": "Sealing and re-authoring: when may a suite be re-authored?",
+      "a": "The seal binds suite <-> spec-hash <-> base-sha. Re-authoring only on spec change (new hash; old suite retired, kept as evidence). Base moved with spec unchanged: re-run validate, never re-author. Disputed tests route through spec clarification (hash changes) or recorded human adjudication — humans are outside the blindness constraint; model roles are not."
+    },
+    {
+      "q": "Authoring role input scope: what does the test-author get to see?",
+      "a": "This task's full plan entry plus the plan-level preamble (goal, non_goals, constraints, decisions) plus the base checkout. Not other tasks' specs — suites test their own task's contract at its declared seams; seam discipline, not secrecy, is the reason pre-implementation."
+    }
+  ],
+  "open_questions": [],
+  "tasks": [
+    {
+      "id": "workspace-materialize",
+      "title": "Workspace contract + materialize subcommand",
+      "spec": "Create tools/heldout-suite/heldout.py with the house CLI conventions (argparse subcommands; exit 0 ok / 1 refusal or policy failure / 2 usage-IO error; JSON to stdout). Subcommand: `materialize --plan PLAN.json --task TASK_ID --repo REPO --base REF --out DIR`. Behavior: (1) resolve --out to a real path and refuse (exit 1) if it lies inside REPO's toplevel — the sound in-repo check; (2) load the plan (contract 1), find TASK_ID, and write the authoring workspace at OUT/TASK_ID/: authoring/task.json holding exactly the interview-scoped inputs — the task's full entry plus plan-level goal, non_goals, constraints, decisions (never other tasks) — plus base ref and its resolved sha from REPO; (3) create empty suite/ for the author's test files and copy nothing else; (4) write authoring/AUTHORING.md, a generated pointer stating: what is in task.json, that tests go in suite/ as test_*.py (stdlib unittest), that the suite will be judged by `validate` against a clean base checkout under the fails-on-base policy, and that the full role instructions are ROLE.md in the artifact directory; (5) refuse (exit 1) if OUT/TASK_ID already exists — re-materialization of a sealed workspace is the retire flow in validate-seal, not an overwrite. Tests in tools/heldout-suite/test_heldout.py: in-repo --out refusal (incl. symlink into the repo), correct task.json extraction (preamble present, sibling tasks absent), base sha recorded, existing-workspace refusal.",
+      "checks": [
+        "python3 tools/heldout-suite/test_heldout.py"
+      ],
+      "provides": [
+        "authoring-workspace-contract"
+      ],
+      "requires": [
+        "plan-json-contract"
+      ]
+    },
+    {
+      "id": "validate-seal",
+      "title": "validate (fails-on-base) + seal (manifest + deny-fragment) + retire",
+      "spec": "Add to tools/heldout-suite/heldout.py: `validate --workspace OUT/TASK_ID --repo REPO` — creates a throwaway detached git worktree of the workspace's recorded base sha (same pattern as merge-gate but re-implemented here, no cross-artifact imports), runs the suite (python3 -m unittest discover -s suite/ with cwd and sys.path arranged so the suite imports the checked-out code), and applies the policy: runner must complete and report; at least one test must fail; record {failed, passed, errored} where ImportError-style errors count as failures-on-base. Emits a validation record JSON into the workspace (validation.json with base_sha, split, ts). Always removes the worktree. `seal --workspace OUT/TASK_ID` — re-runs validate internally, then writes manifest.json {contract: 1, task_id, spec_hash: sha256 of canonical authoring/task.json, base_sha, run: the exact suite invocation, files: sorted suite file list with sha256s, fails_on_base: the split, sealed_at} and deny-fragment.json {deny_read: [absolute suite paths]} — the ready-to-merge file for an implementer-spawner's settings. seal refuses if the workspace is already sealed unless --retire is passed, which moves the existing suite/ + manifest.json to retired/<ts>/ before re-sealing (evidence preserved, decisions[4]). Tests: all-pass suite refuses seal; one-failing suite seals with correct split; ImportError counts as failing; spec-hash changes when task.json changes; retire flow preserves the old suite; deny-fragment paths are absolute and correct; worktree cleanup verified.",
+      "checks": [
+        "python3 tools/heldout-suite/test_heldout.py"
+      ],
+      "depends_on": [
+        "workspace-materialize"
+      ],
+      "provides": [
+        "suite-manifest-contract",
+        "deny-fragment"
+      ],
+      "requires": [
+        "authoring-workspace-contract"
+      ]
+    },
+    {
+      "id": "role-and-docs",
+      "title": "ROLE.md authoring contract + artifact README + repo wiring",
+      "spec": "Write tools/heldout-suite/ROLE.md — the authoring agent's instructions, the role-contract analogue of spec-interview's SKILL.md: you receive an authoring workspace (task.json + base checkout access) and nothing else; write adversarial tests from the SPEC, not from any implementation (none exists); test this task's contract at its declared seams (requires/provides), edge and failure behavior named in the spec, and regression guards for base behavior the change must preserve; put tests in suite/ as stdlib-unittest test_*.py; you never assert your suite is good — `validate` and the seal decide; you never read outside the workspace and base checkout. Write tools/heldout-suite/README.md in the house contract style: one-thing-well statement (D2/D11), the three verbs with exit codes, the manifest and deny-fragment schemas, guarantees (in-repo refusal, fails-on-base policy verbatim from decisions[2], seal binding, retire-preserves-evidence), non-goals (verbatim the plan's), composition examples (gate --check wiring of a sealed suite's run command; deny-fragment merge into a spawner's settings; ledger append of a seal record), the R2 deletion criterion (judged by escapes caught that visible checks missed — the P3v2-5 precedent), and the T11 note. Add the root README.md layout row for tools/heldout-suite/ (v2 artifact #4). Run the corpus link guard.",
+      "checks": [
+        "python3 -m unittest tests.test_reference -q",
+        "python3 tools/heldout-suite/test_heldout.py"
+      ],
+      "depends_on": [
+        "validate-seal"
+      ],
+      "requires": [
+        "suite-manifest-contract"
+      ]
+    }
+  ],
+  "external": [
+    "plan-json-contract"
+  ]
+}

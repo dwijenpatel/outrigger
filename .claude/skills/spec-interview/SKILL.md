@@ -10,11 +10,31 @@ best-evidenced levers in agent coding (underspecification costs tens of percenta
 clarification recovers most of it), so this is careful, patient work: the deliverable is a
 `plan.json` the operator ratifies, not an implementation.
 
+## Before the first question — the briefing
+
+Open with a **self-contained briefing** the operator can follow with zero prior context, no
+matter how well you believe they know the work:
+
+- **What is being planned, and why now** — in plain words. Never open on a bare codename
+  ("artifact #4", "the v2 loop"): a label the operator glosses over produces
+  poorly-considered answers to everything downstream of it.
+- **Define every term of art the interview will use** — project codenames, prior-version
+  references, artifact names, mechanism words. If a term needs the conversation's history to
+  parse, it is not defined.
+- **State what the operator's answers will decide** — the stakes, in a sentence or two.
+
+The reason is load-bearing: **operators have small working contexts compared to you, and they
+decide only as well as they can follow.** Every question and option must also read standalone
+— re-define or avoid shorthand mid-interview, and never lean on "as discussed above."
+
 ## Ground rules
 
 1. **One question per message.** Never a questionnaire. Each question states, in one clause,
    why it matters ("this decides X"). Prefer concrete options with a recommendation over
-   open-ended asks when the space is enumerable.
+   open-ended asks when the space is enumerable — and **every option carries its pros, cons,
+   and tradeoffs**, including the *costs* of the option you recommend and the genuine benefits
+   of the ones you recommend against. A recommendation without stated costs is advocacy, not
+   decision support.
 2. **Ground yourself before asking.** Read the repo first — locate the code the goal touches,
    its tests, its conventions. Never ask what the codebase already answers; brownfield
    planning is mostly localization.

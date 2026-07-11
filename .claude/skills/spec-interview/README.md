@@ -37,6 +37,13 @@ machine bar). v1 precedent: the interview surfaced ~20 decisions on its first ou
 absence was a recorded pilot defect (P1-8). If measured usage shows interview-produced plans
 doing no better than prompt-only, delete the ceremony; that deletion is a result.
 
+**First live run (2026-07-11, planning the held-out-suite artifact):** coverage judged right
+by the operator; presentation produced three recorded defects — no self-contained briefing
+before question 1, undefined shorthand throughout ("v1", "#5", "seal", "vault"), and options
+lacking explicit pros/cons/tradeoffs. Fixed same-day (the briefing section, the cold-reader
+standalone-readability rule, the tradeoffs requirement in ground rule 1); recorded in the v2
+ledger (`spec-interview/live-run-1`) and as the design's D8 cold-reader rule.
+
 ## Versioning
 
 Contract **v1**, shared with plan-preflight. SKILL.md's example and preflight's schema table

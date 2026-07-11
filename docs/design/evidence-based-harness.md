@@ -4,6 +4,8 @@
 composable artifacts), composability touch-ups to D7/D8/D12/D14, +T11, sequencing reworded.
 **Second amendment, 2026-07-11:** +R6 (improvement is evidence-gated, permanently) and a
 substrate-volatility note on R1 (multiple subscriptions; metered API pricing).
+**Third amendment, 2026-07-11:** D8 gains the cold-reader rule for operator-facing surfaces
+(operator feedback from the first live spec-interview run).
 
 This is a from-first-principles redesign. It inherits
 **nothing** from [token-time-optimized-harness.md](../attic/token-time-optimized-harness.md) (kept as
@@ -237,6 +239,14 @@ cluster (the slowest-decaying evidence in the corpus) dictates the shape:
 - **The card is a standalone artifact (R5/D15):** it renders any schema'd decision file,
   records the commit-before-reveal transcript, and emits a stamped decision file — usable by
   any workflow, not only this harness's composition of it.
+- **Operator-facing surfaces are written for a cold reader** (operator directive, from the
+  first live spec-interview run, 2026-07-11): a self-contained briefing before any decision is
+  requested; every term of art defined in-surface (no bare codenames, version names, or
+  mechanism shorthand); every option carrying explicit pros/cons/tradeoffs, including the
+  recommended option's costs. The operator's working context is the scarcest resource in the
+  loop, and an operator who cannot fully follow the surface decides poorly — the failure lands
+  exactly where §3.3 says it will. Applies to interview questions, ratification cards, blocker
+  cards, and escalation messages alike.
 
 ### D9. Memory: versioned plain files, deterministically captured, write-gated; nothing learned until closed-loop evidence exists — **Decided**
 

@@ -144,6 +144,12 @@ Those claims keep their tags in place, and are collected in
 
 ## How this maps to the design doc
 
+**2026-07-10:** a from-scratch, evidence-first successor design-plan now exists at
+[../design/evidence-based-harness.md](../design/evidence-based-harness.md) — every decision in it
+cites [distilled/](distilled/README.md) directly, and it disregards all prior design decisions by
+construction. The table below maps the corpus to the *previous* design
+([token-time-optimized-harness.md](../design/token-time-optimized-harness.md), kept as history).
+
 | Design section | Backing research |
 |---|---|
 | §2 objective function; §7 correctness floor | correctness-and-verification-evidence; landscape-and-novelty |

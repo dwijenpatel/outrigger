@@ -17,7 +17,7 @@ Tier-A evidence. It disregards all prior design decisions by construction.
 
 **The operator's governing decision:** the future harness will be built **from scratch**, not
 from any existing harness work in this repo. The previous effort
-([design/attic candidate: token-time-optimized-harness.md](design/token-time-optimized-harness.md)
+([design/attic candidate: token-time-optimized-harness.md](attic/token-time-optimized-harness.md)
 plus the `harness/` machinery) is an **evidence quarry, not a foundation**. The rule that
 decides what survives: *our defeats are evidence; our decisions are not* — internal defects,
 falsified predictions, and measurement artifacts are Tier-A material; the old design's choices
@@ -46,7 +46,7 @@ are self-generated conclusions.
 |---|---|---|
 | **Preserve** | `docs/research/` entire; `docs/terminology.md`; `docs/design/evidence-based-harness.md`; `docs/design/operator-walkthrough.md` | The product of this phase. terminology.md keeps internal evidence readable once old docs leave HEAD |
 | **Preserve** | Measurement instruments + raw artifacts: the model/effort benchmark harness + 73 raw run JSONs, the spawn-portability probe, the cache-weight experiment (unexecuted) | Artifacts *are* the Tier-A warrant (internal §4); they measure the vendor, not our harness — zero design anchoring |
-| **Archive to `docs/attic/`, don't delete** | `docs/design/token-time-optimized-harness.md`, `docs/plan/` | Pilot ledgers cite their IDs constantly (I19, D17, GL1, §5.2); deleting them makes Tier-A internal evidence uninterpretable. Banner: *"Superseded 2026-07-10. Prior art to argue against — never a source of defaults."* |
+| **Archive to `docs/attic/`, don't delete** | `docs/attic/token-time-optimized-harness.md`, `docs/plan/` | Pilot ledgers cite their IDs constantly (I19, D17, GL1, §5.2); deleting them makes Tier-A internal evidence uninterpretable. Banner: *"Superseded 2026-07-10. Prior art to argue against — never a source of defaults."* |
 | **Delete from HEAD** | `harness/`, `hooks/`, machinery-specific tests, the `plan-build`/`build-loop`/`build-pause` skills in `.claude/`, `state/` handling | The contamination vector — implementers copy patterns from code, not ledgers. Git history retains everything |
 | **Rewrite** | `CLAUDE.md` | The auto-loaded file currently primes every session with old machinery. Worst contamination vector. New content spec in §4 |
 | **Delete (outside repo)** | The `harness-technical-plan` scheduled task (`~/.claude/scheduled-tasks/harness-technical-plan/`) | It plans the OLD design; Manual-only, never fired |

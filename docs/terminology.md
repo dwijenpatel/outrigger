@@ -4,13 +4,13 @@ Every acronym, coined term, and piece of jargon used across this repo's design, 
 corpus, skills, and tooling — defined as *this project* uses it, with a pointer to where it is
 canonically defined.
 
-Companion pages: [reference.md](reference.md) is the API/shape reference (what to *call*); this
+Companion pages: [reference.md](attic/reference.md) is the API/shape reference (what to *call*); this
 page is the vocabulary (what things *mean*). The design doc
-([design/token-time-optimized-harness.md](design/token-time-optimized-harness.md)) is the
+([design/token-time-optimized-harness.md](attic/token-time-optimized-harness.md)) is the
 authority for anything here that conflicts.
 
 **Reading the source column:** `§N` refers to a numbered section of the design doc.
-`plan` = [plan/implementation-plan.md](plan/implementation-plan.md).
+`plan` = [plan/implementation-plan.md](attic/plan/implementation-plan.md).
 `research/<name>` = a document in [research/](research/README.md).
 
 ---
@@ -546,7 +546,7 @@ decision leans on it. Import the *mechanism*, never the *effect size*.
 - **Accept-halt / clean close** — a firing ending with the runnable set empty and zero worker
   spend. *The halt is itself the finding.*
 - **Source-dive** — a session reading machinery source to recover shapes the docs don't state.
-  A turn-economy cost that [reference.md](reference.md) exists to prevent.
+  A turn-economy cost that [reference.md](attic/reference.md) exists to prevent.
 
 ## 11. Statistics and methodology
 

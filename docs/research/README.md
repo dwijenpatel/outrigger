@@ -1,7 +1,7 @@
 # Research corpus — index
 
 Primary-sourced research behind the harness design
-([../design/token-time-optimized-harness.md](../design/token-time-optimized-harness.md)),
+([../attic/token-time-optimized-harness.md](../attic/token-time-optimized-harness.md)),
 organized by topic. Each document is self-contained and cites primary sources inline with
 confidence tags: `[official]` Anthropic docs, `[measured]` community/benchmark measurement with
 data, `[contested]` conflicting evidence, `[folklore]` practitioner consensus; plus `[E]`
@@ -148,7 +148,7 @@ Those claims keep their tags in place, and are collected in
 [../design/evidence-based-harness.md](../design/evidence-based-harness.md) — every decision in it
 cites [distilled/](distilled/README.md) directly, and it disregards all prior design decisions by
 construction. The table below maps the corpus to the *previous* design
-([token-time-optimized-harness.md](../design/token-time-optimized-harness.md), kept as history).
+([token-time-optimized-harness.md](../attic/token-time-optimized-harness.md), kept as history).
 
 | Design section | Backing research |
 |---|---|

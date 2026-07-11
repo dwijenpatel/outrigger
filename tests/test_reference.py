@@ -1,47 +1,55 @@
-"""I3 — the reference page stays honest: every documented name must exist."""
+"""The corpus stays navigable: every relative markdown link must resolve.
 
-import importlib
+Repurposed at the 2026-07-11 reincarnation from the v1 API-reference honesty
+test (which asserted `harness.*` symbols — modules deleted from HEAD, see tag
+`v1-attic`). The corpus and the design plan are now the repo's product; this
+guards them the way the old test guarded the code.
+
+Run: python3 -m unittest tests.test_reference -q
+"""
+
 import os
 import re
-import sys
+import subprocess
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-REF = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                   "docs", "reference.md")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LINK = re.compile(r"\[[^\]]*\]\(([^)#\s]+?)(?:#[^)]*)?\)")
 
 
-class ReferenceHonestyTests(unittest.TestCase):
-    def test_every_documented_symbol_resolves(self):
-        with open(REF) as fh:
-            body = fh.read()
-        symbols = set(re.findall(r"harness\.([a-z_]+)\.([A-Za-z_]+)", body))
-        self.assertGreater(len(symbols), 40, "reference lost its content?")
-        missing = []
-        for mod_name, attr in sorted(symbols):
-            try:
-                mod = importlib.import_module(f"harness.{mod_name}")
-            except ImportError:
-                missing.append(f"harness.{mod_name} (module)")
-                continue
-            if not hasattr(mod, attr):
-                missing.append(f"harness.{mod_name}.{attr}")
-        self.assertEqual(missing, [],
-                         "reference.md documents names that do not exist — "
-                         "update the page with the code: " + ", ".join(missing))
+def tracked_markdown():
+    out = subprocess.run(
+        ["git", "-C", ROOT, "ls-files", "*.md"],
+        capture_output=True, text=True, check=True,
+    ).stdout.split()
+    return [f for f in out if os.path.exists(os.path.join(ROOT, f))]
 
-    def test_every_documented_cli_module_runs(self):
-        with open(REF) as fh:
-            body = fh.read()
-        for mod_name in set(re.findall(r"python3 -m harness\.([a-z_]+)", body)):
-            mod = importlib.import_module(f"harness.{mod_name}")
-            path = getattr(mod, "__file__", "")
-            with open(path) as fh:
-                src = fh.read()
-            self.assertIn("__main__", src,
-                          f"harness.{mod_name} documented as a CLI but has "
-                          f"no __main__ guard")
+
+class CorpusLinkTests(unittest.TestCase):
+    def test_corpus_is_present(self):
+        files = tracked_markdown()
+        self.assertGreater(len(files), 50, "the corpus lost its content?")
+        for anchor in (
+            "docs/design/evidence-based-harness.md",
+            "docs/research/distilled/external.md",
+            "docs/research/distilled/internal.md",
+            "docs/reincarnation-plan.md",
+        ):
+            self.assertIn(anchor, files, f"load-bearing document missing: {anchor}")
+
+    def test_every_relative_link_resolves(self):
+        broken = []
+        for f in tracked_markdown():
+            base = os.path.dirname(os.path.join(ROOT, f))
+            with open(os.path.join(ROOT, f), encoding="utf-8") as fh:
+                body = fh.read()
+            for m in LINK.finditer(body):
+                target = m.group(1)
+                if target.startswith(("http://", "https://", "mailto:")):
+                    continue
+                if not os.path.exists(os.path.join(base, target)):
+                    broken.append(f"{f} -> {target}")
+        self.assertEqual(broken, [], "broken relative links:\n" + "\n".join(broken))
 
 
 if __name__ == "__main__":

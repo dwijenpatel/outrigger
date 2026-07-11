@@ -1,7 +1,7 @@
 # Token economics & scheduling — routing, effort, forecasting, budget governance
 
 Evidence behind the design's O1 machinery
-([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md)):
+([../attic/token-time-optimized-harness.md](../../../attic/token-time-optimized-harness.md)):
 model/effort tier routing (§5.3), the budget governor and window-aware admission (§5.1, §6.2),
 and the wall-clock/paid-parallelism tradeoffs (§6). Claude Code / Max-plan *mechanics* the
 governor is built on are a separate document

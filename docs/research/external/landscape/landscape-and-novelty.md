@@ -1,7 +1,7 @@
 # Landscape & novelty — the design vs. the field (2024–2026)
 
 How the harness design (specified in
-[../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md))
+[../attic/token-time-optimized-harness.md](../../../attic/token-time-optimized-harness.md))
 compares to 20+ contemporary coding agents, multi-agent frameworks, the spec-driven movement,
 and the strongest framework prior art — and what in it is genuinely novel.
 

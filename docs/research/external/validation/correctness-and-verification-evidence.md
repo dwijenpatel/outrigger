@@ -1,7 +1,7 @@
 # Correctness & verification evidence — why the O0 floor is built this way
 
 The empirical case behind the design's correctness machinery
-([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md) §7):
+([../attic/token-time-optimized-harness.md](../../../attic/token-time-optimized-harness.md) §7):
 blind validation, diverse-lens panels, the human plan gate, durable state with external kill
 switches, governed self-modification, and the calibration probe.
 

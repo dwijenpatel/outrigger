@@ -1,5 +1,10 @@
 # Harness reference — one page
 
+> **⚰ SUPERSEDED — attic'd 2026-07-11.** The `harness.*` modules this page documents were
+> deleted from HEAD (recoverable at tag `v1-attic`); the honesty test that enforced this page
+> (`tests/test_reference.py`) was repurposed as the corpus link guard. See
+> [README.md](README.md).
+
 The shapes and one-liners a firing/planning session otherwise source-dives
 for (I3, P1-6; pilot-3-v2's orchestrator spent mid-firing turns reading
 module APIs). Every `harness.<module>.<name>` token below is asserted to

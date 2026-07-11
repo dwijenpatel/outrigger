@@ -1,5 +1,11 @@
 # Dual-objective agent harness on Claude Code — technical design
 
+> **⚰ SUPERSEDED 2026-07-10 — attic'd 2026-07-11.** Prior art to argue against, never a source
+> of defaults. The current design surface is
+> [../design/evidence-based-harness.md](../design/evidence-based-harness.md); this file survives
+> only as the referent for §-numbers cited by the Tier-A internal evidence. See
+> [README.md](README.md).
+
 > **Goal.** An agent harness that takes a thorough technical design spec and drives it to a
 > *correctly implemented* codebase while explicitly optimizing two objectives: **(1) minimal
 > token spend measured against the Claude Code Max plan's 5-hour and weekly rate windows**, and

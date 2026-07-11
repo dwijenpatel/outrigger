@@ -78,11 +78,15 @@ un-skippable); **the triggers were prose** (nothing intercepted a merge to deman
 step); **the governor had no staleness handling.** Fixed in Phase H.
 
 **Concurrency source audit** `[code-read 2026-07-10]`, from the orchestration pass — discovered
-by reading `harness/ledger.py` and `harness/interlocks.py`, not by a firing. **All OPEN** (the
-repo is in research mode; machinery is upstream-owned): recorded here and in the
-[concurrency doc's hardening backlog](../external/orchestration/concurrency-and-merge-correctness.md),
-deliberately not fixed. These give the pre-registered watch items W1–W3 (§3) concrete code-level
-mechanisms while the items themselves remain unobserved live.
+by reading `harness/ledger.py` and `harness/interlocks.py`, not by a firing. Recorded here and in
+the [concurrency doc's hardening backlog](../external/orchestration/concurrency-and-merge-correctness.md),
+deliberately never fixed. **Tombstone:** the v1 modules were deleted from HEAD at the 2026-07-11
+reincarnation — inspect via `git show v1-attic:harness/interlocks.py` (and `…:harness/ledger.py`);
+the A3 go-look path survives at that tag, where the code is frozen forever. The rows below are
+therefore closed as v1 defects and survive as **class lessons for any v2 implementation**
+(merge-skew: validate against the *target*, not just the source; single-writer invariants need a
+mechanism, not an architecture note). They gave the pre-registered watch items W1–W3 (§3)
+concrete code-level mechanisms; the items themselves were never observed live.
 
 | ID (maps) | Defect | Status |
 |---|---|---|
@@ -221,4 +225,4 @@ live confirmation, not a catch rate.
 | Model speed / token efficiency / effort scaling | `model-generation` | Any new model in the lineup. Void for Fable (removed, I28) unless reintroduced. |
 | Fable's model-specific weekly cap | `vendor-policy` | Any announced plan change. |
 | In-tree self-audit (hooks unregistered, gate skippable) | `our-tree` | Superseded by Phase H — **kept as history, not as current state.** |
-| Defect rows in §2 | `our-tree` | All fixed except P3v2-13's liveness ping and the 2026-07-10 concurrency source audit (B-1..B-4) — those stay OPEN by research-mode policy. |
+| Defect rows in §2 | `our-tree` → frozen at `v1-attic` (2026-07-11) | The v1 machinery was deleted from HEAD; every row is closed as a v1 defect and survives as a class lesson. P3v2-13's liveness ping and B-1..B-4 were never fixed — by policy, and now by retirement. |

@@ -1,7 +1,7 @@
 # Budget governor tools
 
 Working artifacts resolving three of the design doc's
-([../../docs/design/token-time-optimized-harness.md](../../docs/design/token-time-optimized-harness.md))
+([../../docs/attic/token-time-optimized-harness.md](../../docs/attic/token-time-optimized-harness.md))
 §12 open questions: per-agent effort/model spawn portability (#3), window-occupancy
 forecasting (#4), and the cache-read quota-weight experiment protocol (#2). This is the first
 real implementation code in the repo — everything else so far is docs.

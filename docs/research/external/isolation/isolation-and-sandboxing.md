@@ -1,7 +1,7 @@
 # Isolation & sandboxing — proving the implementer cannot read the vault
 
 Evidence answering the design's open question #3
-([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md) §12):
+([../attic/token-time-optimized-harness.md](../../../attic/token-time-optimized-harness.md) §12):
 the concrete mechanism proving an implementer agent *cannot* read the held-out test vault
 (§5.5). The *economics* of vault reuse (safe RTS, freshness, leakage budget) are a separate
 document ([revalidation-reuse-and-leakage.md](../validation/revalidation-reuse-and-leakage.md)).

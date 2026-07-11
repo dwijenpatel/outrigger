@@ -3,7 +3,7 @@
 Prior-art survey of one practitioner's production stack for unattended / semi-attended agent
 operation (github.com/kunchenguid: **gnhf**, **firstmate**, **treehouse**, **no-mistakes**,
 **acpx**, **acp-mock**, **wheelhouse**, **m87**), read against the harness design
-([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md) §3.4
+([../attic/token-time-optimized-harness.md](../../../attic/token-time-optimized-harness.md) §3.4
 disk-is-memory, §5.1 governor, §6.3 human latency, §7 floor, §9 failure modes). The repos form a
 deliberate, dogfooded stack: treehouse (worktree pool) → no-mistakes (merge gate) → gnhf
 (overnight loop) / firstmate (crew orchestrator) → acpx/acp-mock (agent transport + token-free

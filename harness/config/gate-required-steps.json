@@ -1,6 +1,0 @@
-{
-  "routine": ["visible_tests", "verdicts", "risk_floor", "heldout_tests"],
-  "elevated": ["visible_tests", "verdicts", "risk_floor", "heldout_tests"],
-  "high": ["visible_tests", "verdicts", "risk_floor", "heldout_tests", "heldout_drop"],
-  "critical": ["visible_tests", "verdicts", "risk_floor", "heldout_tests", "heldout_drop"]
-}

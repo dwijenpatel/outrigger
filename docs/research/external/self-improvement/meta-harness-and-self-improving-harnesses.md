@@ -3,7 +3,7 @@
 What "meta-harness" means, what the self-improving-harness literature has actually
 demonstrated (with costs), every documented instance of a self-improvement loop gaming its
 evaluator, and what all of it confirms, extends, or challenges in this design
-([../design/token-time-optimized-harness.md](../../../design/token-time-optimized-harness.md)).
+([../attic/token-time-optimized-harness.md](../../../attic/token-time-optimized-harness.md)).
 
 **Provenance:** 2026-07-09 deep-research pass. Anchor source: Lilian Weng, *"Harness
 Engineering for Self-Improvement"* (lilianweng.github.io, 2026-07-04), read in full from a

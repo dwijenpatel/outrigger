@@ -1,7 +1,7 @@
 # An evidence-based coding-agent harness — from-scratch design plan (draft 1)
 
 **Status: first draft, 2026-07-10.** This is a from-first-principles redesign. It inherits
-**nothing** from [token-time-optimized-harness.md](token-time-optimized-harness.md) (kept as
+**nothing** from [token-time-optimized-harness.md](../attic/token-time-optimized-harness.md) (kept as
 history) — no prior decision survives unless the evidence independently re-derives it. It
 assumes a **fresh implementation substrate**: the only assets carried forward are the research
 corpus, its grading method, and the internal defect record. It is deliberately **under-designed**:

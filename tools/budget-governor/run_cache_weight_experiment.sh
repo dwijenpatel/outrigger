@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Cache-read quota-weight experiment runner (design doc SS10.2 / SS12 open question #2).
+# Cache-read quota-weight experiment runner (T1 in docs/design/evidence-based-harness.md;
+# originally design-v1 SS10.2 / SS12 open question #2, now attic'd).
 # See cache-read-quota-weight-experiment.md for the full protocol, the math, and how to
 # read the result. THIS SCRIPT SPENDS REAL MAX-PLAN QUOTA when run with arm-a/arm-b -- read
 # the protocol doc and confirm timing with yourself before running those for real.
@@ -72,12 +73,13 @@ summarize() {
     echo "no turn-*.json files found in $dir" >&2
     exit 1
   fi
-  # Field paths below are this script's BEST-EFFORT GUESS at `claude -p --output-format json`'s
-  # per-turn usage schema, cross-referenced against the prompt-caching docs (which confirm
-  # input_tokens / output_tokens / cache_read_input_tokens / cache_creation_input_tokens exist
-  # as concepts) but NOT independently verified against a live call by this tooling (that would
-  # cost real quota). Run `dry-run` first and diff its output against this jq filter; adjust
-  # the filter here if the real keys/nesting differ.
+  # Field paths below were VALIDATED 2026-07-11 (zero quota) against real committed
+  # `claude -p --output-format json` outputs from build 2.1.201 (the benchmark artifacts in
+  # docs/research/internal/model-speed-effort-benchmark-2026-07/results/): .usage.input_tokens,
+  # .usage.output_tokens, .usage.cache_read_input_tokens, .usage.cache_creation_input_tokens,
+  # and .total_cost_usd all match and sum correctly across multi-file input. Schema decay is
+  # vendor-build: still run `dry-run` once as a confirmation on the build you'll use, and
+  # adjust here if a newer CLI moved the keys.
   jq -s '{
     turns: length,
     total_input_tokens:          (map(.usage.input_tokens // .input_tokens // 0) | add),

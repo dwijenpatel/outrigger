@@ -1,9 +1,13 @@
 # Cache-read quota-weight experiment — protocol
 
-Resolves design doc §10.2 / §12 open question #2, called out there as "the highest-value
-experiment": does a cache-read token count against the Max-plan 5-hour/weekly windows at a
-discount (API billing rate is ~10% of fresh input) or at near-full weight (what community
-telemetry — `docs/research/claude-code-and-max-plan-facts.md` §4 — suggests)?
+Resolves **T1** in the current design plan
+([../../docs/design/evidence-based-harness.md](../../docs/design/evidence-based-harness.md) §4,
+D12) — the highest-value single measurement available *(originally design-v1 §10.2/§12 open
+question #2; that document is now in [the attic](../../docs/attic/token-time-optimized-harness.md))*:
+does a cache-read token count against the Max-plan 5-hour/weekly windows at a discount (API
+billing rate is ~10% of fresh input) or at near-full weight (what community telemetry —
+[claude-code-and-max-plan-facts.md](../../docs/research/external/platform-facts/claude-code-and-max-plan-facts.md)
+§4 — suggests)?
 
 **This experiment spends real Max-plan quota.** It is written but **not executed**. Read this
 whole document, then decide when to run it — right after a window reset gives the cleanest
@@ -91,12 +95,15 @@ as a sign the linear model is too simple for a second pass.
   2. Or skip headless entirely and paste the filler + instruction directly into an interactive
      session's turns, reading the statusline after each one — slower to script, but keeps
      everything in one surface.
-- **Confirm the JSON schema before trusting the numbers.** `run_cache_weight_experiment.sh
-  summarize`'s field paths are this tooling's best-effort guess at `claude -p --output-format
-  json`'s per-turn usage schema (cross-referenced against the prompt-caching docs, not
-  independently verified against a live call — that would itself cost quota). Run `dry-run`
-  first and diff its raw JSON against the `summarize()` jq filter in the script; adjust the
-  filter if the real keys differ before running the real arms.
+- **Confirm the JSON schema before trusting the numbers.** ~~`summarize`'s field paths are a
+  best-effort guess~~ — **validated 2026-07-11, zero quota**: the jq filter was run against real
+  committed `claude -p --output-format json` outputs (build 2.1.201) from
+  [the benchmark artifacts](../../docs/research/internal/model-speed-effort-benchmark-2026-07/README.md),
+  and every field path (`.usage.input_tokens` / `.usage.output_tokens` /
+  `.usage.cache_read_input_tokens` / `.usage.cache_creation_input_tokens` / `.total_cost_usd`)
+  matched and summed correctly across multi-file input. The `dry-run` step is therefore a
+  *confirmation* against the current build (schema decay is `vendor-build`), not a discovery —
+  still eyeball its output once before the real arms.
 
 ## Procedure
 
@@ -104,7 +111,8 @@ as a sign the linear model is too simple for a second pass.
    dry-run`, then `jq . experiment-logs/<timestamp>-dry-run/turn-1.json` and confirm the fields
    `summarize()` expects are actually present at those paths; edit the script if not.
 2. **Baseline.** In an interactive session on the same account, check `used_percentage` for the
-   5-hour window. Note the timestamp.
+   5-hour window. Note the timestamp. *(Desktop app: use `/usage` — the app has no statusline
+   surface, pilot-2 P2-8.)*
 3. **Arm A:** `./run_cache_weight_experiment.sh arm-a 5 6000` (5 turns, ~6,000-word filler per
    turn — scale up if step 1's dry run suggests the window is large enough that this would be
    too small to register). Immediately after, check `used_percentage` again (interactive
@@ -113,12 +121,21 @@ as a sign the linear model is too simple for a second pass.
 4. **Arm B:** `./run_cache_weight_experiment.sh arm-b 5 6000` (same N and F). Record
    `ΔB_window` and the token totals the same way.
 5. **Compute** `ratio = ΔA_window / ΔB_window` and back out `w` from the table above.
-6. **Write the result back** into design doc §10.2 (replace `[contested]` with the measured
-   weight, or explicitly note the experiment was inconclusive and why) and into
-   `docs/research/claude-code-and-max-plan-facts.md` §4, dated.
-7. If `w` turns out non-trivial (> ~0.3), revisit the budget governor's default conservative
-   cache-read weight (§5.1) — this experiment's whole purpose is to let you stop assuming and
-   start calibrating it.
+6. **Commit the artifact first** — the raw `experiment-logs/` turn JSONs, both `summarize`
+   outputs, and the before/after `used_percentage` readings (values + timestamps), under
+   `docs/research/internal/cache-weight-experiment-<date>/`. The artifact is the warrant
+   (distilled method): without it the result is a claim, not a measurement.
+7. **Write the result back** into its current homes, dated:
+   - [docs/design/evidence-based-harness.md](../../docs/design/evidence-based-harness.md) —
+     settle **T1** in the §4 ledger and update D12's contested-question bullet with the measured
+     `w` (or record "inconclusive" and why — that too settles how aggressive context reuse
+     should be, conservatively);
+   - [docs/research/distilled/internal.md](../../docs/research/distilled/internal.md) §4 — the
+     measurement as A3 (decay `vendor-policy`: re-check on any announced plan change);
+   - [claude-code-and-max-plan-facts.md](../../docs/research/external/platform-facts/claude-code-and-max-plan-facts.md)
+     §4 and [distilled/external.md](../../docs/research/distilled/external.md) §4's "still
+     officially unanswered" note — cross-reference the internal measurement (the *official*
+     question stays open; we now have our own answer).
 
 ## Files
 

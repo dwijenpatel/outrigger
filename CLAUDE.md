@@ -1,30 +1,29 @@
-# Harness repo — session notes
+# Session notes — evidence-first harness design
 
-> **⚠ Phase change (2026-07-10) — read [docs/reincarnation-plan.md](docs/reincarnation-plan.md)
-> first.** The project pivoted to an evidence-first, from-scratch redesign: current design
-> surface is [docs/design/evidence-based-harness.md](docs/design/evidence-based-harness.md),
-> evidence base is [docs/research/distilled/](docs/research/distilled/README.md). The
-> reincarnation plan holds the ratified repo-cleanup manifest (NOT yet executed), the standing
-> operator directives (Opus 4.8 for subagents; branch→ff-merge only; T1 experiment is
-> operator-run; record-don't-fix machinery defects), and the external-assets inventory. The
-> notes below describe the OLD machinery and remain valid only until the manifest executes.
+**Mode:** research-and-design. The v2 harness will be built **from scratch**; nothing is
+implemented here yet. The current design surface is
+[docs/design/evidence-based-harness.md](docs/design/evidence-based-harness.md); the evidence
+base is [docs/research/distilled/](docs/research/distilled/README.md). The repo was
+**reincarnated 2026-07-11** — v1's conclusions live in [docs/attic/](docs/attic/README.md)
+(*prior art to argue against, never a source of defaults*), v1's code at git tag `v1-attic`.
+Continuity record + executed manifest: [docs/reincarnation-plan.md](docs/reincarnation-plan.md).
 
-- **Order of operations:** `plan-build` skill (interview → ratified plan) →
-  `build-loop` skill (the firing). The build-loop refuses to start without
-  `python3 -m harness.planning ready` passing.
-- **Shell is zsh.** Never use bare `=`-prefixed words (`echo ===` dies:
-  zsh expands `=cmd` to a command path). Use `---` separators.
-- `state/` is created lazily at runtime and is gitignored — `ls state/`
-  failing before a firing is normal.
-- **The vault lives OUTSIDE this repo** (absolute path, e.g. a sibling
-  directory). An in-repo vault dirties the tree and rides git history into
-  worker worktrees.
-- Machinery paths (`harness/`, `hooks/`, `.claude/`, `tools/`, `docs/plan/`,
-  `docs/design/`) are gate-protected; product code goes elsewhere
-  (e.g. `pilot/<name>/`).
-- **Machinery is upstream-owned.** In a pilot clone, do NOT implement
-  machinery fixes locally — two parallel implementations collided once
-  already (P2-collision). Record the defect in the pilot's observations
-  ledger; the fix lands in the parent repo and arrives by
-  `git fetch <parent> main && git merge FETCH_HEAD`. Local machinery edits
-  will be overwritten by that merge.
+## Standing operator directives
+
+- **A design decision enters only with a distilled Tier-A citation** — otherwise it is
+  Provisional (named promotion trigger) or TBD (named settling experiment). "The old design
+  did it" is not a warrant. Do not over-design.
+- **Sub-agents use the `Opus 4.8` model, not `Fable 5`.**
+- **Git discipline:** never commit directly to `main` — feature branch → commit → `--ff-only`
+  merge → delete branch.
+- **Never run** `tools/budget-governor/run_cache_weight_experiment.sh` `dry-run`/`arm-a`/`arm-b`
+  — it spends real Max-plan quota. That measurement (T1) is operator-run only.
+- Operator comfort is not a goal; gates are judged by errors caught (design R3).
+
+## Environment
+
+- **Shell is zsh.** Never use bare `=`-prefixed words (`echo ===` dies: zsh expands `=cmd` to a
+  command path). Use `---` separators. zsh for-loops need explicit arrays; macOS lacks
+  `realpath -m`.
+- After editing docs, run the corpus guard: `python3 -m unittest tests.test_reference -q`
+  (every relative markdown link must resolve).

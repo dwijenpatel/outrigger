@@ -1,9 +1,32 @@
 # Reincarnation plan — continuity record for the from-scratch effort
 
-**Status: ratified in discussion 2026-07-10, NOT yet executed.** This document is the
-session-continuity anchor: it records everything a fresh session needs that is not derivable
-from the rest of the repo. If you are a new session picking this effort up, read this file,
-[the design plan](design/evidence-based-harness.md), and
+**Status: EXECUTED 2026-07-11** (ratified in discussion 2026-07-10). Execution ran every step
+in the §3 order, as the commit chain `c67768e` (salvage) → `89ef70c` (attic + machinery
+deletion) → this commit (CLAUDE.md rewrite + close-out), with the pre-cleanup state anchored at
+git tag **`v1-attic`** (placed on `c67768e`, i.e. *with* the salvage included). Findings and
+deviations during execution:
+
+- **Pilot clones located:** `repos/cc-agent-harness-test1/` (HEAD `a638acf`) plus siblings
+  `-vault/` and `-wt/`. The full P3v2-5 evidence set was salvaged into
+  [research/internal/pilot-3-artifacts/](research/internal/pilot-3-artifacts/README.md) —
+  **including the vault** (amending §3's "no salvage needed" note: the held-out replay meter
+  and the `41 passed` log turned out to live vault-side). internal.md §5 row 3 re-graded
+  Tier C → **A3** (n stays 1). The clones were left on disk; deleting them is now safe and is
+  the operator's call.
+- **Tokenizer-study harness: confirmed lost** (no surviving session scratchpad holds it);
+  internal.md marks that row permanently non-promotable.
+- **One live catch:** the unanchored `state/` gitignore pattern silently swallowed the salvage
+  — the tree-dirt failure family (P1-5/P1-9/P2-9) firing during the archival of its own
+  evidence. Fixed by anchoring to `/state/`.
+- **Scope additions found during execution:** `docs/reference.md` (the v1 API reference) went
+  to the attic with the code it documents; `tests/test_reference.py` was repurposed into the
+  corpus link guard (same invocation, new object of protection); the root `README.md` (a v1
+  front page) was rewritten; `.claude/settings.json` was emptied in the same commit as the
+  `hooks/` deletion so no registered hook points at a deleted script.
+- The `harness-technical-plan` scheduled task was deleted.
+
+This document remains the session-continuity anchor: if you are a new session picking this
+effort up, read this file, [the design plan](design/evidence-based-harness.md), and
 [distilled/](research/distilled/README.md) — in that order — and you have the full state.
 
 ## 1. Where the project is
@@ -86,14 +109,18 @@ upstream-ownership, pilot-clone rules — all old-machinery operational notes.
 
 ## 5. External assets a cold session cannot discover
 
-- **Pilot clones** (P3v2-5 salvage source): sibling directories outside this repo; exact paths
-  unrecorded — **required input before step 1**.
-- **The vault**: lives outside the repo (absolute path, sibling directory). Obsolete after
-  reincarnation; no salvage needed.
-- **Zenith clone**: `repos/zenith` (relative to the user's home reposdir), pinned at commit
-  `feb1d62` — the §5 code-read facts in distilled/external.md decay on any release past it.
-- **Scheduled task**: `~/.claude/scheduled-tasks/harness-technical-plan/` — stale, slated for
-  deletion (manifest §3).
+- **Pilot clones** (P3v2-5 salvage source): **located and salvaged 2026-07-11** —
+  `repos/cc-agent-harness-test1/` + `-vault/` + `-wt/`. Everything evidentiary is now in-tree
+  ([pilot-3-artifacts/](research/internal/pilot-3-artifacts/README.md)); the clones' only
+  remaining unique content is their git history (the judged diffs, branch `task/GL1-scaffold`
+  head `4b8653f`). Safe to delete; operator's call.
+- **The vault** (`repos/cc-agent-harness-test1-vault/`): **salvaged in full** into
+  `pilot-3-artifacts/vault/` (the "no salvage needed" pre-judgment was wrong — the replay
+  evidence lived there). The on-disk original is now redundant.
+- **Zenith clone**: `repos/zenith`, pinned at commit `feb1d62` — the §5 code-read facts in
+  distilled/external.md decay on any release past it. Keep.
+- **Scheduled task**: `~/.claude/scheduled-tasks/harness-technical-plan/` — **deleted
+  2026-07-11** per the manifest.
 - **Assistant memory** (`~/.claude/projects/-Users-dwijen-repos-cc-agent-harness/memory/`)
   mirrors the scope rules but is machine/user-local — this repo file is canonical.
 

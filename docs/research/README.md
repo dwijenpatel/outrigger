@@ -44,7 +44,12 @@ orchestration documents. A **human-in-the-loop pass (2026-07-10)** ran six Opus 
 the mature adjacent fields — automation bias/complacency/alarm fatigue, mixed-initiative and
 levels-of-automation, adjudication economics, scalable oversight and human-AI complementarity,
 code-review HITL, and ratification governance — producing the two human-in-the-loop documents and
-completing the 14-subtopic sweep.
+completing the 14-subtopic sweep. A **distillation refresh (2026-07-10)** then re-graded all four
+passes into [distilled/](distilled/README.md) via four independent Opus 4.8 extraction agents —
+adding ~30 Tier-A entries (two new mathematics rows, the human-factors cluster under a new
+`human-factors` decay class, the equal-budget orchestration class-claims, the memory-benchmark
+record, nine new absence rows) and the B-1..B-4 concurrency source-audit to
+[distilled/internal.md](distilled/internal.md) as open defects.
 
 ## Layout
 

@@ -75,6 +75,25 @@ un-skippable); **the triggers were prose** (nothing intercepted a merge to deman
 **the gate was skippable-by-omission** (every absent input yielded a passing "caller's choice"
 step); **the governor had no staleness handling.** Fixed in Phase H.
 
+**Concurrency source audit** `[code-read 2026-07-10]`, from the orchestration pass — discovered
+by reading `harness/ledger.py` and `harness/interlocks.py`, not by a firing. **All OPEN** (the
+repo is in research mode; machinery is upstream-owned): recorded here and in the
+[concurrency doc's hardening backlog](../external/orchestration/concurrency-and-merge-correctness.md),
+deliberately not fixed. These give the pre-registered watch items W1–W3 (§3) concrete code-level
+mechanisms while the items themselves remain unobserved live.
+
+| ID (maps) | Defect | Status |
+|---|---|---|
+| **B-4** (W3) | **Gate-stamp base-move race — the one real correctness hole.** `_require_stamp` validates only the *source* ref HEAD; the stamp records `base` but **nothing checks `base` against the current target HEAD**. A and B both gate against `main@X`; A merges (`main→Y`); B's source HEAD is unchanged, so the interlock **admits B though it was only ever proven green against `main@X`** — textbook merge-skew. Exposed under true `git merge`; masked under rebase/FF. **Present at the minimum cap of 2; the `base` field the fix needs is already in the stamp.** | **OPEN — backlog #1** (bind stamp to `base`, invalidate on base-move; or mandate rebase-before-merge). The likeliest source of the harness's first *silent* wrong merge. |
+| **B-1** (W1) | **OCC atomicity gap.** No lock spans read→validate→write (no `flock`/`fcntl`/`O_APPEND`/lock anywhere in `harness/`); two writers reading `generation=N` both pass validation, the second **clobbers** the first. Safe **only** because the shared log is single-writer — an architectural invariant no mechanism enforces. | OPEN — backlog #2 (advisory `flock`, or a selftest failing if any non-orchestrator path reaches `EventLog.append`). |
+| **B-2** (W1) | `seq = len(events)+1` is SELECT-MAX+1 — collides under two writers, correct under one. Append-only monotonicity is the redeeming strength (ABA-immune). | OPEN — same root as B-1. |
+| **B-3** (W2) | **No per-record checksum.** Torn-tail integrity is newline-boundary + JSON-parse + monotonic-seq, not checksum; a torn write landing valid JSON with a plausible `seq` would pass. Severity low (single ~4KB fsync'd lines). | OPEN, optional — per-record CRC only if records grow multi-line. |
+
+Also convention-not-invariant: `reconcile` outranks the event log **only when the caller passes
+`artifacts`** — the design's "reconstruct from artifacts before acting" rule is a convention no
+type enforces. Warrant: A3 grep-verified + A2 against interest. Decay: `our-tree` — recheck on
+any commit touching those files.
+
 **The named theme.** P1-5, P1-9, P2-9, and the pilot-3 boundary-sync are **four instances of one
 failure**: the machinery's own bookkeeping dirties the very tree its gate judges. Every one was a
 composition defect; **no hermetic module test caught any of them.** This is the strongest empirical
@@ -88,7 +107,7 @@ before observation," and `pilot-2-artifacts/watch-items.json` is **committed, da
 
 | Watch item | Pre-registered | Outcome |
 |---|---|---|
-| **W1–W5** — the whole concurrency family (stale-generation, write-ahead under interleaving, gate-stamp/HEAD races, admission warmup, worktree conflicts) | ✅ committed + dated | **UNOBSERVED — no opportunity.** Concurrency never ran: GL1 was the serial root, GL2 parked. |
+| **W1–W5** — the whole concurrency family (stale-generation, write-ahead under interleaving, gate-stamp/HEAD races, admission warmup, worktree conflicts) | ✅ committed + dated | **UNOBSERVED — no opportunity.** Concurrency never ran: GL1 was the serial root, GL2 parked. **2026-07-10 update:** the source audit (§2) gave W1/W2/W3 named code-level mechanisms (B-1/B-2, B-3, B-4) — the *predictions* stand, now with the exact lines that would realize them. |
 | W6 — the held-out corpus catches what blind validation misses (**the design thesis**) | ✅ | **CONFIRMED once** (n=1). See §5 for the artifact problem. |
 | W8 — write-ahead `task_spawn` with resolved spawn params | ✅ | **CONFIRMED**, visible in the committed run-log. |
 | W9 — the price of floors-always | ✅ | **CONFIRMED, n=1**: GL1 ≈ **260,659 tokens** across 2 attempts, **panel spend ≈ 63%**. |
@@ -200,4 +219,4 @@ honest statement is *"observed once, artifact not in tree."*
 | Model speed / token efficiency / effort scaling | `model-generation` | Any new model in the lineup. Void for Fable (removed, I28) unless reintroduced. |
 | Fable's model-specific weekly cap | `vendor-policy` | Any announced plan change. |
 | In-tree self-audit (hooks unregistered, gate skippable) | `our-tree` | Superseded by Phase H — **kept as history, not as current state.** |
-| Defect rows in §2 | `our-tree` | All fixed except P3v2-13's liveness ping. |
+| Defect rows in §2 | `our-tree` | All fixed except P3v2-13's liveness ping and the 2026-07-10 concurrency source audit (B-1..B-4) — those stay OPEN by research-mode policy. |

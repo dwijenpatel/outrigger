@@ -140,11 +140,13 @@ ones carry a date and a recheck trigger:
 | Class | Depends on | Half-life | Recheck trigger |
 |---|---|---|---|
 | `math` | Logic. Nothing. | Permanent | Never |
+| `human-factors` | Properties of human cognition (automation bias, alarm fatigue, interruption cost). Replicated across independent labs since the 1980s–90s; predates LLMs and will outlive model generations. | **Decades** | Only a fundamental oversight-interface paradigm shift |
 | `llm-class` | A property of LLMs as a class (error correlation, self-preference, reward hacking). | Years, probably | A capability generation that plausibly changes the mechanism |
 | `model-generation` | Specific model versions (speed, token efficiency, effort response). | One release | Any new model in the lineup |
 | `vendor-policy` | Pricing, plan structure, limit accounting. | Quarters | Any announced plan change |
 | `vendor-build` | How the CLI behaves, field names, flag semantics. | **Days** | Every Claude Code build. Re-probe, don't re-read the docs. |
 | `our-tree` | This repository's working state. | Hours | Any commit touching the machinery |
+| `their-tree` | Someone else's repository at a pinned commit (Zenith code facts, framework surveys). | One release of theirs | Any release past the pinned commit; re-clone before citing |
 
 **The composition rule:** a fact is only as durable as its fastest-decaying dependency. A
 *replicated* measurement of a *vendor build* is `vendor-build` — the replication buys warrant,

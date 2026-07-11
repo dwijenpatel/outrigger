@@ -62,6 +62,10 @@ are self-generated conclusions.
 - **Do not over-design**: a design decision enters only with a distilled Tier-A citation; "the
   old design did it" is explicitly not a warrant; TBD is the required honest state where
   evidence is weak.
+- **Loosely-coupled, composable artifacts** (added 2026-07-11, post-execution): every machinery
+  piece does one thing well, runs standalone, and composes through file contracts; no artifact
+  may require another artifact's existence, in either direction — e.g. the planning interview
+  must be fully decoupled from the execution loop, and vice versa (design R5/D15).
 
 ## 3. The reincarnation manifest (ratified, awaiting execution)
 

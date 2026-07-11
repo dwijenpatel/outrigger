@@ -13,6 +13,9 @@ Continuity record + executed manifest: [docs/reincarnation-plan.md](docs/reincar
 - **A design decision enters only with a distilled Tier-A citation** — otherwise it is
   Provisional (named promotion trigger) or TBD (named settling experiment). "The old design
   did it" is not a warrant. Do not over-design.
+- **Loosely-coupled, composable artifacts** (design R5/D15): every machinery piece does one
+  thing well, runs standalone, and composes via schema'd file contracts + exit codes; no
+  artifact may require another artifact's existence, in either direction. No bundling.
 - **Sub-agents use the `Opus 4.8` model, not `Fable 5`.**
 - **Git discipline:** never commit directly to `main` — feature branch → commit → `--ff-only`
   merge → delete branch.

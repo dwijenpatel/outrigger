@@ -1,6 +1,9 @@
 # An evidence-based coding-agent harness — from-scratch design plan (draft 1)
 
-**Status: first draft, 2026-07-10.** This is a from-first-principles redesign. It inherits
+**Status: first draft, 2026-07-10. Amended 2026-07-11:** +R5 and +D15 (loosely-coupled,
+composable artifacts), composability touch-ups to D7/D8/D12/D14, +T11, sequencing reworded.
+
+This is a from-first-principles redesign. It inherits
 **nothing** from [token-time-optimized-harness.md](../attic/token-time-optimized-harness.md) (kept as
 history) — no prior decision survives unless the evidence independently re-derives it. It
 assumes a **fresh implementation substrate**: the only assets carried forward are the research
@@ -46,6 +49,13 @@ separate from evidence so nobody mistakes a preference for a finding.
   identical reps (*internal* §4, committed artifact), horizon-bucket prediction has no validated
   feature set, and the operator judges the problem inherently hard. The harness measures spend;
   it does not predict or optimize it over horizons.
+- **R5 — Artifacts are loosely coupled and composable** (added 2026-07-11). Every piece of
+  machinery does **one thing well**, runs standalone, and composes through thin, durable
+  interfaces, in the Unix spirit. No artifact may require another artifact's existence to be
+  useful — the planning interview must work without the execution loop, the loop without the
+  interview, the gate as a bare command — and so on throughout. This is operator doctrine, not
+  a measured finding; **D15** gives it its mechanisms, its evidence support, and its
+  against-interest exhibit.
 
 ---
 
@@ -163,6 +173,11 @@ measure the planted distribution, not the real one (M4). Experiment **T4**.
   (§3.1, three independent benchmarks, three recovery mechanisms). Budget real tokens there.
 - Requirements templates are formatting, not completeness — EARS's own inventors say so (§2.3);
   a template cannot substitute for the interview.
+- **The planning machinery is a standalone artifact (R5/D15):** the interview + preflight run
+  with vanilla Claude Code and emit a ratified plan file; nothing else in this design is
+  required for them to be useful, and the execution loop does not require them — a flat task
+  legitimately runs plan-less, and any plan file meeting the contract is accepted regardless of
+  what produced it.
 
 **Provisional mechanics** (sign trusted, unmeasured): typed re-plan patches with
 locality-of-repair, per Zenith's committed implementation (§5) and classical plan-repair theory;
@@ -202,6 +217,9 @@ cluster (the slowest-decaying evidence in the corpus) dictates the shape:
   is scope/intent governance (§3.3 review-collapse; §6: no shipped product validates its
   checkpoint's defect-catching; human+AI teams *lose* on decision tasks, g = −0.23, §3.3).
   Correctness authority stays with D1's sound verifiers.
+- **The card is a standalone artifact (R5/D15):** it renders any schema'd decision file,
+  records the commit-before-reveal transcript, and emits a stamped decision file — usable by
+  any workflow, not only this harness's composition of it.
 
 ### D9. Memory: versioned plain files, deterministically captured, write-gated; nothing learned until closed-loop evidence exists — **Decided**
 
@@ -259,7 +277,8 @@ roles are separate processes (§4).
   §4.)
 - **The wall is survivable by construction**: credits are strictly opt-in, so an unattended run
   halts rather than spills (§4) — the harness records a resumable checkpoint and *parks*.
-  Wake-on-reset exists nowhere in the surveyed ecosystem (§5 census) and is cheap; build it.
+  Wake-on-reset exists nowhere in the surveyed ecosystem (§5 census) and is cheap; build it —
+  as a standalone wrapper around *any* long-running invocation, not a loop feature (R5/D15).
 - **Instrument spend; never predict it** (R4; *internal* §4's 3× same-task variance with
   committed artifacts).
 - **TBD — the contested question that decides how aggressive context reuse should be:** how
@@ -297,7 +316,49 @@ So, from the first commit:
   own miss, *internal* §3);
 - held-out assets carry an explicit reuse budget (M1/M2), and replay is licensed on unchanged
   surface only (M3);
-- absence claims state their sample and date (grading method).
+- absence claims state their sample and date (grading method);
+- measurement attaches **per artifact** (R5/D15): each ships its own null arm, so the R2
+  deletion clause executes at artifact granularity — never all-or-nothing.
+
+### D15. Composition model: standalone artifacts, file contracts, late binding — **Decided** (R5 + evidence-supported mechanisms), **TBD** (contract-versioning discipline)
+
+R5 is operator doctrine and needs no warrant — but its mechanisms are independently
+evidence-supported, and v1 is the against-interest exhibit for the alternative.
+
+- **Each artifact is a standalone tool**: its own invocation, its own contract documentation,
+  its own tests and null arm (D14), adoptable one-at-a-time in a vanilla Claude Code setup.
+  "One thing well" also bounds surface area, which is where the tool-ergonomics evidence points:
+  few, well-shaped surfaces beat many (§3.1), and anything load-bearing is deterministically
+  invoked (D13).
+- **Interfaces are durable file contracts** — schema-validated files, exit codes, streams —
+  never imports of another artifact's internals, never shared mutable state. This is the
+  machinery analogue of §3.2's licensing condition: decomposition is safe exactly when seams are
+  determinate up front, and a schema'd file plus an exit code is a maximally determinate seam.
+  The MAST caution — failures concentrate at coordination seams (§3.2) — is about *agents
+  negotiating with agents* in free-form channels; a deterministic file contract is the seam type
+  least exposed to that taxonomy.
+- **No existence-dependencies, in either direction.** The interview emits a plan file and is
+  useful alone (D7); the loop consumes a plan file *if present* (D7); the merge gate is a
+  command over (diff, tests) → exit code that any workflow — including a human's — can call
+  (D5); the card renders any schema'd decision file (D8); park-and-resume wraps any invocation
+  (D12). Process-level role isolation (D11) already forces the process shape;
+  composition-by-subprocess with disjoint tool surfaces and a stateless kernel re-reading disk
+  is Zenith's committed, code-verified architecture (§5, A3).
+- **Composition is explicit and late.** A thin composition layer may wire artifacts into a
+  harness; artifacts never know they are composed. Risk-conditional configuration then
+  degenerates to *choosing the compose set* — dropping the held-out-vault stage for low-risk
+  work is removing a pipeline stage, not forking a monolith. (Task-conditional harness
+  configuration is otherwise unpublished except by task family and model — §6 — so this is an
+  extension, made cheap by construction.)
+- **v1, against interest** (*internal* §1–§2): the build-loop refused to start unless
+  `harness.planning ready` passed — the exact coupling R5 bans; the bootstrap deadlock was two
+  individually-correct fail-closed rules composing invisibly inside one process; P2-collision
+  destroyed the better implementation because two contexts coupled through shared machinery
+  state. None of these failure shapes exists between artifacts that meet only through files.
+
+**The TBD:** the contract-versioning discipline — how independently-evolving artifacts keep
+their file contracts compatible (schema versioning, tolerant readers, golden files) — is
+deliberately undecided; settle it at the first real two-artifact integration (**T11**).
 
 ---
 
@@ -315,11 +376,13 @@ So, from the first commit:
 | TOON / serialization tricks | Measured-negative generation; narrow savings band (§3.1; *internal* §4) |
 | Recommendation-first approval cards | Measured over-reliance bait: acceptance rises right-or-wrong (§3.3) |
 | Approval theater (board-style review of every change) | External approval buys latency, not failure reduction (Tier B DORA, consistent with §3.3 complacency); PPV governs the human channel (§3.3) |
+| Bundled machinery — artifacts that require each other to exist | R5; v1's own coupling defects: the loop hard-gated on the planner, the bootstrap deadlock, P2-collision (*internal* §1–§2); machinery seams must be few and determinate (D15, §3.2) |
 
 The strongest statement this document makes is that the previous design's machinery count was
-its defect, not its moat. The evidence funds a **small** machine: one writer, sound verifiers
-behind blocking gates, spec-authored held-out tests, a forcing-function human surface, files as
-memory, park-and-resume economics, and instrumentation. Everything else waits for data.
+its defect, not its moat. The evidence funds a **small** machine — and R5/D15 says a
+**separable** one: one writer, sound verifiers behind blocking gates, spec-authored held-out
+tests, a forcing-function human surface, files as memory, park-and-resume economics, and
+instrumentation — each a standalone tool, composed late. Everything else waits for data.
 
 ## 4. TBD ledger — the deliberately undetermined
 
@@ -335,18 +398,26 @@ memory, park-and-resume economics, and instrumentation. Everything else waits fo
 | T8 | Does a lessons store improve *anything* closed-loop? | With/without-injection paired arm; expect efficiency-not-quality (§2.3 Sandelin); measure *use*, not receipt |
 | T9 | Per-lineup effort/model routing | Re-run the committed benchmark harness on each new lineup (`model-generation` decay) |
 | T10 | Where does human latency actually go? | Instrument ack/decision times — operators' self-estimates are miscalibrated (§7 METR direction) |
+| T11 | What contract-versioning discipline keeps independently-evolving artifacts compatible? | The first real two-artifact integration: instrument seam failures and contract drift (schema versioning vs tolerant readers vs golden files) |
 
 ## 5. Sequencing sketch (a plan, not a commitment)
 
-1. **Measure first.** T1 (operator-run) and the instrumentation substrate (D14) — before any
-   loop is built, the ledger that will judge it exists.
-2. **The minimal loop.** Single writer + spec-authored held-out tests + sound verifiers behind a
-   blocking merge gate + granted completion (D1–D5) on a small real task set, with a null arm.
-3. **The human surface.** Forcing-function ratification card + tiered, acknowledged escalation +
-   park-and-resume (D8, D12) — then T6/T7/T10 on live traffic.
-4. **Only then, candidates for expansion**, each entering through its TBD experiment: determinacy
-   preflight (T3), canaries (T4), lessons store (T8), read-fan-out (T5-informed), admission
-   machinery (T5).
+Every stage's deliverables are **standalone artifacts with file contracts** (D15); composition
+is itself a late, explicit step, never the medium the artifacts are born into.
 
-Nothing in stages 2–4 is exempt from R2: any mechanism whose paired arm shows the null harness
-matching it gets deleted, and that deletion is a result, not a failure.
+1. **Measure first.** T1 (operator-run) and the instrumentation ledger (D14) — the first
+   standalone artifact: before anything else is built, the tool that will judge it exists and
+   is usable on its own.
+2. **The correctness artifacts.** The spec-interview (D7), the test-author role (D2), and the
+   merge-gate command (D1/D5) — each landing separately with its contract, tests, and null arm;
+   then the first composition: a single-writer loop wired from them (D3/D4) on a small real
+   task set, which is also T11's integration probe.
+3. **The human-surface artifacts.** The forcing-function card (D8), tiered acknowledged
+   escalation (D8), and the park-and-resume wrapper (D12) — then T6/T7/T10 on live traffic.
+4. **Only then, candidates for expansion**, each entering as its own artifact through its TBD
+   experiment: determinacy preflight (T3), canaries (T4), lessons store (T8), read-fan-out
+   (T5-informed), admission machinery (T5).
+
+Nothing in stages 2–4 is exempt from R2: any artifact whose paired arm shows the null harness
+matching it gets deleted — at artifact granularity, which is exactly what R5 makes cheap — and
+that deletion is a result, not a failure.

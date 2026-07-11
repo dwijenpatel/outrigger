@@ -107,3 +107,10 @@ you'd actually want to decide. The Decided spine: single writer, walled-off grad
 gates, park-and-resume. The TBDs are about *tuning and trust* — plan-gate strictness (T3),
 trust in silent verdicts (T4), whether the forcing card and memory pay off (T6, T8), and the
 window economics (T1, T5) — not about the spine.
+
+**And a note on the machinery's own shape (R5/D15):** what ran overnight is a *toolbox, not a
+monolith*. The interview, the merge gate, the ratification card, and the park-and-resume
+wrapper are each standalone tools that talk through files — you can adopt the interview alone
+with plain Claude Code, or call the gate from a workflow that contains nothing else from this
+design. The "harness" is just one composition of them, and dropping a stage for low-risk work
+is configuration, not surgery.

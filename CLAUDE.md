@@ -16,6 +16,9 @@ Continuity record + executed manifest: [docs/reincarnation-plan.md](docs/reincar
 - **Loosely-coupled, composable artifacts** (design R5/D15): every machinery piece does one
   thing well, runs standalone, and composes via schema'd file contracts + exit codes; no
   artifact may require another artifact's existence, in either direction. No bundling.
+- **Improvements are evidence-gated, permanently** (design R6): post-creation harness changes
+  enter exactly like design decisions — new external or internal highly-reliable evidence →
+  design doc → artifacts. No other channel.
 - **Sub-agents use the `Opus 4.8` model, not `Fable 5`.**
 - **Git discipline:** never commit directly to `main` — feature branch → commit → `--ff-only`
   merge → delete branch.

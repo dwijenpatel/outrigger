@@ -66,6 +66,13 @@ are self-generated conclusions.
   piece does one thing well, runs standalone, and composes through file contracts; no artifact
   may require another artifact's existence, in either direction — e.g. the planning interview
   must be fully decoupled from the execution loop, and vice versa (design R5/D15).
+- **Improvement is evidence-gated, permanently** (added 2026-07-11): after initial creation the
+  harness improves only through new highly-reliable evidence — **new external research** or
+  **new internal research** (instrumented runs, TBD-ledger experiments, defect ledgers) —
+  flowing through the design doc, then into artifacts (design R6). Also recorded: R1 carries a
+  substrate-volatility note (possible multiple concurrent subscriptions with distinct model
+  sets/window clocks; possible metered API pricing) — documented in R1/D12, deliberately not
+  provisioned for.
 
 ## 3. The reincarnation manifest (ratified, awaiting execution)
 

@@ -92,7 +92,8 @@ One thing you won't find: the harness did **not** improve or rewrite its own mac
 overnight. Deliberate omission (D10) — every self-improving loop in the literature eventually
 cheated its own scoring, so v1 has no ability to edit itself. If ever built, it'll be
 proposals-only behind the strictest version of the commit-before-reveal card. **Parked on
-purpose.**
+purpose.** Improvements arrive the way the design itself did: new evidence — external research
+or the harness's own measurements — through the design doc, ratified by you (R6).
 
 Underneath it all, from the first run, the harness **keeps score on itself** — logging what
 each mechanism cost and, where feasible, running a quiet "would plain Claude Code have done

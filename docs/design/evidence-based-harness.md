@@ -2,6 +2,8 @@
 
 **Status: first draft, 2026-07-10. Amended 2026-07-11:** +R5 and +D15 (loosely-coupled,
 composable artifacts), composability touch-ups to D7/D8/D12/D14, +T11, sequencing reworded.
+**Second amendment, 2026-07-11:** +R6 (improvement is evidence-gated, permanently) and a
+substrate-volatility note on R1 (multiple subscriptions; metered API pricing).
 
 This is a from-first-principles redesign. It inherits
 **nothing** from [token-time-optimized-harness.md](../attic/token-time-optimized-harness.md) (kept as
@@ -38,6 +40,12 @@ separate from evidence so nobody mistakes a preference for a finding.
   shared pool, credits strictly opt-in so an unattended run halts at the wall — the §4 official
   commitments). The goal is *reliable unattended work inside the windows*, not dollar
   minimization.
+  *Volatility note (2026-07-11):* the operator flags two ways this substrate may change:
+  (1) **multiple concurrent fixed-cost subscriptions** — e.g. subscriptions A and B, each with
+  its own model set and its own usage-window clocks; (2) **a metered API cost model** — cost as
+  a function of tokens in/out and the model used. Either reopens R1 and D12 (walls pluralize,
+  or become budgets rather than reset clocks). Recorded for decay-awareness only: v1 designs
+  for the substrate as stated and takes no speculative provision.
 - **R2 — Machinery must be minimal.** The previous design's post-mortem: the machine cost tokens
   to save tokens, and meta-work crowded out real work. Every mechanism in this plan must justify
   itself against the null harness (plain Claude Code with a good prompt); "would help" is not
@@ -56,6 +64,15 @@ separate from evidence so nobody mistakes a preference for a finding.
   interview, the gate as a bare command — and so on throughout. This is operator doctrine, not
   a measured finding; **D15** gives it its mechanisms, its evidence support, and its
   against-interest exhibit.
+- **R6 — Improvement is evidence-gated, permanently** (added 2026-07-11). After initial
+  creation, the harness changes the same way this design was made: a proposed improvement
+  enters only with highly-reliable evidence, and that evidence comes from exactly two
+  categories — **new external research** (literature, replications, vendor commitments,
+  re-graded into [distilled/](../research/distilled/README.md)) and **new internal research**
+  (the instrumented harness's own record: null arms, TBD-ledger experiments, firing defect
+  ledgers — D14's output stream). The design document is the change surface; artifacts follow
+  it. This is the standing alternative to a self-modification loop (D10): the improvement loop
+  runs through the operator and the evidence pipeline, never through the harness itself.
 
 ---
 
@@ -259,6 +276,10 @@ weak supervisor's judging collapses (§2.1 weak-to-strong). Human-ratified self-
 remains unpublished anywhere (§6) — this is the design's one genuinely novel object, and it
 stays parked until the base loop earns it.
 
+Meanwhile the standing improvement path is **R6**: evidence-gated, operator-ratified design
+changes. A self-modification loop, if ever built, automates proposal-generation *within* R6 —
+never around it.
+
 ### D11. Isolation is OS-enforced, per-role, process-level — **Decided**
 
 Role boundaries (implementer / test-author / validator) are separate OS processes with distinct
@@ -285,6 +306,10 @@ roles are separate processes (§4).
   cache reads weigh against *subscription windows* is officially unanswered (§4; the vendor
   declined to answer, §2.1). The built, unexecuted experiment (**T1**) settles it and is the
   highest-value single measurement available.
+- **Substrate decay-awareness:** R1 carries a volatility note — multiple concurrent
+  subscriptions, or metered API pricing. If either lands, "the wall" pluralizes or becomes a
+  budget rather than a reset clock, and this decision is revisited through R6. Not provisioned
+  for now.
 - **TBD — admission/routing machinery.** Window-aware admission control appears nowhere (§6),
   which makes it tempting novelty — but our own governor both deadlocked a first firing
   (bootstrap deadlock, *internal* §2) and was once correct against operator override (*internal*
@@ -319,6 +344,10 @@ So, from the first commit:
 - absence claims state their sample and date (grading method);
 - measurement attaches **per artifact** (R5/D15): each ships its own null arm, so the R2
   deletion clause executes at artifact granularity — never all-or-nothing.
+
+D14's output stream is also **R6's internal-evidence feed**: the ledger, the experiment
+write-backs, and the firing defect records are where post-creation improvements get their
+warrants.
 
 ### D15. Composition model: standalone artifacts, file contracts, late binding — **Decided** (R5 + evidence-supported mechanisms), **TBD** (contract-versioning discipline)
 

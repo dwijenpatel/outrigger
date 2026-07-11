@@ -1,0 +1,12 @@
+{
+  "floors": [
+    {"glob": "pilot/greenlane/app/security.py", "min_profile": "critical"},
+    {"glob": "pilot/greenlane/app/routes/auth.py", "min_profile": "critical"},
+    {"glob": "pilot/greenlane/app/routes/invites.py", "min_profile": "critical"},
+    {"glob": "pilot/greenlane/app/models.py", "min_profile": "high"},
+    {"glob": "pilot/greenlane/app/services/**", "min_profile": "high"},
+    {"glob": "pilot/greenlane/app/routes/invoices.py", "min_profile": "high"},
+    {"glob": "pilot/greenlane/app/routes/payments.py", "min_profile": "high"},
+    {"glob": "pilot/greenlane/app/routes/**", "min_profile": "elevated"}
+  ]
+}

@@ -12,7 +12,9 @@ plus the internally-sourced claims embedded in three mixed-provenance external d
 
 A win with a committed run-log line, verdict file, or gate stamp is checkable by a stranger with
 a clone. A win that lives only in a pilot-clone transcript is an assertion. §5 grades them
-honestly, and the result is uncomfortable: **the design's headline win is not currently Tier A.**
+honestly. *(Until 2026-07-11 the design's headline win failed this bar; the
+[pilot-3 salvage](../internal/pilot-3-artifacts/README.md) brought its artifacts into the tree
+and §5 row 3 now grades A3.)*
 
 Pilot observation IDs collide across files (`P2-x` exists in both `pilot-1-observations.md` and
 `pilot-2-observations.md`), so every citation names its file.
@@ -108,7 +110,7 @@ before observation," and `pilot-2-artifacts/watch-items.json` is **committed, da
 | Watch item | Pre-registered | Outcome |
 |---|---|---|
 | **W1–W5** — the whole concurrency family (stale-generation, write-ahead under interleaving, gate-stamp/HEAD races, admission warmup, worktree conflicts) | ✅ committed + dated | **UNOBSERVED — no opportunity.** Concurrency never ran: GL1 was the serial root, GL2 parked. **2026-07-10 update:** the source audit (§2) gave W1/W2/W3 named code-level mechanisms (B-1/B-2, B-3, B-4) — the *predictions* stand, now with the exact lines that would realize them. |
-| W6 — the held-out corpus catches what blind validation misses (**the design thesis**) | ✅ | **CONFIRMED once** (n=1). See §5 for the artifact problem. |
+| W6 — the held-out corpus catches what blind validation misses (**the design thesis**) | ✅ | **CONFIRMED once** (n=1). Artifacts committed 2026-07-11 (§5 row 3 → A3). |
 | W8 — write-ahead `task_spawn` with resolved spawn params | ✅ | **CONFIRMED**, visible in the committed run-log. |
 | W9 — the price of floors-always | ✅ | **CONFIRMED, n=1**: GL1 ≈ **260,659 tokens** across 2 attempts, **panel spend ≈ 63%**. |
 | W7 — `fraction_rate` cross-firing lookback | ✅ | **CONFIRMED as a defect** → I25. |
@@ -158,10 +160,11 @@ CSV −55.0%, Markdown −36.7%; but raw list-valued ledger shapes **+16.8%**, n
 **+7.1%**, pretty JSON **+48–82%**.
 
 It falls short of Tier A on its own stated grounds: o200k is a **proxy** ("Anthropic's tokenizer
-differs — treat ratios, not absolutes"), and the harness is **preserved in a session scratchpad,
-not committed to the repo.** Reproducible in principle; not re-runnable from the tree. Under this
-document's rule, a measurement without a committed artifact is a claim. *If the harness is ever
-committed, this promotes to A3.*
+differs — treat ratios, not absolutes"), and the harness was never committed — a search of the
+surviving session scratchpads (2026-07-11, reincarnation step 1) **confirmed it is gone.** The
+measurement is permanently non-promotable; if the question ever matters again, re-run from
+scratch. Under this document's rule, a measurement without a committed artifact is a claim —
+this row is now the standing example of why the rule exists.
 
 Two things nonetheless raise confidence in it above a typical self-run number: the measurement is
 **deterministic token counting**, with no model judgment anywhere in the loop; and its conclusion
@@ -174,20 +177,19 @@ and instead produced the "No TOON" rule. An `A2` flavor inside a `Tier B` measur
 |---|---|---|---|
 | **P2-14** (pilot-2) — tick 1 exercised the whole floor and it held: statusline rung live, blocker-card resume, write-ahead + generation stamps clean (7→10, no stale-gen), and **the I12 ladder ran textbook — haiku FAIL ×2 (effort rung between) → sonnet PASS. All three worker self-reported "pass" claims were falsified by ground truth *before* panel or gate spend.** | `claims, not evidence` earns its keep; the escalation ladder works | **Committed.** `run-log.jsonl` records the exact ladder (`haiku/cheap/low` a1 → `haiku/cheap/medium` a2 → `sonnet/standard/medium` a3 → merge); `governor-log.jsonl` shows assumed-0.3 → live-0.62; `verdicts/GL1-scaffold/correctness.json` is a committed PASS. | **A3** |
 | **P3v2-12** (pilot-3) — the governor's degrade hold deferred GL2; the operator **overrode it**; the fresh worker died on its first call (429, 0 tokens, $0). | The governor was right, and we know because we disobeyed it | **Committed.** `run-log.jsonl` carries the `task_aborted` record; `governor-log.jsonl` the degrade reading. | **A3** — unusually strong: the disconfirming action was taken and the machinery still won. |
-| **P3v2-5** (pilot-3) — **the design's central thesis, first live proof.** Attempt 1's `get_db(request)` passed visible tests, typecheck, *and* a full 3-lens Opus panel. The **held-out corpus failed 3 tests.** Attempt 2 (fresh worker, no leakage) fixed it and caught a latent `dependency_overrides` closure bug that would have silently broken later DB tasks. | The vault catches what blind validation alone misses | **NOT committed to this repo.** The 41/41 held-out result, the 3 Opus verdicts, and the merge stamp live in the **pilot clone**. `pilot-2-artifacts/verdicts/` holds only pilot-2's *routine* GL1 verdict (a haiku validator). | **Tier C here.** |
+| **P3v2-5** (pilot-3) — **the design's central thesis, first live proof.** Attempt 1's `get_db(request)` passed visible tests, typecheck, *and* a full 3-lens Opus panel. The **held-out corpus failed 3 tests.** Attempt 2 (fresh worker, no leakage) fixed it and caught a latent `dependency_overrides` closure bug that would have silently broken later DB tasks. | The vault catches what blind validation alone misses | **Committed 2026-07-11** — [`pilot-3-artifacts/`](../internal/pilot-3-artifacts/README.md): the 3 Opus verdicts, the gate stamp, the 11-step gate report, the 7-file held-out corpus, the vault-side `41 passed` log, and the 4-replay meter. Caveat kept: the attempt-1 *failing* log was not retained vault-side — that link survives as the replay timestamps + two-wave run-log, not a preserved failure artifact. | **A3** (n=1) |
 | P3-1 (pilot-3) — the floor collision was caught **statically, pre-spawn**, parked on a complete blocker card, zero worker spend. | I16 worked at the cheapest possible point | Clone/prose + the instrument-v2 ratification stamp. No telemetry (nothing spawned). | Tier C |
 | P2-1 (pilot-1) — the `plan-build` interview performed as designed (~20 single-question rounds, D1–D24 decisions log, P1-8 did not recur). | The planning surface works | Clone `PLAN.md`, not committed here. | Tier C |
 | Leg-2 start gates all green — smoketest **17/17** (first live use), plan-ready **7/7**, selftest **30/30**. | The gates run | Narrative only. (The suites themselves are of course re-runnable.) | Tier C |
 
-**Read row 3 carefully.** The single result this entire design exists to produce — *the held-out
-vault caught a defect that visible tests and three blind validators all missed* — is, in this
-repository, **an assertion.** Its corroborating artifacts were never brought back from the pilot
-clone. By the rule in [README.md](README.md), it cannot be Tier A, and calling it so would be
-exactly the self-serving move this document is built to prevent.
-
-That is a fixable defect in our evidence practice, not in the design: **copy the pilot-3
-verdicts, held-out summary, and gate stamp into `internal/pilot-3-artifacts/`.** Until then, the
-honest statement is *"observed once, artifact not in tree."*
+**Row 3's history is worth keeping.** From 2026-07-05 to 2026-07-11 the single result this
+design exists to produce — *the held-out vault caught a defect that visible tests and three
+blind validators all missed* — was, in this repository, **an assertion**: its artifacts had
+never been brought back from the pilot clone, and this document graded it Tier C accordingly.
+The 2026-07-11 reincarnation salvage fixed the evidence-practice defect and the row now grades
+**A3 — with n still 1**, and with the attempt-1 failing log honestly recorded as the one
+non-retained link. The upgrade changed the *warrant*, not the sample size: the thesis has one
+live confirmation, not a catch rate.
 
 ## 6. What our internal evidence cannot establish
 

@@ -1,0 +1,15 @@
+{
+  "entries": {
+    "GL1-scaffold/test_heldout_config_db.py": "6996a12f548845542ef716e95947fdb27ad7177b1afe8fc888a5a8a617c720c5",
+    "GL1-scaffold/test_heldout_factory.py": "b50597b8fcd82e2b6abe2b4c94e135e1e715c129e43d236252aea7d187025eb1",
+    "GL1-scaffold/test_heldout_fixture_isolation.py": "e56475e1f308bf268cf94c9cafc12d12349668fc354ebdb915c9bf71a6504e22",
+    "GL1-scaffold/test_heldout_health.py": "0777a61444fc9da10934afb3198969b02b3b4521657278f82cbeea777b7ca79e",
+    "GL1-scaffold/test_heldout_layout_files.py": "24edfcc04872627645d781db31eb1c4ceb73c83d44e81396f455720e2f3da56d",
+    "GL1-scaffold/test_heldout_runpy.py": "527364553b8924146f49753894806a81a27c618a67f92a9db0e33a547d98a274",
+    "GL1-scaffold/test_heldout_templates.py": "0ea6ff9581f58e185b5967ca70230dfefd9d824720375a6498fc639ce0c3be6f",
+    "GL2-auth-tenancy/test_heldout_csrf.py": "ed7563eb9ad4dbd4f15abc0a05bee55e33ff1881f904bbd28f9b47034dd1870d",
+    "GL2-auth-tenancy/test_heldout_login_session.py": "756df2e28fdf2ab741400d3957815844a92642203dc1893e3274dcb18563fbee",
+    "GL2-auth-tenancy/test_heldout_signup.py": "85970e1f325654d053642914dee81f7eb264f80ae2115e6a67bd542b33c5b02c",
+    "GL2-auth-tenancy/test_heldout_tenancy.py": "c49c41ff921dd84e1829499efebdbe34ab9b06f9ed76502d576149277c669ce5"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "attempt": 2,
+  "findings": [
+    {
+      "detail": "No external/CDN URLs in template or CSS; no committed secrets/.env/.db (*.db and node_modules gitignored); check_same_thread=False sqlite-scoped; ORM-only SQL; sessions closed in finally across all get_db variants; no eval/exec/shell/pickle/debug=True; /health and 404 leak no traceback; deps expected, lockfile integrity-pinned. Info: run.py binds 0.0.0.0 (dev), python deps unpinned (npm locked).",
+      "file": "-",
+      "severity": "info"
+    }
+  ],
+  "lens": "security",
+  "model": "claude-opus-4-8",
+  "summary": "Early scaffold is security-clean on attempt 2; only proportionate info notes.",
+  "task_id": "GL1-scaffold",
+  "verdict": "PASS"
+}

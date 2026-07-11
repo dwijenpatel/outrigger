@@ -1,0 +1,28 @@
+{
+  "task_id": "GL1-scaffold",
+  "repro": "Simulated the risk-floor gate against GL1 pinned deliverables: hooks.check_risk_floor(\"routine\", GL1_paths, plan/floors.json) -> ok=False, \"diff touches paths floored at high; task profile is routine\". GL1 (routine) must create app/models.py (floored high) and app/services/__init__.py (services/** floored high) per its pinned layout; floors are path-based/content-blind so empty placeholders still match. PLAN.md D17 ratified models=high AND scaffold=routine -> internal contradiction. GL1 is the root dependency; a floor bounce halts the whole firing. NOT among the operator pre-registered bounces (only GL10-seed was).",
+  "options": [
+    {
+      "key": "reprofile_gl1_high",
+      "label": "Re-ratify GL1 profile routine->high (minimal edit)",
+      "consequence": "Breaks the same-plan byte-identical protocol for one task; GL1 then runs as high (3 validators, +heldout_drop step) and the floor clears (high>=high). Firing proceeds. Requires plan/ edit + re-ratification."
+    },
+    {
+      "key": "accept_documented_halt",
+      "label": "Accept as documented pilot finding; halt (same class as GL10-seed floors-always bounce)",
+      "consequence": "Byte-identical protocol preserved; pilot #3 documents that floors-always blocks the root scaffold and the regime-routing lever (reserved for a later pilot) is the real fix. Firing produces the finding but builds nothing past scaffold, like pilot #2."
+    },
+    {
+      "key": "relocate_floored_placeholders",
+      "label": "Re-ratify to move GL1 floored placeholders to profile-appropriate owners",
+      "consequence": "Larger plan surgery (e.g. Base->GL2-critical, services pkg->its owner); keeps scaffold routine but edits plan/ + re-ratify and still breaks byte-identical."
+    }
+  ],
+  "recommendation": "Operator decision required. If the goal is to BUILD greenlane this pilot, reprofile_gl1_high is the minimal, surgical re-ratification. If the goal is to CHARACTERIZE the plan under floors-always (consistent with reserving the regime lever for a later pilot and pre-registering the GL10-seed bounce), accept_documented_halt is the clean experimental outcome. I will not edit plan/ or weaken any gate input without an explicit ratification.",
+  "resolved": {
+    "decision": "reprofile (Package A, systemic)",
+    "by": "dwijen",
+    "at": "2026-07-05",
+    "detail": "GL1/GL4/GL6/GL7 -> high, GL10 -> elevated; plan re-ratified as instrument v2; resume GL1 parked->in_progress"
+  }
+}

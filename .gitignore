@@ -1,6 +1,6 @@
 __pycache__/
 *.pyc
 .DS_Store
-state/
+/state/
 .claude/worktrees/
 .claude/settings.local.json

@@ -1,0 +1,16 @@
+{
+  "frozen_at": "2026-07-05T11:51:03Z",
+  "task_hash": "d71eba21da14ed69",
+  "task_ids": [
+    "GL1-scaffold",
+    "GL10-seed-demo",
+    "GL2-auth-tenancy",
+    "GL3-invites",
+    "GL4-customers-properties",
+    "GL5-schedules-generator",
+    "GL6-visits-daylists",
+    "GL7-quotes",
+    "GL8-invoicing",
+    "GL9-payments"
+  ]
+}

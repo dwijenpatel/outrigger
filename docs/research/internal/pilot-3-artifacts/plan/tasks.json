@@ -1,0 +1,106 @@
+{
+  "tasks": [
+    {
+      "deps": [],
+      "id": "GL1-scaffold",
+      "may_be_invalidated_by": [],
+      "phase": "1",
+      "profile": "high"
+    },
+    {
+      "deps": [
+        "GL1-scaffold"
+      ],
+      "id": "GL2-auth-tenancy",
+      "may_be_invalidated_by": [],
+      "phase": "1",
+      "profile": "critical"
+    },
+    {
+      "deps": [
+        "GL2-auth-tenancy"
+      ],
+      "id": "GL3-invites",
+      "may_be_invalidated_by": [],
+      "phase": "1",
+      "profile": "critical"
+    },
+    {
+      "deps": [
+        "GL2-auth-tenancy"
+      ],
+      "id": "GL4-customers-properties",
+      "may_be_invalidated_by": [],
+      "phase": "1",
+      "profile": "high"
+    },
+    {
+      "deps": [
+        "GL4-customers-properties"
+      ],
+      "id": "GL5-schedules-generator",
+      "may_be_invalidated_by": [],
+      "phase": "1",
+      "profile": "high"
+    },
+    {
+      "deps": [
+        "GL5-schedules-generator",
+        "GL3-invites"
+      ],
+      "id": "GL6-visits-daylists",
+      "may_be_invalidated_by": [
+        "GL5-schedules-generator"
+      ],
+      "phase": "1",
+      "profile": "high"
+    },
+    {
+      "deps": [
+        "GL4-customers-properties"
+      ],
+      "id": "GL7-quotes",
+      "may_be_invalidated_by": [
+        "GL5-schedules-generator"
+      ],
+      "phase": "2",
+      "profile": "high"
+    },
+    {
+      "deps": [
+        "GL6-visits-daylists"
+      ],
+      "id": "GL8-invoicing",
+      "may_be_invalidated_by": [
+        "GL5-schedules-generator",
+        "GL6-visits-daylists"
+      ],
+      "phase": "2",
+      "profile": "high"
+    },
+    {
+      "deps": [
+        "GL8-invoicing"
+      ],
+      "id": "GL9-payments",
+      "may_be_invalidated_by": [
+        "GL8-invoicing"
+      ],
+      "phase": "2",
+      "profile": "high"
+    },
+    {
+      "deps": [
+        "GL7-quotes",
+        "GL9-payments"
+      ],
+      "id": "GL10-seed-demo",
+      "may_be_invalidated_by": [
+        "GL8-invoicing",
+        "GL9-payments"
+      ],
+      "phase": "2",
+      "profile": "elevated"
+    }
+  ]
+}

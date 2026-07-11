@@ -1,0 +1,62 @@
+{
+  "files_touched": [
+    "heldout_out/test_heldout_tenancy.py",
+    "heldout_out/test_heldout_csrf.py",
+    "heldout_out/test_heldout_signup.py",
+    "heldout_out/test_heldout_login_session.py"
+  ],
+  "intent": "Pin the trust-critical auth/tenancy contract with executable, red-able held-out tests before any code exists.",
+  "key_changes_made": [
+    "test_get_or_404_cross_company_is_404_not_403_not_redirect: a cross-company object id via get_or_404 raises HTTP 404, identical to a nonexistent id \u2014 never 403, never a redirect",
+    "test_get_or_404_returns_own_company_object: get_or_404 returns the caller's own-company object (positive control so the 404s are not unconditional)",
+    "test_get_or_404_ignores_a_company_id_kwarg_if_accepted: a caller-supplied company_id can never unlock another tenant's object; scoping uses only user.company_id",
+    "test_company_query_only_returns_own_company_rows: company_query yields only rows where company_id == user.company_id (no cross-tenant leakage)",
+    "test_session_payload_carries_no_role_or_company: the session identifies the user by user_id alone \u2014 no role/company/email smuggled into the payload",
+    "test_logout_without_csrf_is_400_and_session_survives: POST /logout with no csrf_token field -> 400 and the session is NOT cleared",
+    "test_logout_with_wrong_csrf_is_400_and_session_survives: POST /logout with an incorrect token -> 400, session survives",
+    "test_logout_with_another_sessions_csrf_is_400: a csrf token belonging to a different session is rejected (400); tokens are per-session",
+    "test_logout_with_valid_csrf_succeeds: positive control \u2014 a valid token yields 303 to /login and clears the session",
+    "test_settings_post_without_csrf_is_400_and_no_mutation: mutating POST /settings without csrf -> 400 and the company row is unchanged",
+    "test_settings_post_with_wrong_csrf_is_400_and_no_mutation: mutating POST /settings with a wrong token -> 400, company unchanged",
+    "test_signup_creates_exactly_one_company_and_one_owner: signup creates exactly one Company and one owner User, stores email lowercase, and hashes the password with bcrypt ($2, verify round-trips, no plaintext in the hash)",
+    "test_signup_password_never_appears_plaintext_in_any_column: the raw password appears verbatim in no User column",
+    "test_short_password_rejected_and_nothing_created: a <8-char password re-renders the form at 200 and creates nothing",
+    "test_password_length_boundary_eight_is_accepted: an exactly-8-char password is accepted (pins the min-length boundary / off-by-one)",
+    "test_invalid_timezone_rejected_and_nothing_created: a non-IANA timezone re-renders at 200 and creates nothing",
+    "test_duplicate_email_rejected_globally_nothing_created: a second signup with an existing email (a new would-be company) is rejected at 200 and creates no second User or Company (global uniqueness across companies)",
+    "test_duplicate_email_detection_is_case_insensitive: duplicate-email detection is case-insensitive",
+    "test_full_cycle_signup_logout_login: signup -> logout -> login round-trips through TestClient with the specified 303 redirects, and home displays the company name",
+    "test_login_email_is_case_insensitive: login matches the stored (lowercased) email case-insensitively",
+    "test_wrong_password_and_unknown_email_are_indistinguishable: wrong-password and unknown-email logins return the SAME generic visible error at 200 (no user enumeration)",
+    "test_wrong_password_does_not_establish_a_session: a failed login establishes no session",
+    "test_settings_forbidden_for_crew: an authenticated crew user gets 403 from GET /settings",
+    "test_settings_allowed_for_owner: positive control \u2014 an owner gets 200 from GET /settings (so the crew 403 is role-based, not blanket)",
+    "test_unauthenticated_home_redirects_303_to_login: unauthenticated GET / -> 303 to /login",
+    "test_unauthenticated_settings_redirects_303_to_login_not_403: unauthenticated GET /settings -> 303 to /login (redirect, not 403 \u2014 distinguishing missing-auth from wrong-role)"
+  ],
+  "key_learnings": [
+    "No route in THIS task accepts an object id (customer/schedule models come later), so the CRITICAL cross-tenant-404 invariant has no HTTP surface here; it is pinned directly on the get_or_404/company_query helpers that every later route depends on.",
+    "The spec's 'Session payload: {user_id} ONLY' coexists with 'generate csrf_token into the session', so a live session legitimately holds BOTH user_id and csrf_token; the enforceable invariant is 'no role/company smuggled in', not 'exactly one key'.",
+    "Environment gotchas an implementer will hit in this same runtime: passlib 1.7.4 is broken against the installed bcrypt 5.0 (bcrypt has no __about__), and Starlette's Jinja2 TemplateResponse now requires the (request, name, context) signature \u2014 both surfaced while building the verification sketch."
+  ],
+  "outcome": "pass",
+  "spec_ambiguities": [
+    {
+      "corpus_covers": "both",
+      "text": "What are the exact HTML form field <input name=...> POST parameter names for signup/login/settings (e.g. is the company field 'company_name' or 'company', and the person field 'name' or 'owner_name')?"
+    },
+    {
+      "corpus_covers": "both",
+      "text": "Do POST /signup and POST /login enforce CSRF (400 on missing/invalid token), or is CSRF enforced only on authenticated mutating POSTs (logout/settings)?"
+    },
+    {
+      "corpus_covers": "both",
+      "text": "Is global email uniqueness enforced by a DB UNIQUE constraint on User.email, or only by an application-level duplicate check in POST /signup (or both)?"
+    },
+    {
+      "corpus_covers": "both",
+      "text": "Is it acceptable for the gl_session cookie to carry csrf_token alongside user_id, given the spec says the payload is 'user_id ONLY' yet also stores the CSRF token in the session?"
+    }
+  ],
+  "summary": "Authored 26 held-out adversarial tests across 4 files (tenancy, csrf, signup, login/session) for GL2-auth-tenancy from the spec alone, with no implementation present. The CRITICAL cross-tenant invariant (acceptance #3) is pinned directly on the get_or_404/company_query helpers because this task ships no route that takes an object id. All signup/login/settings interactions are driven naming-agnostically (form fields discovered from the rendered HTML, email/password/timezone detected by input type, every text field filled with a valid value), so the corpus passes under any reasonable choice of form field names. I built a faithful throwaway sketch (deleted) to confirm every test goes GREEN against a correct impl (25 pass, 1 correct skip) and RED against 19 targeted single-behavior mutations covering all six acceptance criteria and every adversarial-mandate bullet \u2014 no tautologies, no false-reds. All four spec ambiguities I encountered were written to pass under BOTH readings, so none park this task."
+}

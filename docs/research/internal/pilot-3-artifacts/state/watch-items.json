@@ -1,0 +1,48 @@
+{
+  "firing": "greenlane-pilot3-v2",
+  "leg": "GL2-only (I19-I29 defabled arm; operator attending)",
+  "opened_at": "2026-07-06T01:35:28Z",
+  "paused_at": "2026-07-06T06:52Z (operator /build-pause; 5h usage limit hit at the implementer boundary; limit since reset; clean-pause, resume at implementer stage)",
+  "plan": "INSTRUMENT V2 (ratification fb51fce3346daa04) — byte-identical, no regime tags, plan/ never edited",
+  "arm": "I19-I29 DEFABLED: opus-4-8 is the critical routing (fable removed from tiers.json; 'max' aliases 'capable'=opus). Machinery used AS DOCUMENTED — the leg-2 workarounds are now upstream fixes: headless_worker_cmd inlines the schema (P3v2-9 fixed), parse_worker_result is fence-tolerant (P3v2-10 fixed), failures.load_patterns accepts a tuple (P3v2-11 fixed), run_headless_worker enforces a wall-clock deadline (P3v2-13/I29 fixed). Verified each held in-code before use.",
+  "note": "Observations for the GL2 leg on the defabled headless arm. Hypotheses to observe, not defects to fix; machinery fixes land upstream (never locally, per P2-collision). Record in docs/research/pilot-3-observations.md + firing digest.",
+  "items": [
+    {
+      "id": "W10-preflight-smoke-start",
+      "watch": "preflight + smoke composition proof at leg start (I5/I19)",
+      "status": "OBSERVED @start 01:35Z — selftest 30/30, smoketest green (17 steps), vault valid, skill budget 762/15000. governor preflight NORMAL (live statusline rung). governor decide OK: seven_day 0.03 (post weekly-reset), five_hour transient 0.83 (pre-5h-reset lag) SETTLED to 0.01 on the next live read — no override needed."
+    },
+    {
+      "id": "W12-corpus-covers-both",
+      "watch": "GL2 fresh test-author emits corpus_covers:'both' objects (I20 dual-safe discharge)",
+      "status": "OBSERVED / DISCHARGED — FRESH test-author (no carried corpus) emitted 4 spec_ambiguities, ALL 4 as {corpus_covers:'both'}: 4 discharged, 0 BLOCKING on the critical H9 gate. Implementer proceeds with zero operator round-trip (P3v2-1 avoided by construction). Ambiguities were substantive (form-field names; CSRF-on-unauth-POST; email-uniqueness enforcement; session holding csrf_token) yet each pinned under both readings."
+    },
+    {
+      "id": "W14-headless-first-live",
+      "watch": "FIRST PRODUCTIVE headless pipeline (leg 2 never completed a worker)",
+      "status": "DISCHARGED for the test-author stage. Probe (opus-4-8/low): exit 0, 2.5s, $0.044, parsed=dict — validated my driver plumbing + W19 parse path. Test-author (opus-4-8/xhigh): exit 0, wall 1474s (<2700 deadline), $5.06, 1.97M tokens, 4 files / 26 tests authored. Machinery-as-documented worked end-to-end (schema inlined, wall deadline present, tuple patterns accepted). Implementer + 4-panel NOT reached (parked on window pressure, W16).",
+      "findings": {
+        "arm_fixes_confirmed_in_code": "P3v2-9/10/11/13 all confirmed FIXED upstream and used natively — no workarounds applied (arm change recorded).",
+        "spawn_interlock": "fresh admission stamp per batch + live run marker; workers ran via run_headless_worker (subprocess.Popen under wall deadline) inside background Bash — orchestrator stayed responsive."
+      }
+    },
+    {
+      "id": "W16-critical-panel-cost",
+      "watch": "critical-profile cost on ALL-OPUS routing — the priciest routing",
+      "status": "*** HEADLINE FINDING ***  The opus-4-8/xhigh test-author ALONE drove the 5-hour rate window 0.01 -> 0.77 (~+0.75). The remaining critical pipeline is 5 MORE opus-4-8/xhigh workers (implementer @capable + 4-lens panel @max: correctness/repro/security/perf). The cumulative pipeline EXHAUSTED the 5h usage limit at the implementer boundary (the limit hit was hard enough to take down the Bash safety classifier). CONCLUSION: a single critical task's full 6-worker all-opus/xhigh pipeline does NOT fit in one 5-hour window (~0.75 window/worker). Critical tasks must be paced across multiple 5h windows; re-check the governor between EVERY stage. seven_day stayed healthy (0.03 -> ~0.25). The panel itself was not reached, but per-worker window cost is the decisive metric."
+    },
+    {
+      "id": "W18-headless-timed-out",
+      "watch": "run_headless_worker timed_out events (I29 wall deadline)",
+      "status": "NONE. The test-author completed at 1474s, well under the 2700s deadline; no timed_out event. The 5h-limit hit was CUMULATIVE window exhaustion at the orchestrator/classifier level, NOT a worker wall-timeout or a per-worker 429. (Contrast leg-2 P3v2-13: a 38-min silent pre-compute hang — now structurally prevented by the wall deadline, though not exercised here.)"
+    },
+    {
+      "id": "W19-parse-path-health",
+      "watch": "parse_worker_result returns non-None on compliant workers (zero spurious ladder escalations)",
+      "status": "OBSERVED + FINDING. Probe: parsed=dict cleanly. Test-author: parse_worker_result returned parsed=None on a CONTENT-COMPLIANT handoff because the worker PROSE-WRAPPED its valid JSON (prose before/around the object); parse_worker_result's single-fence tolerance strips one fenced block but not leading prose. Per the arm, parsed=None -> ladder — which would be a SPURIOUS escalation here. Orchestrator recovered via a string-aware balanced-brace extractor + schemas.validate_handoff; NO spurious escalation occurred (W19 goal met via recovery, not native parse). UPSTREAM FINDING: parse_worker_result should extract the largest balanced JSON object from `result` (tolerate prose-wrapped JSON), not only fenced JSON."
+    }
+  ],
+  "carried_forward": {
+    "note": "W1-W5 (concurrency family) remain UNEXERCISED — GL2 is still the serial root (GL3||GL4 is the first concurrency point, not admitted this leg). W15 (attempt-2 max-rung delta) did NOT fire — GL2 parked pre-implementer on window pressure, so there was no attempt-1 gate-fail. The implementer, 4-lens panel, gate, and merge are all PENDING the re-fire (resume marker seq 15; resume at the implementer stage)."
+  }
+}

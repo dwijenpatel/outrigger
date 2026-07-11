@@ -1,0 +1,30 @@
+{
+  "task_id": "GL2-auth-tenancy",
+  "kind": "governor-hold-window-pressure",
+  "asked_at": "2026-07-05T23:11:01Z",
+  "repro": "Leg start gates all green (selftest 30/30, smoketest 17/17, vault valid, plan-ready 7/7, preflight NORMAL with a live statusline rung 1s old). But the between-task governor read the live rung as seven_day 0.82 / five_hour 0.63 (statusline used_percentage seven_day 81, five_hour 58) -> status=degrade, binding_window=seven_day (0.82 >= effective degrade 0.7998). scheduler.tick(occupancy=0.82, slots=1) DEFERRED GL2 (the sole runnable) with reason 'occupancy 0.82 already at/over degrade threshold 0.80'. This is a hard admission gate: harness/admission.py:97 returns admit=False whenever occupancy>=degrade, independent of reset_headroom / window_phase. reset_headroom is conservative anyway (I25: only 1 governor reading exists since this firing's marker acquired_at 23:03:53Z; fraction_rate needs a >=600s span -> None). GL2 is NOT admissible until seven_day occupancy falls below 0.80. seven_day resets in ~113 min (~2026-07-06T00:59:59Z), after which occupancy drops and GL2 admits cleanly. This is exactly the 'large spend to be steered' condition the pilot paused GL1 for; GL2 is critical (the priciest task: opus-4-8 implementer + a 4-lens fable-5 max-tier validator panel + possible multi-attempt ladder). occupancy_at_pause was seven_day 0.73 (21:37Z); it rose to 0.82 over the ~1.5h since (account-level usage, not this leg's cheap Step-0 probes). GL2 remains not_started (never admitted; ledger is truthful, no false in_progress).",
+  "recommendation": "hold-and-refire: respect the governor. Clean-pause this leg now (park nothing false, release the run marker, leave a resume marker) and re-fire the GL2 headless-arm shakedown after the seven_day window resets (~00:59:59Z, ~113 min) or once seven_day is back under 0.80. The pilot exists precisely to steer this spend, and launching the single most expensive task (critical, 4-lens max-tier panel, multi-attempt-capable) while already over the degrade line pushes seven_day toward the 0.95 pause line for marginal shakedown value that keeps just as well after the reset.",
+  "options": [
+    {
+      "key": "hold-and-refire",
+      "label": "Clean-pause now; re-fire GL2 after the seven_day window resets (~00:59:59Z) when occupancy is under degrade",
+      "consequence": "Respects the governor with zero override. Shakedown of the I26 headless arm slips ~113 min. GL2 admits without any threshold change. Cheapest, safest; the recommended path."
+    },
+    {
+      "key": "operator-ack-proceed",
+      "label": "Operator explicitly acks proceeding NOW under degrade (attributed override; observe-mode governor)",
+      "consequence": "Runs the headless shakedown immediately but spends a full critical task (impl + 4-lens max-tier panel + any ladder attempts) while already at 0.82 seven_day, driving toward the 0.95 pause line. Requires an operator-attributed threshold relaxation (e.g. degrade raised for this attended leg) — an operator-owned config decision, NOT an orchestrator 'fit one more in'. Degrade would still apply profile-minimum panels."
+    },
+    {
+      "key": "wait-in-session",
+      "label": "Keep this firing live and idle until the window resets, then auto-admit GL2",
+      "consequence": "Same outcome as hold-and-refire but holds a live firing (and its run marker) blocking for ~113 min. Note: waiting for burn-rate data to engage reset_headroom does NOT help — reset_headroom only demotes tail->mid; it never lifts the degrade admission gate. Less clean than hold-and-refire."
+    }
+  ],
+  "resolved": {
+    "decision": "operator-ack-proceed",
+    "by": "dwijen",
+    "at": "2026-07-05T23:14:00Z",
+    "detail": "Operator (attending) explicitly acked proceeding NOW under degrade — an operator-attributed override of the scheduler's deferral, executed via the I21 card-first adjudication (card written + notify BEFORE the ask). The scheduler's deferral (seven_day 0.82 >= 0.80 degrade) stands on the record (scheduler-log tick 2); this is NOT an orchestrator 'fit one more in' — it is the operator's carded decision to spend a critical task now for the I26 headless-arm shakedown. Admission is a one-off attributed exception for GL2 only; NO global degrade relaxation and NO other admissions (GL3+ excluded by scope). Degrade posture honored: implementer at its floor tier (capable/opus-4-8) for attempt 1; validator panel stays at the critical profile floor (4 lenses, max tier) because validation-side strength never downgrades by config (the critical panel IS its own minimum). Operator accepts driving seven_day toward the 0.95 pause line."
+  }
+}

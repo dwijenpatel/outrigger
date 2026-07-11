@@ -1,0 +1,17 @@
+{
+  "task_id": "GL1-scaffold",
+  "kind": "H9-spec-ambiguity",
+  "repro": "Package A raised GL1 routine->high. schemas.ambiguity_blockers(carried-over GL1 test-author handoff, 'GL1-scaffold', 'high') returns 10 blockers because BLOCKING_AMBIGUITY_PROFILES=('high','critical') and the handoff carries 10 spec_ambiguities. Under v1/routine these were advisory (routine is not a blocking profile); under v2/high the H9 gate fires and would park GL1 before the implementer. This gate was NOT in the operator's pre-resolved set (only the GL1-floor-collision was pre-cleared).",
+  "recommendation": "Proceed-as-read: the test-author's handoff documents (41 tests + 11 mutations) that the held-out corpus was deliberately built to accept BOTH readings of every one of the 10 ambiguities (each note states 'tests accept both' / 'tests pin the behavior, not the literal choice'). 'validated-wrong software' — the risk H9 exists to prevent — is therefore not present for these 10: whichever reading the implementer picks, the corpus passes. proceed-as-read is validated-safe by construction.",
+  "options": [
+    {"key": "proceed-as-read", "label": "Adjudicate all 10 proceed-as-read; build GL1 now (corpus dual-safe)"},
+    {"key": "park-as-finding", "label": "Park GL1 on the 10 blockers; H9-on-scaffold-under-v2 becomes the pilot finding"},
+    {"key": "reauthor", "label": "Spawn a fresh test-author to shrink spec_ambiguities, then re-run H9"}
+  ],
+  "resolved": {
+    "decision": "proceed-as-read (all 10)",
+    "by": "dwijen",
+    "at": "2026-07-05",
+    "detail": "Operator adjudicated proceed-as-read for all 10 GL1 spec ambiguities. Rationale: the carried-over test-author corpus is dual-safe by construction, so proceed-as-read carries no validated-wrong risk. Preserves v2 build-intent (firing advances past scaffold). H9-activation-by-Package-A recorded as pilot #3-v2 finding P3v2-1."
+  }
+}

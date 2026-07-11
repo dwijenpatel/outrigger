@@ -1,0 +1,29 @@
+{
+  "asked_at": "2026-07-06T06:51:54Z",
+  "kind": "governor-hold-window-pressure-5h",
+  "measured": {
+    "five_hour_pct_at_pause": 16,
+    "seven_day_pct_at_pause": 25,
+    "test_author_5h_window_delta": "+0.75 (0.01->0.77)",
+    "test_author_cost_usd": 5.06,
+    "test_author_wall_secs": 1474.61
+  },
+  "options": [
+    {
+      "key": "park-until-window-headroom",
+      "label": "(RECOMMENDED) Clean-pause; re-fire GL2 from the implementer stage when the 5h window has headroom (now reset)."
+    },
+    {
+      "key": "proceed-now-accept-429",
+      "label": "Proceed into the window and accept a mid-pipeline 429/park (wastes partial opus spend; competes with interactive usage, I28)."
+    }
+  ],
+  "recommendation": "Park GL2 at the implementer boundary and clean-pause; re-fire the implementer + panel + gate now that the window has reset. Corpus is vaulted so the re-fire resumes at the implementer with zero re-authoring. W16 HEADLINE: a single critical task's full all-opus/xhigh pipeline (6 workers) does NOT fit in one 5-hour window \u2014 pace it across windows / re-check the governor between every stage.",
+  "repro": "Test-author (opus-4-8/xhigh) completed OK; its held-out corpus (4 files / 26 tests) is vaulted + manifested (11 entries: 7 GL1 + 4 GL2); all 4 spec-ambiguities discharged (corpus_covers=both); 5 lessons injected. But the test-author ALONE drove the 5-hour rate window 0.01 -> 0.77 (W16). The remaining CRITICAL pipeline (implementer + 4-lens validator panel = 5 more opus-4-8/xhigh workers, each ~0.75 of a 5h window) then EXHAUSTED the 5h usage limit at the implementer boundary \u2014 the limit hit was hard enough to take down the Bash safety classifier. Operator confirms the limit has since reset (five_hour back to ~16%).",
+  "resolved": {
+    "at": "2026-07-06T06:51:54Z",
+    "by": "dwijen",
+    "decision": "park-until-window-headroom \u2014 operator invoked /build-pause after the 5h usage limit was hit at the implementer boundary; limit now reset, re-fire resumes at the implementer stage"
+  },
+  "task_id": "GL2-auth-tenancy"
+}

@@ -1,0 +1,35 @@
+{
+  "task_id": "GL2-auth-tenancy",
+  "kind": "max-tier-credit-exhaustion",
+  "asked_at": "2026-07-05T23:32:00Z",
+  "repro": "Under the operator's proceed-under-degrade override (card GL2-governor-hold.json resolved), GL2's FRESH test-author was spawned headless: claude -p --model claude-fable-5 (critical base, tier max) --effort xhigh. It died on its FIRST call: api_error_status=429, result='You're out of usage credits. Run /usage-credits to keep using Fable 5 or /model to switch models.', num_turns=1, 0 tokens, total_cost_usd=0. failures.classify -> 'retryable' (429), but this is CREDIT EXHAUSTION on Fable 5 specifically (a haiku probe and this opus orchestrator both still work), so blind-retry re-hits it. The critical profile (risk-profiles.json) requires fable-5 for the test-author AND the 4-lens validator panel [correctness,repro,security,perf]; only the implementer (opus-4-8, capable) is on an unaffected model. => the critical pipeline cannot reach a gate until fable-5 credits reset. This directly vindicates the governor's earlier degrade DEFERRAL of GL2 (seven_day 0.82>=0.80) that the operator overrode.",
+  "recommendation": "park-and-refire-after-reset: this is the deterministic-correct response to a retryable 429 credit wall — back off; the governor decides the pace. Park GL2 on this blocker, clean-pause the leg (resume marker + release run marker), and re-fire the GL2 headless shakedown once Fable 5 credits reset (weekly window ~2026-07-06T00:59:59Z, or check /usage-credits). The shakedown already delivered its core value this leg: the headless spawn/harvest mechanism is proven working, and four concrete integration findings landed (P3v2-9 schema path-vs-inline, P3v2-10 fenced-result parsed=None, P3v2-11 load_patterns tuple, P3v2-12 the credit wall itself). Do NOT substitute opus for the fable roles to force GL2 through: that silently downgrades critical validation (the skill forbids validation-side downgrade-by-config) and would land a real auth/tenancy merge on weakened validation; model routing is machinery (tiers.json), an upstream/between-firings decision, not an in-firing lever.",
+  "options": [
+    {
+      "key": "park-and-refire-after-reset",
+      "label": "Park GL2 on the credit wall; clean-pause now; re-fire after Fable 5 credits reset (~00:59:59Z / check /usage-credits)",
+      "consequence": "Deterministic-correct backoff. Preserves critical validation integrity. Shakedown findings already banked. GL2 resumes cleanly from disk once fable-5 has credits. RECOMMENDED."
+    },
+    {
+      "key": "shakedown-substitute-no-merge",
+      "label": "Operator authorizes substituting opus-4-8 for the fable-5 roles to exercise the FULL headless pipeline now — SHAKEDOWN ONLY, do NOT merge GL2",
+      "consequence": "Completes the I26 pipeline shakedown (test-author + implementer + 4 validators + gate) on non-fable models, so the arm gets fully exercised. But it runs the priciest task while over-degrade AND on downgraded critical validation — so its gate result is NOT merge-worthy for a trust-critical auth task. Requires an operator-attributed, recorded exception; still an out-of-config routing change in spirit. Gate PASS here would be parked, not merged."
+    },
+    {
+      "key": "abandon-leg",
+      "label": "Abandon the GL2 leg entirely; keep GL1 as the only merged task; write the findings and stop",
+      "consequence": "Cleanest stop. GL2 stays not-started-effectively (parked). All shakedown findings preserved. Re-plan the whole GL2 attempt for a future firing when the window has headroom."
+    }
+  ],
+  "resolved": {
+    "decision": "shakedown-substitute-no-merge",
+    "by": "dwijen",
+    "at": "2026-07-05T23:34:00Z",
+    "detail": "Operator (attending) authorized substituting claude-opus-4-8 for the fable-5 roles (test-author + 4-lens validator panel) to exercise the FULL I26 headless pipeline end-to-end on unaffected models. Operator-attributed exception, recorded. HARD CONSTRAINT: shakedown-only — GL2 is NOT to be merged to main regardless of gate outcome (critical auth/tenancy validated on downgraded/capable-tier validators is not merge-worthy). Effort stays xhigh. Implementer already opus-4-8. A gate PASS is recorded and the task is PARKED (not merged); a gate FAIL exercises the ladder as normal. This bends 'validation-side weakness never downgrades by config' by explicit operator attribution for the shakedown; it is NOT a precedent and NOT a tiers.json change. Findings P3v2-9..12 stand."
+  },
+  "substitution_outcome": {
+    "result": "FAILED — premise 'opus is unaffected' proved false (P3v2-13)",
+    "at": "2026-07-06T00:17:00Z",
+    "detail": "The substituted opus-4-8 test-author HUNG ~38 min (7.35s CPU, 0% CPU sleeping, idle API sockets, 0 output, no files) and was killed via TaskStop. Under the same over-degrade window that 429'd fable-5, opus was throttled into an indefinite backoff stall. So the shakedown-substitute path cannot complete either. Third hard quota signal. Leg backs off: GL2 re-parked; clean-pause recommended; re-fire after the window resets (~00:59:59Z) and fable-5 credits return."
+  }
+}

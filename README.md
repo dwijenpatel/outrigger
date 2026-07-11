@@ -33,6 +33,7 @@ git tag **`v1-attic`**.
 | [docs/research/distilled/](docs/research/distilled/README.md) | Tier-A only — external, internal, and the method |
 | [docs/design/](docs/design/) | The evidence-based design plan and its operator walkthrough |
 | [docs/attic/](docs/attic/README.md) | The superseded v1 design, plan, and API reference — *prior art to argue against, never a source of defaults* |
+| [tools/run-ledger/](tools/run-ledger/README.md) | **v2 artifact #1** — append-only, schema-validated JSONL measurement ledger (D14): the home of every null arm, write-back, and pre-registered prediction |
 | [tools/budget-governor/](tools/budget-governor/README.md) | Preserved measurement instruments: the spawn-portability probe and the **unexecuted cache-weight experiment (T1** — quota-costing, operator-run only**)** |
 | `tests/` | The corpus link/reference guard (`python3 -m unittest tests.test_reference -q`) |
 

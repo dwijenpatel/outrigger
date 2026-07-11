@@ -40,7 +40,11 @@ six Opus 4.8 clusters — the does-multi-agent-pay adjudication (Anthropic vs Co
 equal-budget refutation), the MAST failure taxonomy, parallel code-generation, handoff/
 communication, shipped frameworks, and distributed-systems concurrency theory (with a source-level
 audit of the harness's own machinery that surfaced a latent merge-race bug) — producing the two
-orchestration documents.
+orchestration documents. A **human-in-the-loop pass (2026-07-10)** ran six Opus 4.8 clusters over
+the mature adjacent fields — automation bias/complacency/alarm fatigue, mixed-initiative and
+levels-of-automation, adjudication economics, scalable oversight and human-AI complementarity,
+code-review HITL, and ratification governance — producing the two human-in-the-loop documents and
+completing the 14-subtopic sweep.
 
 ## Layout
 
@@ -79,13 +83,14 @@ Coverage: **● rich · ◐ moderate · ○ thin (no dedicated document)** — a
 | [memory-and-context/](external/memory-and-context/README.md) — persistent memory, lessons, context engineering, staleness, memory security | memory-architectures-and-benchmarks; memory-for-coding-harnesses | ● |
 | [planning/](external/planning/README.md) — spec elicitation, determinacy, decomposition quality, plan evaluation, re-planning, brownfield | planning-and-decomposition-evidence; spec-determinacy-and-practice | ● |
 | [orchestration/](external/orchestration/README.md) — topologies, parallel implementation, handoffs, concurrency correctness | multi-agent-orchestration-evidence; concurrency-and-merge-correctness | ● |
-| [human-in-the-loop/](external/human-in-the-loop/README.md) — ratification UX, adjudication latency, approval fatigue, escalation policy | *none dedicated* | ○ |
+| [human-in-the-loop/](external/human-in-the-loop/README.md) — ratification UX, adjudication latency, approval fatigue, escalation policy, safe autonomy reduction | oversight-and-vigilance-evidence; ratification-and-escalation-design | ● |
 
-**The imbalance is the finding.** The ● folders long orbited validation/correctness and its
-economics; memory-and-context, planning, and orchestration joined them across 2026-07-10. The
-one remaining ○ folder — human-in-the-loop — is a first-class harness subproblem with no
-dedicated research document, disproportionately thin given that human ratification is the
-design's surviving novelty. Its README carries the seed questions for the next pass.
+**The sweep is complete.** As of 2026-07-10 all 14 external subtopics carry a dedicated document
+(five ● were long-standing; memory-and-context, planning, orchestration, and human-in-the-loop
+went thin→rich across 2026-07-10; isolation, routing, unattended-operation, tool-surface, and
+evaluation remain ◐ moderate). The corpus is now a mapped design space rather than a record of
+what was researched first; the remaining ◐ folders are the natural depth targets, and each rich
+folder's README carries its own measured open questions.
 
 ### Internal — evidence we generated ourselves
 

@@ -1,0 +1,146 @@
+{
+  "contract": 1,
+  "goal": "Build v2 artifact #5, tools/exec-loop/ — the execution loop: the program that takes a ratified plan.json and runs it unattended, task by task, composing the four existing artifacts (plan-preflight, heldout-suite, merge-gate, run-ledger) plus a new swappable worker launcher. Per task, serially: materialize the authoring workspace, launch a fresh test-author, seal the held-out suite, launch a fresh implementer in a sandboxed worktree, gate the merged tree (visible checks + verify-then-run the sealed suite), merge on pass, record every step in the ledger. Fresh-worker retry with model escalation on gate failure; halt-everything with a blocker record when a task exhausts attempts. This is the design's stage-2 exit: the first composition, and the artifact that makes 'unattended' true.",
+  "non_goals": [
+    "No parallelism and no cross-task pipelining in v1 — pipelining (author task N+1's suite while task N implements) is the NAMED upgrade and inherits three requirements decided in this interview: mechanical staleness detection via the seal's spec-fingerprint before any pre-authored suite is used, depth-1 only (never author beyond N+1), and a wasted-authoring ledger metric so the go/no-go is measured, not argued.",
+    "No continue-independent-tasks-past-a-blocker in v1 — halt-all is the default (decision 6); continue-independents is the named v1.1 upgrade, gated on measured adjudication data (how often resolutions amend shared plan context vs stay task-local).",
+    "No park-at-usage-wall / wake-on-reset machinery — that is the separate park-and-resume artifact (design D12); v1 of the loop simply fails loudly if the window empties mid-run.",
+    "No escalation tiers, notifications, or operator paging — stage-3 human-surface artifacts; v1 signals by exiting nonzero with a blocker record.",
+    "No boundary-verification probe (proving a worker process cannot read the held-out workspace) — still its own future artifact, per the heldout-suite plan.",
+    "No mid-run plan editing or re-planning — a plan defect discovered mid-run is a blocker for the operator, never something the loop repairs itself (D10)."
+  ],
+  "constraints": [
+    "R5 composition rule: the loop invokes sibling artifacts ONLY as subprocess CLIs (plan-preflight, heldout-suite, merge-gate, run-ledger) — never imports their code; the launcher is invoked only through its file contract. Pure stdlib Python 3.",
+    "The loop refuses to run a plan without a ratification stamp (plan-preflight check --require-ratified is the admission line).",
+    "Workers: test-author = Opus 4.8 @ xhigh; implementer attempt 1 = Sonnet 5 @ xhigh; implementer attempt 2 = Opus 4.8 @ xhigh (decision 3; per-run configurable; re-benchmark on any model-generation change).",
+    "Implementer spawns: own git worktree + per-spawn settings merging the sealed suite's deny-fragment + Claude Code sandbox mode ON, network allowed (decision 4). The live smoke must probe the wall, never assume it.",
+    "Held-out feedback to retries is counts-only; the implementer's own visible-check output flows in full (decision 5). The asymmetric redaction has its own test — a redaction bug is a silent leak.",
+    "Quota-costing operations are operator-run only: the live smoke script is never wired into automatic tests, gates, or CI (standing rule).",
+    "Landing goes branch -> merge-gate run + verify -> --ff-only merge, gate report appended to docs/research/internal/v2-ledger.jsonl (house rule)."
+  ],
+  "decisions": [
+    {
+      "q": "Scope cut for v1: full task cycle, implementers-only with hand-sealed suites, or a dry-run walker first?",
+      "a": "Full cycle, serial, one worker at a time (A). Orchestration logic is tested with mock workers plus one operator-run live smoke, because the previous harness's mocks never caught any of its three real vendor-interface breakages — only live probes did. Clarifications recorded: tests are authored BEFORE implementation for blindness-by-physics (the author cannot see what does not exist, and the seal's timestamp preceding the implementer branch makes blindness provable from artifacts, not asserted); parallel authoring+implementing would cost zero extra tokens (parallelism changes wall-clock, never spend) but loses provable temporal blindness within a task and adds concurrent-failure orchestration; pipelining ACROSS tasks preserves per-task blindness and is the named upgrade with staleness-check, depth-1, and waste-metric requirements."
+    },
+    {
+      "q": "How does the loop start headless AI workers?",
+      "a": "Through a launcher FILE CONTRACT (A): the loop invokes an executable with a role-bundle directory (instructions, parameters, settings path) and reads back an exit code plus result files; it never calls the vendor CLI directly. One claude -p launcher ships; a mock launcher is the test substrate. Principle: substitutability — vendor-interface breakage lands in one small named script, and a future non-Claude worker is a new launcher file, not loop surgery. Cost accepted: one indirection layer and a contract to design."
+    },
+    {
+      "q": "Which models and effort power the worker roles?",
+      "a": "Author = Opus 4.8 @ xhigh; implementer = Sonnet 5 @ xhigh; a gate-failed task escalates attempt 2 to Opus @ xhigh (B). Effort xhigh everywhere per the official guidance ('Use xhigh for coding, high-autonomy work' — platform.claude.com/docs/en/about-claude/models/choosing-a-model, official-mechanism, operator-fetched 2026-07-12) and our own committed probes (uniform-high safe on adaptive lineups; sonnet@low wrong where sonnet@max right). Evidence shape: Strong-Weak (arXiv 2505.20182, ~40% cost cut at strong-equivalent performance ONLY under instance-level determinate guidance — which ratified task specs are by construction; single-source magnitude) + CAID (weak models benefit most under determinate partitioning) + METR horizons + our benchmark's correctness saturation at small task sizes. The silent-failure asymmetry decides who gets the strong model: a weak implementer fails loudly at the gate; a weak test-author fails silently as missing coverage — never economize the author. Escalation is reactive (on an actual FAIL), never predictive (no horizon prediction, R4). The ledger records per-attempt models; the measured escalation rate revisits this decision."
+    },
+    {
+      "q": "What actually confines the implementer?",
+      "a": "Worktree + per-spawn generated settings merging the sealed suite's deny-fragment + Claude Code sandbox mode ON, network allowed (A). Stated honestly: deny rules constrain Claude's file tools, NOT arbitrary shell — only OS-level sandboxing covers the bash gap, the vendor concedes its sandbox 'is not a complete isolation boundary', and all of it is vendor-build decay re-probed each release. Deny rules are monotonic across scopes (a worktree settings file cannot remove ours — verified vendor commitment). Network-on is an accepted exfiltration channel while the loop runs on the operator's own repos; revisit before pointing at sensitive code. The backstop when prevention leaks is detection: heldout verify + the ledger anchor."
+    },
+    {
+      "q": "What does a retry attempt learn from the failure? (the leakage decision)",
+      "a": "Counts-only for the held-out suite; full output for the implementer's own visible checks (C). The math: detailed reveals burn a held-out set's bounded reuse budget at maximum rate, while aggregate feedback provably bounds the decay (reusable-holdout/Ladder results). The visible-check output is the worker's own property — attempt 1 already saw it, attempt 2 could regenerate it — so passing it costs nothing new. Precedent: the previous harness's attempt-2 worker got a fresh start, fixed the real defect, and caught a latent second bug a revealed-test path would likely have special-cased past. The asymmetric redaction gets its own test."
+    },
+    {
+      "q": "How many attempts, and what happens to the rest of the plan when a task is exhausted?",
+      "a": "Cap 2 (Sonnet then Opus), then HALT THE ENTIRE RUN (A): blocker record (task, attempts, per-attempt models, counts-only evidence), exit nonzero, wait for the operator. Cost stated plainly: all automated progress stops, including tasks unrelated to the failure — a 10-task plan blocked at task 2 wastes the night's remaining window. Worth it for v1 because the failure may not be task-local: if adjudication amends shared plan context, sibling work merged in the meantime was built on a premise that changed. Continue-independents is v1.1, gated on ledger data about how often adjudications touch shared context. Beyond 2 attempts there is zero evidence of gains and each attempt burns a full cycle plus one query of the suite's reuse budget."
+    },
+    {
+      "q": "How does the loop track progress and survive interruption?",
+      "a": "No loop state file — derive everything from the artifacts on every start (A): done = task branch merged (git ancestry + ledger record), authored = sealed manifest present and verify-fresh, attempt counts = read from the append-only ledger. In-flight uncommitted work is torn down and redone (bounded: one attempt). Advisory flock prevents two loops walking the same repo. Principle: the previous harness's 'reconstruct from artifacts' was an unenforced convention next to a raceable cursor file; here there is no cursor to race — the lost-update defect class is eliminated by construction. Accepted costs: an interrupted attempt's tokens are lost; the ledger becomes read-load-bearing for attempt counts (prune it and attempt history resets — documented); startup scans git + workspaces (seconds at plan scale)."
+    },
+    {
+      "q": "The tamper question: how could a worker subvert the loop, and what stops or notices it?",
+      "a": "The uncovered channel is the worker's own DIFF: on self-hosted runs the worktree contains the gate, the tools, the plan, and the ledger — a reward-hacking implementer can ship an evaluator edit inside its task diff and have the merge land it (the DGM move, arriving through the merge channel). Mitigation (A): a protected-paths interlock — before gating, the loop lists the diff's touched paths against a configured protect list (defaults: tools/, plans/, .claude/, the ledger file); any touch is an automatic blocker, never gated, never merged, parked for operator hand-review. The plan is snapshotted once at loop start. The loop's code runs from the main checkout, out of worker reach mid-run. Honest limits: this cannot stop malicious PRODUCT code that passes every check (weak checks, weak gate), nor vendor sandbox escapes — those are noticed (seal verify, ledger anchor, operator review), not prevented. Accepted cost: legitimate machinery-improvement tasks hit the blocker every time and require operator hand-merge — correct per R6 (machinery changes are human-ratified), but it is operator time and it will fire on honest work."
+    },
+    {
+      "q": "Integration testing and the live vendor probe: dedicated end-to-end task? Where does the live smoke live?",
+      "a": "Both, separated by cost (A). (1) A dedicated end-to-end task: a tiny throwaway practice repo + practice plan, the whole loop run with MOCK workers scripted per scenario — full success; gate-fail once then succeed on the Opus retry; attempt exhaustion halting the run; a protected-path diff blocking; kill-and-restart resuming correctly. Free, deterministic, runs with every test invocation. (2) The live smoke — one real claude -p worker on one tiny task — is a documented OPERATOR-RUN script, never wired into automatic tests (quota-costing = operator-run, standing rule). Cost stated plainly: the artifact merges with its orchestration proven and its vendor contract UNPROVEN — no real worker will have been launched until the operator runs the smoke script; the merge makes it code-complete, the smoke run makes it real."
+    }
+  ],
+  "open_questions": [],
+  "tasks": [
+    {
+      "id": "launcher-contract",
+      "title": "Launcher file contract + claude -p launcher + mock launcher",
+      "spec": "Create tools/exec-loop/ with the launcher seam. CONTRACT (document in launchers/CONTRACT.md): a launcher is an executable invoked as `<launcher> <bundle-dir>`; the bundle dir contains instructions.md (the role prompt the worker must follow), params.json ({role, model, effort, cwd, settings_path, timeout_s}), and on return the launcher must have written result.json ({ok, exit, started_at, finished_at}) and transcript.txt into the bundle dir. Launcher exit 0 means the worker session ran to completion (task success is NOT the launcher's judgment — gates judge results); nonzero means the launch itself failed; the launcher must enforce timeout_s (kill the worker process group, ok=false). Implementations, both pure stdlib Python: launchers/claude_p.py — builds and executes the real claude -p invocation from params (model, effort via the CLI's supported mechanism, --settings settings_path, cwd) with a --dry-run flag that prints the exact argv+env WITHOUT executing (free to test; the live behavior is the smoke script's job); launchers/mock.py — the test substrate: reads MOCK_SCRIPT from params or env naming a scenario script, executes it in cwd (the scenario script performs the worker's file operations: copying pre-written tests into a suite, applying a code change), writes result files per contract. Tests in tools/exec-loop/test_exec_loop.py: contract compliance of mock (result.json + transcript written, exit semantics), timeout kill (scenario script that sleeps; short timeout_s; ok=false, process-group dead), claude_p --dry-run argv correctness for both roles (model/effort/settings/cwd all present, no execution).",
+      "checks": [
+        "python3 tools/exec-loop/test_exec_loop.py"
+      ],
+      "provides": [
+        "launcher-contract"
+      ]
+    },
+    {
+      "id": "task-cycle",
+      "title": "Single-task cycle: author -> seal -> implement -> gate -> merge",
+      "spec": "Add the per-task engine to tools/exec-loop/loop.py (importable functions + CLI wired in plan-walker): given (plan snapshot, task, repo, heldout-out dir, config) run: (1) materialize the authoring workspace via `heldout.py materialize` (subprocess CLI — never import); skip if a sealed fresh workspace already exists (verify) — staleness of the frozen task.json vs the current plan snapshot is checked by recomputing the extraction and comparing bytes; mismatch = retire path is NOT automatic: blocker (spec changed since sealing). (2) Author: build a role bundle (instructions.md generated from ROLE.md pointer + workspace path; params: role=author, model/effort per config decision 3, cwd=the authoring workspace, settings: deny nothing special, sandbox ON) and invoke the configured launcher; then `heldout.py seal`; on fails-on-base policy refusal, relaunch a fresh author once with the validation counts; second refusal = blocker. Append seal record + manifest sha256 anchor to the ledger via `ledger.py append`. (3) Implement: create branch task/<id>-a<N> from current main in a fresh worktree; generate per-spawn settings JSON merging the workspace's deny-fragment.json (deny_read) + sandbox-enabled config; bundle (instructions.md = task spec + goal/constraints/decisions preamble + repo conventions pointer; attempt 2 additionally carries the decision-5 feedback: full visible-check tails + held-out counts only, never held-out output); invoke launcher (attempt 1 Sonnet@xhigh, attempt 2 Opus@xhigh). (4) PROTECTED-PATHS CHECK before gating: `git diff --name-only main...HEAD` in the worktree against the protect list (config; defaults tools/ plans/ .claude/ and the ledger path); any touch = blocker with paths named. (5) Gate: `gate.py run` with --base main --ref the attempt branch, checks = the task's checks from the plan + `heldout.py verify --workspace ...` + the manifest's recorded suite run command; on PASS: `gate.py verify` then `git merge` the attempt branch, append gate report to ledger; on FAIL: extract the decision-5 feedback from the gate report (redact held-out check output_tail, keep counts; keep visible tails) and either escalate to attempt 2 or return blocker (attempts exhausted). Every spawn/seal/gate/merge/blocker appends a ledger record. Worktrees and bundles are cleaned on completion; kept on blocker for operator inspection. Tests (mock launcher throughout): happy path end-to-end on a fixture repo; author policy-refusal retry then blocker; attempt-1 FAIL -> attempt-2 params carry Opus + counts-only redaction (assert the held-out tail is ABSENT from the attempt-2 bundle and visible tails PRESENT — the silent-leak test); protected-path diff -> blocker with paths; gate PASS -> merged, ledger records present.",
+      "checks": [
+        "python3 tools/exec-loop/test_exec_loop.py"
+      ],
+      "depends_on": [
+        "launcher-contract"
+      ],
+      "provides": [
+        "task-cycle"
+      ],
+      "requires": [
+        "launcher-contract",
+        "heldout-suite-cli",
+        "merge-gate-cli",
+        "run-ledger-cli"
+      ]
+    },
+    {
+      "id": "plan-walker",
+      "title": "The loop CLI: derive state, walk serially, halt on blocker",
+      "spec": "Add the top-level CLI to tools/exec-loop/loop.py: `run --plan PLAN.json --repo REPO --heldout-out DIR [--config CONFIG.json] [--launcher PATH]`. Startup: acquire an advisory flock (a second loop on the same repo refuses, exit 2); snapshot the plan into memory (one read); admission = subprocess `preflight.py check --require-ratified` (refuse unratified, exit 2) and task order = subprocess `preflight.py order` (never reimplement DAG logic). Derive state per task, artifacts-only (decision 7): done iff the ledger's merge record's sha is an ancestor of main (verify via git merge-base --is-ancestor); authored iff sealed manifest exists AND `heldout.py verify` fresh AND the frozen task.json matches the current snapshot's extraction; attempt count = count of this task's attempt records in the ledger (read-only scan). Walk tasks in order, serially, invoking the task-cycle; on task completion continue; on blocker: write blocker.json (task, reason, attempts, evidence paths), append ledger blocker record, release lock, exit 1. Exit 0 only when every task derives as done. No state file anywhere. Config schema (documented in README): models per role/attempt, protect list, timeouts, launcher path. Tests (mock): full 2-task practice plan completes exit 0; restart after task 1 (rerun the CLI) skips task 1 (assert no duplicate spawn records in ledger) and completes task 2; unratified plan refused exit 2; second concurrent loop refused exit 2; blocker path exits 1 with blocker.json present.",
+      "checks": [
+        "python3 tools/exec-loop/test_exec_loop.py"
+      ],
+      "depends_on": [
+        "task-cycle"
+      ],
+      "provides": [
+        "exec-loop-cli"
+      ],
+      "requires": [
+        "task-cycle",
+        "plan-preflight-cli"
+      ]
+    },
+    {
+      "id": "e2e-mock",
+      "title": "Integration: the whole loop against a practice repo, every decided scenario",
+      "spec": "The dedicated end-to-end task (decision 9). Build test fixtures: a tiny practice target repo (a small Python module + a visible test) and a practice plan of 2-3 ratified tasks, plus mock-launcher scenario scripts for each worker behavior. Scenarios asserted end-to-end through the REAL CLI (subprocess, never imports): (1) full success — every task authored, sealed, implemented, gated, merged; ledger carries the complete record; exit 0. (2) gate-fail-then-escalate — task 2's implementer scenario fails the visible check on attempt 1; assert attempt 2's bundle params carry the Opus model and the counts-only redaction; attempt 2 succeeds; exit 0. (3) exhaustion halt — both attempts fail; assert blocker.json, ledger blocker record, exit 1, and that NO later task started (halt-all). (4) protected-path block — an implementer scenario whose diff touches tools/; assert automatic blocker naming the path, nothing gated or merged. (5) kill-restart-resume — run to completion of task 1, kill the loop before task 2's gate, rerun; assert task 1 is not re-run (no duplicate ledger spawn records) and the run completes. This task is the composition's proof and T11's third live integration; its failures are seam bugs by definition.",
+      "checks": [
+        "python3 tools/exec-loop/test_exec_loop.py"
+      ],
+      "depends_on": [
+        "plan-walker"
+      ],
+      "requires": [
+        "exec-loop-cli"
+      ]
+    },
+    {
+      "id": "docs-and-smoke",
+      "title": "README (contract + threat model) + operator-run live smoke script + repo wiring",
+      "spec": "Write tools/exec-loop/README.md in the house contract style: one-thing-well statement (the first composition; design D3/D4/D5), the CLI + config schema + exit codes, the launcher contract pointer, the per-task cycle diagram in prose, guarantees (ratified-plan admission, blindness-by-ordering, counts-only held-out feedback, protected-paths interlock, halt-all semantics, derive-from-artifacts resume), the THREAT MODEL section (the worker-diff channel and the interlock; deny-rule monotonicity; what is noticed-not-prevented: malicious product code passing weak checks, vendor sandbox escapes), non-goals verbatim from this plan (each naming its upgrade path and gating data), composition examples (a full run invocation; reading the ledger after a run; the blocker-adjudication flow incl. lesson_target classification per the heldout plan's feedback-loop decision), the R2 deletion criterion (the loop is judged by unattended tasks landed per operator intervention; if real usage shows the operator babysitting every run, the composition has failed its point — measure, then simplify or delete), and the T11 note. Write tools/exec-loop/SMOKE.md + smoke.sh: the operator-run live probe — one tiny real task on a scratch repo via the real claude_p launcher (real quota, ~one worker-pair), with a written procedure: what to check before (window headroom), what it proves (launcher argv/env contract against the live CLI; sandbox + deny actually applied — include a deliberate read-attempt of the held-out path in the smoke task's spec so the wall is PROBED, per decision 4), what to record (ledger append of the smoke result + the probe outcome). smoke.sh refuses to run without an explicit --i-understand-this-spends-quota flag. Add the root README.md layout row (v2 artifact #5). Run the corpus link guard.",
+      "checks": [
+        "python3 -m unittest tests.test_reference -q",
+        "python3 tools/exec-loop/test_exec_loop.py"
+      ],
+      "depends_on": [
+        "e2e-mock"
+      ],
+      "requires": [
+        "exec-loop-cli"
+      ]
+    }
+  ],
+  "external": [
+    "heldout-suite-cli",
+    "merge-gate-cli",
+    "plan-preflight-cli",
+    "run-ledger-cli"
+  ]
+}

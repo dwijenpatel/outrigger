@@ -27,6 +27,12 @@ The reason is load-bearing: **operators have small working contexts compared to 
 decide only as well as they can follow.** Every question and option must also read standalone
 — re-define or avoid shorthand mid-interview, and never lean on "as discussed above."
 
+**Density is a defect too.** One idea per sentence in questions and options. Never coin a
+compound term — a noun built from three jargon words ("the live launcher probe") is three
+undefined terms wearing one hat. Prefer a concrete walk-through ("a script that pretends to
+be a worker: asked to author, it copies pre-written tests into place") over an abstract
+enumeration. If an option needs a definition to parse, the definition comes first, separately.
+
 ## Ground rules
 
 1. **One question per message.** Never a questionnaire. Each question states, in one clause,

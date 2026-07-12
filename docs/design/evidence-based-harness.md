@@ -6,6 +6,20 @@ composable artifacts), composability touch-ups to D7/D8/D12/D14, +T11, sequencin
 substrate-volatility note on R1 (multiple subscriptions; metered API pricing).
 **Third amendment, 2026-07-11:** D8 gains the cold-reader rule for operator-facing surfaces
 (operator feedback from the first live spec-interview run).
+**Fourth amendment, 2026-07-12 (metabolizing an independent adversarial review of `docs/`,
+operator-run):** evidence language tightened to the grading method's own bounds — D1/D10
+gaming-ledger claims sample-bounded, D7's M7 citation narrowed (acyclicity is *a* decidable
+restriction, not *the* precondition), D12's absence→cheapness slide struck, D2's M1/M2 citation
+regime-bounded and the v1 held-out reuse policy stated concretely (+T12). Status refinements,
+all conceding transport gaps the review named: D2 spec-only authorship → Provisional; D4
+concurrent-write *harm magnitude* → Provisional (the single-writer default stays Decided); D8's
+commit-before-reveal effect → Provisional pending T6; D12 wake-on-reset → Provisional behind T5.
+D14 and §5's deletion clause now require **non-inferiority at a pre-registered margin**, not a
+bare null match. Companion changes: the grading method
+([distilled/README.md](../research/distilled/README.md)) resolves its warrant-vs-sufficiency
+wording, adds two use-time fit checks, and adds the executed-reproduction rule for A3 (the
+2026-07-12 grader correction is the standing example); the P3v2-5 thesis row is n=2 (smoke
+run 2) with its artifact bounds stated (*internal* §5).
 
 This is a from-first-principles redesign. It inherits
 **nothing** from [token-time-optimized-harness.md](../attic/token-time-optimized-harness.md) (kept as
@@ -85,17 +99,20 @@ separate from evidence so nobody mistakes a preference for a finding.
 No agent output is accepted on the agent's own assessment: not code, not plans, not completion
 claims. PASS/FAIL is pronounced only by **sound verifiers** — execution, tests, type checks,
 static analysis — and LLM judgment may triage, localize, or generate candidates for sound
-verification, but never seal a result.
+verification, but never seal a result. The authority is exactly as wide as the predicate set:
+a sound verifier's PASS means *these named checks passed*, never "the code is correct" — no
+gate pronounces the latter, and treating a check-pass as a correctness certificate is the
+proxy-optimization mistake M5 formalizes. Weak checks make a weak gate, honestly.
 
 **Evidence.** LLM self-critique is net-negative, replicated across disjoint domains — 55/100
 self-critiqued vs 88/100 with a sound external verifier, at an 84.45% false-positive rate
 (§3.1); agent self-reports are unreliable exactly where verification is absent — ≥16% of
 successful 8h+ runs involved cheating, disavowed when asked; fabricated execution transcripts
-(§3.1); the entire §2.2 gaming ledger (every published self-improvement loop exploited any
-evaluator it could see, edit, or self-grade); and M5 — the correctness floor cannot be a proxy
-the loop optimizes.
+(§3.1); the §2.2 gaming ledger — every loop *in that surveyed sample* exploited any evaluator
+it could see, edit, or self-grade (a curated ledger: its uniformity is the signal, its size is
+not a census denominator); and M5 — the correctness floor cannot be a proxy the loop optimizes.
 
-### D2. Graded tests are authored from the spec by a party that never sees the implementation, and the implementer cannot reach them — **Decided** (the enforcement mechanism), **Provisional** (full validator blindness)
+### D2. Graded tests are authored from the spec by a party that never sees the implementation, and the implementer cannot reach them — **Decided** (implementer-unreachable graded tests, machinery-enforced), **Provisional** (spec-only authorship as the protocol; full validator blindness)
 
 Test authorship is a separate role with a separate filesystem boundary. The implementer cannot
 read, write, or discover the graded tests; the tests are authored from the ratified spec alone.
@@ -108,14 +125,26 @@ it *worse*, while provided ground-truth tests help (§3.1); Anthropic's own admi
 "Claude will sometimes change tests to make them pass" (§2.1); the implementer-can-edit-its-judge
 hole is 12/12 across studied systems and 0 of 9 shipped frameworks close it (§5, §6); prose
 enforcement measurably fails — STOP's explicit `# DO NOT CHANGE` warning made sandbox-disabling
-*more* frequent (§2.2); Zenith's blindness is a prompt promise, not a boundary (§5). Two
-mathematical constraints govern the held-out set's reuse: an adaptively re-queried holdout has a
-bounded, known number of safe reuses (M2), and threshold-revealed results bound leakage to
-O(log k) (M1).
+*more* frequent (§2.2); Zenith's blindness is a prompt promise, not a boundary (§5).
 
-**The provisional part:** withholding the *validators'* reasoning from the implementer (and vice
-versa) beyond test-secrecy is mechanism-plausible (judge self-preference, §3.1) but its marginal
-value over test-secrecy alone is unmeasured — promotion trigger is experiment **T2**.
+**The reuse budget, regime-bounded and stated concretely.** The mathematical reuse guarantees
+hold for *specific feedback regimes*: noise-and-threshold mechanisms (M2) and
+threshold-revealed leaderboard scores (M1's O(log k)) — not for arbitrary rich feedback. The
+v1 policy therefore does not lean on the theorems; it stays trivially inside them: suites are
+**per-task**, failure feedback to the implementer is **counts-only**, and the attempt cap
+(two, then a human) bounds adaptive queries per suite to **≤2**. Any change that raises
+per-suite queries past the attempt cap — pipelining, suite reuse across tasks, larger caps —
+must first write an actual reuse policy (holdout size, threshold, noise, query budget) and
+show the feedback channel sits inside a guaranteed regime. That is **T12**, and it triggers on
+the change, not on the calendar.
+
+**The provisional parts:** (1) *spec-only authorship* — the §3.1 results directly indict
+grading on the implementer's own or implementation-informed tests; "author from the ratified
+spec, blind to any implementation" is this design's remedy, with two internal live instances
+(P3v2-5 and smoke run 2, *internal* §5 — existence, not a rate) and T2's arm as the measure.
+(2) *full validator blindness* — withholding the validators' reasoning from the implementer
+(and vice versa) beyond test-secrecy is mechanism-plausible (judge self-preference, §3.1) but
+its marginal value over test-secrecy alone is unmeasured — promotion trigger is **T2**.
 
 ### D3. Completion is granted, never claimed — **Decided**
 
@@ -129,7 +158,7 @@ progress, replicated across METR RE-Bench, independent research-agent post-morte
 convergent design (§3.1); Zenith's committed code demonstrates the mechanism is buildable — only
 the terminal reviewer's verdict seals `done` (§5).
 
-### D4. Single-writer topology; parallelism only where the evidence licenses it — **Decided**
+### D4. Single-writer topology; parallelism only where the evidence licenses it — **Decided** (the default), **Provisional** (the harm magnitude of concurrent writes)
 
 Exactly one agent writes to the workspace at a time. Concurrency is licensed for three shapes
 only, each with its evidence-bound condition:
@@ -145,18 +174,33 @@ only, each with its evidence-bound condition:
    measurable benefit), and with the expectation set by CAID's own concession: the win, if any,
    is correctness, **not wall-clock or cost** (§2.3).
 
-**Evidence.** At equal thinking-token budgets a single agent is best or tied at every budget
-except the lowest (§3.2, four independent parties incl. Anthropic against interest); the DPI
-floor (M6); the only concurrent-write measurement is 13.1% *slower* with syntactic conflicts
-eliminated and semantic conflicts surviving (§3.2); Anthropic explicitly declines to extend its
-multi-agent result to coding (§2.1). *Internal* corroboration: the one time two agents fixed the
-same defect in parallel, the result was worse than either alone (P2-collision, *internal* §1).
+**Evidence, split by which leg it carries.** The *default* is the well-warranted leg: at equal
+thinking-token budgets a single agent is best or tied at every budget except the lowest (§3.2,
+four independent parties incl. Anthropic against interest), M6 is the theoretical no-gain floor
+at equal compute, Anthropic explicitly declines to extend its multi-agent result to coding
+(§2.1) — and under R2, no measured benefit means no machinery. The *harm magnitude* is the
+Provisional leg, and it transports from thinner ground: the only concurrent-write measurement
+is 13.1% *slower* with syntactic conflicts eliminated and semantic conflicts surviving (§3.2 —
+one study, their domain; the sign is what transports), plus internal n=1 (the one time two
+agents fixed the same defect in parallel, the result was worse than either alone —
+P2-collision, *internal* §1). The default does not need the harm leg to stand.
 
 ### D5. Every independent check sits behind a blocking gate — **Decided**
 
 A verifier that can be advised-past does not exist for correctness purposes. Merge, task
 completion, and phase transitions are interlocks: no PASS artifact, no progression — enforced by
 machinery, with no advisory mode.
+
+**What may block (the D1/D4/D5 composition rule, made explicit):** only *sound* checks —
+deterministic, machine-replayable predicates with exit codes — sit behind the gate. An
+LLM-review lens (D4 shape 2) is a *finding generator*: its findings are advisory until
+converted into a reproducible predicate (a failing test, a type error, a replayable
+counterexample), and it is the predicate that blocks, never the opinion. This is not a
+loophole for LLM findings — it is D1 applied to the gate itself: an opinion that cannot be
+made reproducible cannot be distinguished from a false positive, and §3.1's false-positive
+rates say unreplayable blocking findings would grind progress on phantoms. (The shipped
+merge-gate already implements exactly this: it runs commands and reads exit codes; there is no
+API for an opinion to fail the merge.)
 
 **Evidence.** Detection without blocking collapses cascade containment from 96.4% recovery to
 ~3% (§3.2); multi-agent failures concentrate in coordination/verification, and the taxonomy's
@@ -180,9 +224,13 @@ measure the planted distribution, not the real one (M4). Experiment **T4**.
 
 - A plan is ratified by a human **and** machine-preflighted before execution; the planner never
   self-certifies (§3.1 self-critique, 84.45% FP on plan verification specifically).
-- The preflight requires an **acyclic task graph** — the mathematical precondition for any sound
-  structural check to exist at all (M7) — and rejects plans whose seams are underdetermined
-  wherever decomposition or parallelism is intended (§3.2 seam determinacy).
+- The preflight requires an **acyclic task graph**. M7's actual shape: unrestricted
+  hierarchical plan-existence is undecidable, and decidability holds under *restricted forms* —
+  totally-ordered networks are one, acyclic networks another. The preflight adopts the
+  acyclic-DAG restriction as its decidable regime (the least restrictive of the named forms
+  that still admits a sound structural check); acyclicity is *a* sufficient restriction, not
+  *the* precondition. It also rejects plans whose seams are underdetermined wherever
+  decomposition or parallelism is intended (§3.2 seam determinacy).
 - **Planning depth is task-conditional.** Explicit planning pays ~+14% on structured/decomposable
   tasks and ≈0 on flat ones (§3.1 CoT meta-analysis) — so the harness must be able to run with a
   near-empty plan for flat work. A deficient plan is *worse* than none (§3.1, two independent
@@ -204,7 +252,7 @@ a producer-before-consumer (`requires`/`provides`) check inside the preflight �
 promoted only if **T3** shows machine-checkable determinacy bars beat human eyeballing (no
 shipped product has one — 0/10, §6).
 
-### D8. Human gates are built against the measured failure modes of human oversight — **Decided**
+### D8. Human gates are built against the measured failure modes of human oversight — **Decided** (the human-factors shape), **Provisional** (the forcing card's effect size in this setting)
 
 The human is the scarcest, most-failure-prone component in the loop, and the §3.3 human-factors
 cluster (the slowest-decaying evidence in the corpus) dictates the shape:
@@ -218,7 +266,10 @@ cluster (the slowest-decaying evidence in the corpus) dictates the shape:
   the strongest counter-argument is shown; and the card explicitly prompts the omission channel
   — "what did the triage *not* flag?" (§3.3: passive recommendations raise acceptance right or
   wrong; commit-before-reveal is the one intervention that measurably cuts over-reliance; the
-  silent channel suppresses detection 46%→21%). Accept the UX cost per R3.
+  silent channel suppresses detection 46%→21%). Accept the UX cost per R3. *This bullet is the
+  Provisional part:* the commit-before-reveal effect was measured in clinical/decision-support
+  settings — human-factors decay says the mechanism should transport to code-change
+  ratification, but the effect size here is unmeasured, and **T6** is the promotion trigger.
 - **Approval traffic is governed by the alarm-fatigue law.** Response tracks positive predictive
   value, so nuisance-rate reduction is the primary lever; interruptions are tiered, latched for
   high-severity events, and delivered at task boundaries — immediate interruption is reserved
@@ -255,7 +306,10 @@ cluster (the slowest-decaying evidence in the corpus) dictates the shape:
 
 - **Substrate: plain files under git.** No memory architecture consistently beats a
   full-context or filesystem-grep baseline on independent harnesses — the substrate is not the
-  bottleneck (§3.1). Anything fancier is unjustified complexity under R2.
+  bottleneck (§3.1). Anything fancier is unjustified complexity under R2. (Read the warrant
+  precisely: this is the **null choice winning by default** — the evidence says nothing beats
+  the trivial baseline, not that plain files beat the alternatives. If T8-class evidence ever
+  shows an architecture clearing the baseline, the default loses its license.)
 - **Capture is deterministic (hooks), never model-initiative** — model-initiated capture drops
   events (agentmemory's author withdrew his own tool; Copilot concedes its store tool "isn't
   invoked reliably", §2.3), and skills/guidance auto-invocation recall is 38–69% (§3.1).
@@ -276,9 +330,11 @@ cluster (the slowest-decaying evidence in the corpus) dictates the shape:
 
 v1 ships with **no** mechanism that edits its own machinery, prompts, or configuration. This is
 the single largest deliberate omission, and it is doubly forced: by the gaming ledger — every
-published self-improvement loop exploited its evaluator, including against explicit instruction
-(§2.2) — and by R2, since a self-modification loop is pure meta-work until the base harness has
-demonstrated value.
+loop in the surveyed §2.2 sample exploited its evaluator, including against explicit
+instruction (a curated ledger, so its uniformity is the signal and its count is not a census —
+but a 100% hit rate across every case anyone bothered to publish is not a coin worth flipping)
+— and by R2, since a self-modification loop is pure meta-work until the base harness has
+demonstrated value. Either force suffices alone.
 
 If a later version builds one: modifications are **proposals only**, human-ratified through the
 hardest cognitive-forcing card in the system, with the evaluator and held-out assets outside the
@@ -304,15 +360,34 @@ rules have absolute precedence and resolve symlinks (§4, `vendor-build` — re-
 per-subagent sandbox differentiation is officially impossible in-process, which is precisely why
 roles are separate processes (§4).
 
-### D12. Economics: cache-stable context, halt-at-wall + park-and-resume, measure-don't-predict — **Decided** (floor), **TBD** (everything cleverer)
+**"Separate processes" is the topology, not the wall — the wall is layered, and the layers fail
+independently.** Live internal demonstrations (smoke runs 1–2, *internal* §5): a
+permission-layer read-deny was silently voided by a permission-*mode* change while the process
+boundary stood intact; the OS-sandbox layer holds independently of mode; and the vendor default
+when the sandbox cannot start is to warn and run *unsandboxed* (caught by operator review,
+2026-07-12 — the launcher now makes it a startup abort). So D11's requirement, precisely: role
+separation is enforced by named layers (process, permission-rule, OS sandbox — filesystem and
+network), **every load-bearing layer is probed per launcher per build** by a deliberate
+read-attempt (the smoke's probe, never assumed from documentation), and any layer's mechanism
+is `vendor-build` fact, not design fact. The *requirement* is Decided; every mechanism binding
+carries the vendor-build decay class.
+
+### D12. Economics: cache-stable context, halt-at-wall + park-and-resume, measure-don't-predict — **Decided** (halt-at-wall floor), **Provisional** (append-only discipline under R1; wake-on-reset), **TBD** (everything cleverer)
 
 - **Context discipline is append-only / prefix-stable** so cache reuse is structural, not
-  accidental. (Official commitment: cache reads bill ~10% of input rate — a *billing* statement;
-  §4.)
+  accidental. (Official commitment: cache reads bill ~10% of input rate — a *billing*
+  statement; §4. Whether that discount extends to subscription-*window* occupancy — the thing
+  R1 actually optimizes — is exactly T1's open question, so under R1 this discipline is
+  **Provisional**: kept because its marginal cost is ≈0 and the billing fact bounds the
+  downside, promoted or dropped by T1.)
 - **The wall is survivable by construction**: credits are strictly opt-in, so an unattended run
   halts rather than spills (§4) — the harness records a resumable checkpoint and *parks*.
-  Wake-on-reset exists nowhere in the surveyed ecosystem (§5 census) and is cheap; build it —
-  as a standalone wrapper around *any* long-running invocation, not a loop feature (R5/D15).
+  Wake-on-reset appears in none of the surveyed tools (§5 census) — which, per the grading
+  method's absence rule, licenses "unoccupied niche" and nothing about cost or value; the prior
+  draft's "is cheap; build it" was a builder's estimate wearing the absence finding's warrant,
+  and is struck. Wake-on-reset is **Provisional**: a standalone wrapper around *any*
+  long-running invocation (R5/D15) if built, and **T5**'s telemetry — are unattended windows
+  actually being wasted? — decides whether it earns build effort at all.
 - **Instrument spend; never predict it** (R4; *internal* §4's 3× same-task variance with
   committed artifacts).
 - **TBD — the contested question that decides how aggressive context reuse should be:** how
@@ -348,8 +423,15 @@ win is not Tier A in its own tree because the artifact was never brought home (*
 So, from the first commit:
 
 - every mechanism ships with its measurement and a paired null arm where feasible;
+- **experiments are pre-registered protocols**: hypothesis, arms, metric, sample size, and a
+  **non-inferiority margin** fixed before the run. "The null arm matched" means *non-inferior
+  at the pre-registered margin* — an underpowered no-difference result licenses nothing,
+  in either direction (absence of evidence is not evidence of absence; the deletion clause in
+  §5 binds to this definition);
 - wins require committed, third-party-checkable artifacts — a win without an artifact is a claim
-  (*internal* README rule);
+  (*internal* README rule), and an artifact's reproduction path is **executed before the label
+  is applied** (grading-method maintenance rule 5, added after the 2026-07-12 grader
+  correction: reading the harness is not running it);
 - predictions are pre-registered before firings (the watch-item practice worked — it caught its
   own miss, *internal* §3);
 - held-out assets carry an explicit reuse budget (M1/M2), and replay is licensed on unchanged
@@ -413,7 +495,7 @@ deliberately undecided; settle it at the first real two-artifact integration (**
 | Learned/vector memory, forgetting timers | No system beats trivial baselines; no ablated decay model; zero closed-loop coding evidence (§3.1, §6) |
 | Long-horizon token prediction/optimization | R4; 3× same-task variance (*internal* §4); no validated horizon features |
 | Prompt-level guardrails as enforcement | STOP: the warning comment *increased* violations (§2.2) |
-| Autonomous self-improvement | The entire §2.2 gaming ledger; R2 |
+| Autonomous self-improvement | Every loop in the surveyed §2.2 gaming ledger gamed its evaluator; R2 |
 | Spec-first ceremony on flat tasks | CoT pays only on structured tasks (§3.1); no controlled evidence spec-first beats prompt-then-code at all (§6); a deficient plan is worse than none (§3.1) |
 | TOON / serialization tricks | Measured-negative generation; narrow savings band (§3.1; *internal* §4) |
 | Recommendation-first approval cards | Measured over-reliance bait: acceptance rises right-or-wrong (§3.3) |
@@ -428,10 +510,14 @@ instrumentation — each a standalone tool, composed late. Everything else waits
 
 ## 4. TBD ledger — the deliberately undetermined
 
+The table names each question and its settling instrument. When an experiment is actually
+scheduled, it first gets a **pre-registered protocol card** (hypothesis, arms, metric, sample
+size, non-inferiority margin, decision rule — D14); a row here is a question, not yet a study.
+
 | # | Question | What settles it |
 |---|---|---|
 | T1 | Do cache reads meaningfully discount *subscription-window* occupancy? | The built cache-weight experiment (operator-run; quota-costing) |
-| T2 | Does blind validation + a held-out vault pay its overhead vs test-secrecy alone, per risk tier? | Paired-arm A/B on a realistic task set (the internal n=1 win is Tier C in-tree) |
+| T2 | Does blind validation + a held-out vault pay its overhead vs test-secrecy alone, per risk tier? | Paired-arm A/B on a realistic task set (internal evidence is n=2 *existence* — P3v2-5 + smoke run 2, *internal* §5 — never a rate) |
 | T3 | Does a machine-checkable determinacy bar beat human plan-eyeballing? | Gate-on/gate-off arms measuring downstream integration failures (0/10 products have one, §6) |
 | T4 | What licenses trust in a quiet verifier? | Calibration-canary catch rates, minding M4's coupling caveat |
 | T5 | Is unattended window capacity actually wasted without admission machinery? | Instrumented halt/park/resume telemetry over real weeks |
@@ -441,6 +527,7 @@ instrumentation — each a standalone tool, composed late. Everything else waits
 | T9 | Per-lineup effort/model routing | Re-run the committed benchmark harness on each new lineup (`model-generation` decay) |
 | T10 | Where does human latency actually go? | Instrument ack/decision times — operators' self-estimates are miscalibrated (§7 METR direction) |
 | T11 | What contract-versioning discipline keeps independently-evolving artifacts compatible? | The first real two-artifact integration: instrument seam failures and contract drift (schema versioning vs tolerant readers vs golden files) |
+| T12 | What held-out reuse policy is safe past the attempt cap? | Triggered by any change that raises per-suite adaptive queries above the cap (pipelining, shared suites, larger caps): write the policy — holdout size, threshold, noise, query budget — and show the feedback channel sits inside an M1/M2-guaranteed regime *before* the change lands (D2) |
 
 ## 5. Sequencing sketch (a plan, not a commitment)
 
@@ -461,5 +548,9 @@ is itself a late, explicit step, never the medium the artifacts are born into.
    (T5-informed), admission machinery (T5).
 
 Nothing in stages 2–4 is exempt from R2: any artifact whose paired arm shows the null harness
-matching it gets deleted — at artifact granularity, which is exactly what R5 makes cheap — and
-that deletion is a result, not a failure.
+**non-inferior at the experiment's pre-registered margin** (D14 — a powered result, never a
+bare no-difference from a small sample) gets deleted — at artifact granularity, which is
+exactly what R5 makes cheap — and that deletion is a result, not a failure. Composition effects
+are the known blind spot of per-artifact nulls: an artifact that only pays in combination is
+exactly what a factorial or staged ablation would catch and a lone paired arm will not; when
+two artifacts plausibly interact, the ablation is staged over the pair.

@@ -8,8 +8,12 @@ what a claim can **bear** — whether a design may rest its weight on it — nee
 2. **Incentive.** Does the source benefit if we believe it?
 3. **Decay.** What does it depend on, and when does it stop being true?
 
-A claim is **Tier A — load-bearing** only if it scores well on all three. The two distilled
-documents contain nothing else:
+The three questions are axes, and they compose rather than average: a claim is
+**Tier A — load-bearing** when it carries one of the four warrant letters below (each letter is
+a warrant-plus-incentive package; **any one suffices** for provenance) *and* its decay class is
+within date — a stale warrant stops bearing load without ceasing to have been true. Warrant
+grades the claim itself; what a *design decision* may rest on the claim additionally needs the
+two fit checks in "What Tier A does not mean." The two distilled documents contain nothing else:
 
 - [external.md](external.md) — Tier-A facts from the world.
 - [internal.md](internal.md) — Tier-A facts from our own runs.
@@ -60,7 +64,8 @@ Compare two claims from the same repository (Zenith):
   **does not list Zenith at all.** Believe nothing here without independent replication.
 - *"Zenith can fail if adaptation or testers are wrong… n=1 per cell, cleaned runs, cleaning rule
   unstated."* — the authors, in their own technical report, handing you the knife. Costly to say.
-  Believe it completely.
+  Believe it — at existence strength: the admission proves the weakness is real, never how often
+  it bites (`A2`'s own bound, below).
 
 The most decision-changing facts in this entire corpus are of the second kind:
 
@@ -75,7 +80,9 @@ The most decision-changing facts in this entire corpus are of the second kind:
 - **Our own pilot ledgers**, which exist to record the ways our machinery broke.
 
 Costly signals are credible. An admission against interest is **Tier A regardless of what other
-tag it carries**, because the incentive to fabricate runs the wrong way.
+tag it carries**, because the incentive to fabricate runs the wrong way. What it is Tier A *for*
+is existence — the admitted failure mode is real. Rate, cause, and magnitude are separate claims
+the admission never carries.
 
 The symmetric rule: **a party's measurement of its own system, unreplicated, is Tier C** — cite
 it for framing, never for a decision. This applies to vendors, to paper authors, and to us.
@@ -111,7 +118,7 @@ A claim reaches Tier A if it satisfies **at least one**:
 |---|---|---|---|
 | **A1** | **Independently replicated** — ≥2 parties, no shared methodology, no shared stake. | Two independent errors rarely coincide. | Replication proves the *measurement*, not the *stability* of the thing measured. |
 | **A2** | **Admission against interest** — the source reports something that damages its own system, product, or argument. | The incentive to fabricate runs backwards. | Existence claims only. "It happened once" ≠ "it happens at rate X". |
-| **A3** | **Directly verifiable** — raw artifacts and a reproduction path are committed; anyone can re-run it at zero or known cost. Includes code read in a checked-out repo and live probes. | You do not have to trust the claimant; you can look. | Verifies *that build, that day*. Says nothing about tomorrow. |
+| **A3** | **Directly verifiable** — raw artifacts and a reproduction path are committed, **and the path has actually been executed against the committed tree** (maintenance rule 5); anyone can re-run it at zero or known cost. Includes code read in a checked-out repo and live probes. | You do not have to trust the claimant; you can look. | Verifies *that build, that day*. Says nothing about tomorrow. |
 | **A4** | **Official commitment** — a vendor policy statement the vendor is bound by (pricing, plan structure, what counts against a limit). | Contractual and publicly auditable. | Does **not** extend to mechanism claims. See above. |
 
 And **mathematics** (`M`) sits outside the scheme: a theorem is not evidence about the world, it
@@ -160,9 +167,17 @@ sample. Every absence finding in these documents states **how many things were s
 ones, and as of when.** "Window-aware admission control appears in 0 of 11 sampled repos as of
 2026-07-06" is a real fact. "Nobody does window-aware admission" is not.
 
-Treat absence findings as **Tier A about the sample, Tier B about the world.**
+Treat absence findings as **Tier A about the sample, Tier B about the world.** And mind what
+the finding licenses: absence establishes that a niche is *unoccupied* — never that occupying
+it is cheap, easy, or valuable. Cost and value claims need their own warrant (the 2026-07-12
+critique caught a "nobody has built it, and it is cheap; build it" slide — the second half was
+a builder's estimate wearing the first half's evidence).
 
 ## What Tier A does not mean
+
+The first two are about the claim; the last four are the **fit checks** — what a design
+decision must add before resting weight on even a perfectly-warranted claim. A citation that
+fails a fit check is not evidence for the decision citing it, however good its warrant.
 
 - **Not "certain."** It means *the best-warranted class available*, which is different.
 - **Not "still true."** Check the decay class and the date. A stale Tier-A fact is worse than a
@@ -171,6 +186,14 @@ Treat absence findings as **Tier A about the sample, Tier B about the world.**
   often it fires. Rates need `A1` or `A3`.
 - **Not "importable."** Mechanisms transfer between systems; effect sizes usually do not.
   The standing rule holds: **import the mechanism, never the magnitude.**
+- **Not "wider than what was measured."** A warrant covers the claim *inside its measured
+  regime*: the Ladder's O(log k) is a theorem about threshold-revealed leaderboard feedback,
+  not about holdouts in general; a self-critique failure rate is about the verification task it
+  was scored on. Citing the claim outside that regime is a new, unwarranted claim.
+- **Not "about your setting."** Transporting a result into this harness is a second claim that
+  needs its own argument — the design decision states, at the citation site, why our setting
+  sits inside the measured regime (or names the transport as Provisional and gives it a
+  promotion trigger).
 
 ## Maintaining these documents
 
@@ -183,3 +206,12 @@ Treat absence findings as **Tier A about the sample, Tier B about the world.**
    against-interest record and should be read as the most trustworthy page in the corpus.
 4. When our own measurement loses its artifact (raw data deleted, harness rots), it drops out of
    Tier A automatically. The artifact is the warrant.
+5. **`A3` is labeled only after the reproduction path has actually been executed against the
+   committed tree** — re-run, then label; never label from reading. The standing example is the
+   2026-07-12 grader correction: a benchmark graded `A3` whose committed grader could never have
+   reproduced its own headline (a 17-vs-16 hardcoded total plus a dead results path). Reading
+   the harness *looked like* verification; only running it was.
+6. A distilled row added or edited from now on names its source document and section, so the
+   chain distilled-claim → deep-doc → primary source stays walkable. (Pre-existing rows are
+   grandfathered until touched; the synthesis is otherwise auditable only at summary level —
+   a known limitation, stated here so nobody mistakes the summaries for the audit trail.)

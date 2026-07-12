@@ -237,6 +237,24 @@ Corrections produced by the fact-check passes, kept so future readers don't re-i
   column. Quote the headline as "24/24 re-verified; 12 FIX observed on run day, no longer
   checkable," never as "36/36." Latency/token/cost rows unaffected (CLI-emitted JSONs). Regrade
   transcript: `internal/model-speed-effort-benchmark-2026-07/results/regrade-2026-07-12.txt`.
+- **Reframed 2026-07-12 (same review, phases 2–3), so nobody re-imports the overstatements:**
+  (1) the grading method's summary line ("Tier A only if it scores well on all three") and its
+  warrant table ("any one suffices") were contradictory — resolved: any one warrant letter
+  suffices for provenance, decay must be in-date, and two new *fit checks* (measured-regime,
+  setting-transport) govern use in design decisions; (2) "believe it completely" for
+  admissions against interest is bounded to **existence strength** — A2 never carries rate,
+  cause, or magnitude; (3) A3 now requires the reproduction path to have been **executed**, not
+  read (maintenance rule 5 — the grader correction above is the standing example); (4) the
+  absence rule gains the inference bound: absence licenses "unoccupied niche," never "cheap or
+  valuable" (struck the design's wake-on-reset "is cheap; build it"); (5) design-doc claims
+  sample-bounded or narrowed: the §2.2 gaming ledger is a curated sample not a census, M7's
+  acyclicity is *a* decidable restriction not *the* precondition, M1/M2 reuse budgets hold for
+  their feedback regimes only (the v1 policy stays inside them by the attempt cap; **T12**
+  guards any change past it); (6) status refinements in the design doc's fourth amendment:
+  D2 spec-only authorship, D4 concurrent-write harm magnitude, D8 commit-before-reveal effect
+  size, D12 append-only-under-R1 and wake-on-reset — all → Provisional with named triggers;
+  (7) the P3v2-5 thesis is **n=2 existence** (smoke run 2 fired it live on an isolation
+  regression), neither instance with a complete preserved failure-side chain, still not a rate.
 
 **Absence-of-feature findings** (strong, but inherently harder to prove than a positive): Kiro
 closure gate; Spec Kit automated final gate; LangGraph built-in critic; any published

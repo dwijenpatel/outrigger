@@ -30,6 +30,12 @@ Re-run the smoke after any Claude Code release (vendor-build decay).
   bash unattended, `acceptEdits` covers the edit tool. **Run 3's job: confirm git commit runs
   with no prompt under auto-allow AND the bash read of the held-out dir is DENIED — both at
   once.** That combination is the thing every prior run missed.
+- **Pre-run-3 hardening** (operator-caught, doc-verified 2026-07-12): `sandbox.failIfUnavailable`
+  is now set — the vendor default when the sandbox *cannot start* (missing deps, unsupported
+  platform) is to **warn and run unsandboxed**, which would silently void the OS wall while
+  every visible check still passed. Now it aborts the session instead, and the abort surfaces
+  as a failed spawn. Docs don't name the headless path explicitly (the `--settings` precedence
+  rule implies it) — run 3 arbitrates this key like the rest.
 
 ### Network note
 

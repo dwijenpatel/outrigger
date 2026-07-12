@@ -103,6 +103,10 @@ def build_settings(isolation):
       approval prompt, so headless git commit / python3 do not abort) WHILE
       the filesystem wall stays up. This is why bypassPermissions (which
       dropped the wall in smoke run 2) is not used.
+    - `sandbox.failIfUnavailable` turns sandbox-start failure (missing
+      dependencies, unsupported platform) into a startup abort. The
+      documented default is to WARN AND RUN UNSANDBOXED — a fail-open that
+      would silently void every wall above (operator-caught, 2026-07-12).
 
     Confidence: doc-grounded (code.claude.com/docs sandboxing + settings), but
     the commit-under-auto-allow and denyRead-blocks-bash behaviors are
@@ -121,6 +125,9 @@ def build_settings(isolation):
     if isolation.get("sandbox"):
         sandbox = {
             "enabled": True,
+            "failIfUnavailable": True,          # sandbox can't start (missing deps/platform)
+                                                # -> abort at startup; the documented default
+                                                # WARNS AND RUNS UNSANDBOXED (fail-open)
             "autoAllowBashIfSandboxed": True,   # unattended sandboxed bash; no prompt/abort
             "allowUnsandboxedCommands": False,  # close the dangerouslyDisableSandbox escape hatch
             "excludedCommands": [],             # nothing runs outside the wall

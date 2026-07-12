@@ -69,7 +69,10 @@ snapshotted at loop start; the loop's code runs from the main checkout, out of w
 mid-run. **Stated honestly, this does not stop**: malicious *product* code that passes every
 check (the gate proves checks pass, nothing more — weak checks, weak gate), or vendor sandbox
 escapes — those are *noticed* (seal `verify` before every suite run, the ledger's manifest
-anchor, your review) rather than prevented. The enforcement mechanisms themselves are
+anchor, your review) rather than prevented. A sandbox that cannot *start* is a separate axis:
+the vendor default silently runs unsandboxed; the launcher sets `sandbox.failIfUnavailable`
+so that case aborts the spawn instead (fail-closed, operator-caught 2026-07-12). The
+enforcement mechanisms themselves are
 vendor-build behavior: **probed by [the smoke](SMOKE.md), re-probed every release, never
 trusted from documentation.**
 

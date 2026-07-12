@@ -154,6 +154,9 @@ class ClaudePDryRunTests(unittest.TestCase):
         self.assertFalse(sandbox["allowUnsandboxedCommands"])
         self.assertEqual(sandbox["excludedCommands"], [])
         self.assertEqual(sandbox["filesystem"]["denyRead"], [self.deny])
+        # sandbox-can't-start must abort, not warn-and-run-unsandboxed
+        # (vendor default is the fail-open; operator-caught 2026-07-12)
+        self.assertTrue(sandbox["failIfUnavailable"])
         # the settings file is materialized in the bundle for inspection
         with open(os.path.join(bundle, "generated-settings.json")) as fh:
             self.assertEqual(json.load(fh), settings)

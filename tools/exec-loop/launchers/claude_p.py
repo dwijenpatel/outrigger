@@ -121,8 +121,13 @@ def build_argv(worker, settings_path, instructions_path):
         worker["model"],
         "--settings",
         settings_path,
+        # bypassPermissions, deliberately: the OS sandbox is the wall (probed
+        # live 2026-07-12 — a real worker's ls/cat of the denied workspace was
+        # blocked THROUGH BASH). acceptEdits was falsified by smoke run #1:
+        # headless workers cannot answer approval prompts, so git commit and
+        # check commands hung behind "requires approval" and no work landed.
         "--permission-mode",
-        "acceptEdits",
+        "bypassPermissions",
     ]
     if worker.get("effort"):
         # Effort flag semantics are vendor-build: --dry-run shows it, the

@@ -46,6 +46,19 @@ gen_filler() {
   done
 }
 
+# Both arms MUST run the same model explicitly: bare `claude -p` inherits a config
+# default that some plans auto-switch under window pressure (e.g. Opus -> Sonnet),
+# which would make the arms incomparable. Fail closed rather than pick a default here
+# — the model choice is part of the experiment's pre-registration.
+require_model() {
+  if [ -z "${T1_MODEL:-}" ]; then
+    echo "set T1_MODEL to pin one model for both arms, e.g.:" >&2
+    echo "  T1_MODEL=claude-opus-4-8 $0 arm-a 5 6000" >&2
+    echo "(bare claude -p inherits a config default that may auto-switch mid-window)" >&2
+    exit 2
+  fi
+}
+
 run_turns() {
   local n="${1:?turn count required}"
   local words="${2:?filler word count required}"
@@ -57,9 +70,9 @@ run_turns() {
   local i out
   for (( i = 1; i <= n; i++ )); do
     if [ "$i" -eq 1 ]; then
-      out=$(claude -p "${filler} (turn ${i}) Reply with exactly: OK" --output-format json)
+      out=$(claude -p "${filler} (turn ${i}) Reply with exactly: OK" --model "$T1_MODEL" --output-format json)
     else
-      out=$(claude -p "${filler} (turn ${i}) Reply with exactly: OK" --output-format json --continue)
+      out=$(claude -p "${filler} (turn ${i}) Reply with exactly: OK" --model "$T1_MODEL" --output-format json --continue)
     fi
     echo "$out" > "$outdir/turn-${i}.json"
     echo "wrote $outdir/turn-${i}.json" >&2
@@ -106,11 +119,13 @@ case "$CMD" in
     echo "confirm these concepts appear somewhere in it (exact key path may differ -- adjust the summarize() jq filter in this script if so): input tokens, output tokens, cache_read tokens, cache_creation tokens, total_cost_usd" >&2
     ;;
   arm-a)
-    n="${2:?usage: $0 arm-a N WORDS}"; words="${3:?usage: $0 arm-a N WORDS}"
+    n="${2:?usage: T1_MODEL=<model> $0 arm-a N WORDS}"; words="${3:?usage: T1_MODEL=<model> $0 arm-a N WORDS}"
+    require_model
     run_turns "$n" "$words" "arm-a"
     ;;
   arm-b)
-    n="${2:?usage: $0 arm-b N WORDS}"; words="${3:?usage: $0 arm-b N WORDS}"
+    n="${2:?usage: T1_MODEL=<model> $0 arm-b N WORDS}"; words="${3:?usage: T1_MODEL=<model> $0 arm-b N WORDS}"
+    require_model
     export DISABLE_PROMPT_CACHING=1
     run_turns "$n" "$words" "arm-b"
     ;;

@@ -76,6 +76,12 @@ as a sign the linear model is too simple for a second pass.
 - **No concurrent interactive use of the same account** during the experiment — the window is a
   shared pool (design §5.1); any other Claude app/Claude Code activity on the account during the
   run confounds the delta.
+- **One model, pinned explicitly, both arms** (added 2026-07-12): bare `claude -p` inherits a
+  config default, and some plan configurations auto-switch models under window pressure —
+  which would make the arms incomparable. The runner now requires `T1_MODEL=<model>` for
+  `arm-a`/`arm-b` and passes `--model` on every turn; it refuses to run without it rather
+  than silently picking a default (the model choice is part of the pre-registration — record
+  it with the results).
 - **Identical filler content across arms**, generated once by `run_cache_weight_experiment.sh
   gen-filler` — determinism matters more than the content itself (verified: two invocations
   with the same word count produce byte-identical output).
@@ -113,13 +119,13 @@ as a sign the linear model is too simple for a second pass.
 2. **Baseline.** In an interactive session on the same account, check `used_percentage` for the
    5-hour window. Note the timestamp. *(Desktop app: use `/usage` — the app has no statusline
    surface, pilot-2 P2-8.)*
-3. **Arm A:** `./run_cache_weight_experiment.sh arm-a 5 6000` (5 turns, ~6,000-word filler per
-   turn — scale up if step 1's dry run suggests the window is large enough that this would be
-   too small to register). Immediately after, check `used_percentage` again (interactive
-   session) and record the delta as `ΔA_window`. Also run
+3. **Arm A:** `T1_MODEL=<model> ./run_cache_weight_experiment.sh arm-a 5 6000` (5 turns,
+   ~6,000-word filler per turn — scale up if step 1's dry run suggests the window is large
+   enough that this would be too small to register). Immediately after, check
+   `used_percentage` again (interactive session) and record the delta as `ΔA_window`. Also run
    `./run_cache_weight_experiment.sh summarize <arm-a logdir>` and record the token totals.
-4. **Arm B:** `./run_cache_weight_experiment.sh arm-b 5 6000` (same N and F). Record
-   `ΔB_window` and the token totals the same way.
+4. **Arm B:** `T1_MODEL=<model> ./run_cache_weight_experiment.sh arm-b 5 6000` (same N, F,
+   **and model**). Record `ΔB_window` and the token totals the same way.
 5. **Compute** `ratio = ΔA_window / ΔB_window` and back out `w` from the table above.
 6. **Commit the artifact first** — the raw `experiment-logs/` turn JSONs, both `summarize`
    outputs, and the before/after `used_percentage` readings (values + timestamps), under

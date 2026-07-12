@@ -41,7 +41,11 @@ decide only as well as they can follow.** Every question and option must also re
    motivated decision Y" beats "X is out of scope."
 2. **Ground yourself before asking.** Read the repo first — locate the code the goal touches,
    its tests, its conventions. Never ask what the codebase already answers; brownfield
-   planning is mostly localization.
+   planning is mostly localization. If the repo carries a run-ledger with records of past
+   **interview escapes** (post-ratification spec ambiguities — disputes resolved by amending
+   the spec), read the recent ones before formulating questions: the cheapest
+   question-shaping signal available. (Its utility is unproven — the lessons-store literature
+   is measured-null — so this step survives only while it earns its keep.)
 3. **Depth is task-conditional.** A flat task deserves a one-task plan and few questions —
    stop early. A deficient plan is *worse* than no plan, so when in doubt: **plan less, never
    pad.** Do not invent tasks, phases, or structure the goal doesn't need.

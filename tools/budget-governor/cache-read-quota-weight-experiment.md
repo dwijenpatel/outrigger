@@ -90,17 +90,27 @@ as a sign the linear model is too simple for a second pass.
 - **Scale `F` up if the delta is too small to read.** Windows were doubled 2026-05-06 (design
   §10.3) and sizes aren't published, so a percentage-point delta that rounds to ~0 just means
   the filler was too small — rerun with a larger `F`, not a conclusion.
-- **This measures the 5-hour window specifically**, via whatever surface you read
-  `used_percentage` from (statusline JSON in an interactive session is the documented feed —
-  `claude-code-and-max-plan-facts.md` §4 — but headless `claude -p`, which this script uses to
-  make the workload scriptable, has no such surface itself). Two ways to close that gap:
-  1. Run the arms via headless `claude -p` (this script does), and check the **weekly/5-hour
-     `used_percentage` from an interactive session on the same account** immediately before and
-     after each arm (open a second terminal, run `claude`, check the statusline or `/status`).
-     Since the pool is shared account-wide, headless spend shows up there.
-  2. Or skip headless entirely and paste the filler + instruction directly into an interactive
-     session's turns, reading the statusline after each one — slower to script, but keeps
-     everything in one surface.
+- **This measures the 5-hour window specifically, and the readout must be account-level.**
+  The only documented machine-readable source for the account's window occupancy is the
+  **status-line JSON**: `rate_limits.five_hour.used_percentage` and
+  `rate_limits.seven_day.used_percentage` (plus `resets_at`), populated from the most recent
+  API response — the server's account-wide view (verified 2026-07-12 vs
+  code.claude.com/docs/statusline; `vendor-build`, re-probe each build). It beats the `/usage`
+  panel on two axes that matter here: it is **account-level** (the `/usage` panel is a
+  *local-machine estimate* that excludes other devices and claude.ai), and it is **loggable
+  with a timestamp** rather than hand-copied. Three constraints, all real and all load-bearing:
+  1. The status line runs only in an **interactive terminal** `claude` session — **not** in
+     headless `claude -p` (which the arms use), and **not** in the **desktop app** (no
+     status-line surface — pilot-2 P2-8). So the readings come from a *separate terminal
+     session* that brackets each arm, never from the arm process itself.
+  2. `rate_limits` populates only **after one API round-trip**, so that bracketing session must
+     send one message before the fields appear.
+  3. `used_percentage` is coarse (0–100). If a delta rounds to ~0, scale `F` up (rule above) —
+     now with a machine-readable readout instead of a squinted bar.
+  **Fallback (desktop-app path):** read the 5-hour bar from the `/usage` panel manually before
+  and after each arm. Simpler and app-native, but a local estimate and hand-transcribed. Either
+  way, record the value **and** its timestamp. (`/usage` is interactive-only — it cannot be
+  scripted via `claude -p`; verified 2026-07-12.)
 - **Confirm the JSON schema before trusting the numbers.** ~~`summarize`'s field paths are a
   best-effort guess~~ — **validated 2026-07-11, zero quota**: the jq filter was run against real
   committed `claude -p --output-format json` outputs (build 2.1.201) from
@@ -113,22 +123,37 @@ as a sign the linear model is too simple for a second pass.
 
 ## Procedure
 
-1. **Dry run** (near-zero cost, sanity-checks the schema): `./run_cache_weight_experiment.sh
-   dry-run`, then `jq . experiment-logs/<timestamp>-dry-run/turn-1.json` and confirm the fields
-   `summarize()` expects are actually present at those paths; edit the script if not.
-2. **Baseline.** In an interactive session on the same account, check `used_percentage` for the
-   5-hour window. Note the timestamp. *(Desktop app: use `/usage` — the app has no statusline
-   surface, pilot-2 P2-8.)*
+1. **Dry run — schema *and* readout** (near-zero cost, and it must happen *before* the real
+   window, never during it):
+   - **(a) Token schema:** `./run_cache_weight_experiment.sh dry-run`, then
+     `jq . experiment-logs/<timestamp>-dry-run/turn-1.json` and confirm the fields
+     `summarize()` expects are present; edit the script if not.
+   - **(b) Window readout, if using the status-line path:** add the `statusLine` command below
+     to your settings, open an **interactive terminal** `claude`, send one message, and confirm
+     a line with a real `five_h` number landed in the log. A status-line command that silently
+     fails to log is caught here, for free — not mid-experiment. Remove it (or keep it) for the
+     real run; it is harmless either way.
+
+     ```json
+     { "statusLine": { "type": "command",
+       "command": "jq -c '{t: now, five_h: .rate_limits.five_hour.used_percentage, seven_d: .rate_limits.seven_day.used_percentage, resets: .rate_limits.five_hour.resets_at}' >> ~/t1-rl.log" } }
+     ```
+2. **Baseline.** Take a window reading and record value + timestamp.
+   *Status-line path:* in the bracketing terminal `claude` session send one message, then read
+   the last line of `~/t1-rl.log`. *Fallback:* open `/usage` in the desktop app and read the
+   5-hour bar. Confirm the 5-hour bar is at/near baseline (this is why the run wants a fresh
+   window) and no other account activity is in flight.
 3. **Arm A:** `T1_MODEL=<model> ./run_cache_weight_experiment.sh arm-a 5 6000` (5 turns,
    ~6,000-word filler per turn — scale up if step 1's dry run suggests the window is large
-   enough that this would be too small to register). Immediately after, check
-   `used_percentage` again (interactive session) and record the delta as `ΔA_window`. Also run
+   enough that this would be too small to register). Immediately after, take another reading
+   the same way and record the delta as `ΔA_window`. Also run
    `./run_cache_weight_experiment.sh summarize <arm-a logdir>` and record the token totals.
 4. **Arm B:** `T1_MODEL=<model> ./run_cache_weight_experiment.sh arm-b 5 6000` (same N, F,
    **and model**). Record `ΔB_window` and the token totals the same way.
 5. **Compute** `ratio = ΔA_window / ΔB_window` and back out `w` from the table above.
 6. **Commit the artifact first** — the raw `experiment-logs/` turn JSONs, both `summarize`
-   outputs, and the before/after `used_percentage` readings (values + timestamps), under
+   outputs, and the four window readings with timestamps (the `~/t1-rl.log` lines, or the
+   hand-recorded `/usage` values), under
    `docs/research/internal/cache-weight-experiment-<date>/`. The artifact is the warrant
    (distilled method): without it the result is a claim, not a measurement.
 7. **Write the result back** into its current homes, dated:

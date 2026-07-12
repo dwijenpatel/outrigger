@@ -38,6 +38,7 @@ git tag **`v1-attic`**.
 | [tools/plan-preflight/](tools/plan-preflight/README.md) | **v2 artifact #3a** — sound structural validation of the plan.json contract (D7/M7): acyclicity and integrity hard-fail; determinacy signals warn for the ratifier |
 | [.claude/skills/spec-interview/](.claude/skills/spec-interview/README.md) | **v2 artifact #3b** — the clarification interview as a standalone skill emitting the plan.json contract; `/spec-interview` |
 | [tools/heldout-suite/](tools/heldout-suite/README.md) | **v2 artifact #4** — the graded tests' lifecycle (D2/D11): materialize outside the repo, fails-on-base validation, tamper-evident seal + verify, deny-fragment; [ROLE.md](tools/heldout-suite/ROLE.md) is the authoring contract |
+| [tools/exec-loop/](tools/exec-loop/README.md) | **v2 artifact #5** — the first composition (D3/D4/D5): walks a ratified plan unattended through author→seal→implement→gate→merge with a tool-neutral [launcher contract](tools/exec-loop/launchers/CONTRACT.md); vendor contract proven only by the operator-run [smoke](tools/exec-loop/SMOKE.md) |
 | [tools/budget-governor/](tools/budget-governor/README.md) | Preserved measurement instruments: the spawn-portability probe and the **unexecuted cache-weight experiment (T1** — quota-costing, operator-run only**)** |
 | `tests/` | The corpus link/reference guard (`python3 -m unittest tests.test_reference -q`) |
 

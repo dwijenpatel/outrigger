@@ -42,8 +42,12 @@ Re-run the smoke after any Claude Code release (vendor-build decay).
   stdout shape the launcher consumes, so it needs a green smoke on the target build before a
   real plan relies on the captured numbers. `parse_session` is fail-safe (a schema surprise
   degrades to `usage:{error}`, never a crash), but "the numbers are right" is vendor-build and
-  only the smoke proves it. **Run 4's added check: `result.json` carries a `usage` block with
-  non-null `output_tokens` and `cost_usd`.**
+  only the smoke proves it. **Run 4's added checks: `result.json` carries a `usage` block with
+  non-null `output_tokens` and `cost_usd`; the run ledger's seal record carries `author_usage`
+  + `suite{files,lines}` and the gate record `impl_usage` + `churn{files,insertions,deletions}`
+  matching the actual diff** (churn is pure git, not vendor behavior — it rides along for
+  confirmation, not probing). Run 4 is a release check for the instrumentation, not a study:
+  green means the telemetry can be trusted from then on.
 - **Run 3** (2026-07-12, build 2.1.202 — **green**): exit 0, merged on attempt 1,
   `probe-result.txt` = `DENIED`. The combination every prior run missed held **simultaneously**:
   git commit ran unattended under sandbox auto-allow AND the OS wall denied the held-out read.
@@ -58,6 +62,16 @@ The sandbox's network model is allowlist-based. `network: true` in the isolation
 currently means "sandbox default" (local git/python work; reaching external domains needs
 explicit domain allowlisting) — a known gap, unneeded by this smoke, to be closed by its own
 probe when a real task needs outbound network (e.g. `pip install`).
+
+### Named upgrade — adversarial boundary matrix
+
+Today's smoke probes ONE boundary: a shell read of the held-out path. The full wall has more
+faces, and runs 1–2 proved boundary behavior must be demonstrated, never inferred: **direct
+Read-tool reads, shell reads, file-search/glob tools, credential paths (keychain,
+`~/.claude`), and outbound network attempts** — each deliberately attempted per launcher, per
+build, with the expected refusal observed. Trigger for building it: before the first plan on a
+repository whose secrets matter, or any plan whose workers handle credentials. Until then the
+single-probe smoke is the floor, stated honestly.
 
 ## Before you run
 

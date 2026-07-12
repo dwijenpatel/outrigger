@@ -1,0 +1,16 @@
+{
+  "state": "UNFROZEN — placeholder. No task may run before this manifest is frozen.",
+  "freeze_rule": "Fill tasks[], set state=FROZEN, commit, append the file sha256 to the v2 ledger (kind=note, subject=t2/pilot-1/manifest-frozen) BEFORE the first worker spawns. Post-freeze edits are amendments.",
+  "protocol": "protocol.md (registered 2026-07-12)",
+  "repos": [],
+  "tasks": [],
+  "task_shape": {
+    "id": "kebab-case",
+    "kind": "bugfix | multi-file-feature | integration | ambiguous | visible-tests-insufficient | canary",
+    "repo": "name from repos[]",
+    "base_sha": "40-hex, both clones start here",
+    "plan": "path to the ratified plan.json",
+    "arm_order": "H-first | N0-first (alternate by index)",
+    "canary_plant": "canary tasks only: sealed description path, revealed at grading"
+  }
+}

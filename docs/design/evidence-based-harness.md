@@ -519,7 +519,7 @@ size, non-inferiority margin, decision rule — D14); a row here is a question, 
 | # | Question | What settles it |
 |---|---|---|
 | T1 | Do cache reads meaningfully discount *subscription-window* occupancy? | The built cache-weight experiment (operator-run; quota-costing) |
-| T2 | Does blind validation + a held-out vault pay its overhead vs test-secrecy alone, per risk tier? | Paired-arm A/B on a realistic task set (internal evidence is n=2 *existence* — P3v2-5 + smoke run 2, *internal* §5 — never a rate) |
+| T2 | Does blind validation + a held-out vault pay its overhead vs test-secrecy alone, per risk tier? | Paired-arm A/B on a realistic task set (internal evidence is n=2 *existence* — P3v2-5 + smoke run 2, *internal* §5 — never a rate). **Pilot 1 registered 2026-07-12** ([protocol](../research/internal/t2-pilot-1/protocol.md), ledger-anchored): full harness vs the R2 null first, arbiter-suite oracle; the secrecy-vs-gating decomposition is pilot 2, gated on pilot 1's outcome |
 | T3 | Does a machine-checkable determinacy bar beat human plan-eyeballing? | Gate-on/gate-off arms measuring downstream integration failures (0/10 products have one, §6) |
 | T4 | What licenses trust in a quiet verifier? | Calibration-canary catch rates, minding M4's coupling caveat |
 | T5 | Is unattended window capacity actually wasted without admission machinery? | Instrumented halt/park/resume telemetry over real weeks |

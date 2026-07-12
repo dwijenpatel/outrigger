@@ -243,7 +243,10 @@ cluster (the slowest-decaying evidence in the corpus) dictates the shape:
   first live spec-interview run, 2026-07-11): a self-contained briefing before any decision is
   requested; every term of art defined in-surface (no bare codenames, version names, or
   mechanism shorthand); every option carrying explicit pros/cons/tradeoffs, including the
-  recommended option's costs. The operator's working context is the scarcest resource in the
+  recommended option's costs — **and every cost named as its plain operational consequence**
+  (what stops, who must act, when it resumes), never through softening metaphor ("friction",
+  "overhead"): a plainly-named cost is what earns the operator's scrutiny, and euphemism is
+  over-reliance manufacturing. The operator's working context is the scarcest resource in the
   loop, and an operator who cannot fully follow the surface decides poorly — the failure lands
   exactly where §3.3 says it will. Applies to interview questions, ratification cards, blocker
   cards, and escalation messages alike.

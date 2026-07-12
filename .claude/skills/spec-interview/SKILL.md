@@ -34,7 +34,11 @@ decide only as well as they can follow.** Every question and option must also re
    open-ended asks when the space is enumerable — and **every option carries its pros, cons,
    and tradeoffs**, including the *costs* of the option you recommend and the genuine benefits
    of the ones you recommend against. A recommendation without stated costs is advocacy, not
-   decision support.
+   decision support. Where an option embodies an architectural principle — separation of
+   concerns, substitutability, future replaceability — **name the principle and what it buys
+   or forecloses over the long horizon**; immediate pros/cons alone under-inform. And state
+   tradeoffs as *couplings* where they are: "including X would cost the separation that
+   motivated decision Y" beats "X is out of scope."
 2. **Ground yourself before asking.** Read the repo first — locate the code the goal touches,
    its tests, its conventions. Never ask what the codebase already answers; brownfield
    planning is mostly localization.
@@ -45,7 +49,10 @@ decide only as well as they can follow.** Every question and option must also re
    (non-goals), behavioral edges (error/empty/concurrent cases), seams between tasks (only
    where the plan actually splits work), acceptance checks, and **irreversible or
    externally-visible actions** (sends, deletes, deploys, purchases — these become explicit
-   `constraints` entries; they are never left implicit).
+   `constraints` entries; they are never left implicit). Where the plan splits work, also ask
+   whether the seams warrant an **explicit integration task** (its own spec describing the
+   cross-task contract, its own checks, depending on the tasks it integrates) — integration
+   coverage is never a free byproduct of per-task tests.
 5. **Record decisions, not just answers.** Every answer that changes the spec becomes a
    `decisions[]` entry (`q`/`a`), so a fresh implementer never re-decides it. What stays
    genuinely unresolved goes to `open_questions` — visible, never silently dropped.

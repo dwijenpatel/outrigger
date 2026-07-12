@@ -48,9 +48,21 @@ def main(argv=None):
         print(f"error: cannot read params.json: {exc}", file=sys.stderr)
         return 2
 
-    scenario = os.environ.get("MOCK_SCRIPT")
+    # Scenario selection: most-specific env var wins, so one test run can
+    # script each role and attempt differently.
+    role = str(params.get("role", "")).upper()
+    attempt = params.get("attempt")
+    candidates = []
+    if role and attempt is not None:
+        candidates.append(f"MOCK_SCRIPT_{role}_A{attempt}")
+    if role:
+        candidates.append(f"MOCK_SCRIPT_{role}")
+    candidates.append("MOCK_SCRIPT")
+    scenario = next(
+        (os.environ[name] for name in candidates if os.environ.get(name)), None
+    )
     if not scenario or not os.path.isfile(scenario):
-        print(f"error: MOCK_SCRIPT not set or missing: {scenario!r}", file=sys.stderr)
+        print(f"error: no scenario found (tried {', '.join(candidates)})", file=sys.stderr)
         return 2
 
     with open(scenario, encoding="utf-8") as fh:

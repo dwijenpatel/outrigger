@@ -30,7 +30,8 @@ The caller (the loop) prepares it with exactly:
 
 `worker.effort` is optional and tool-interpreted. **`isolation` is intent, never mechanism**:
 the launcher translates it into its own tool's enforcement (settings files, sandbox flags,
-whatever the tool offers). The caller never writes tool-specific configuration.
+whatever the tool offers). The caller never writes tool-specific configuration. The caller may
+add `"attempt": <int>` (informational — lets launchers/transcripts distinguish retries).
 
 ## Fail-closed (the load-bearing clause)
 

@@ -416,5 +416,147 @@ class TaskCycleTests(TaskCycleFixture):
         self.assertEqual(ctx.exception.detail["changed_field"], "decisions")
 
 
+LOOP_CLI = os.path.join(HERE, "loop.py")
+
+AUTHOR_GENERIC = """\
+TID=$(basename "$PWD")
+mkdir -p suite
+cat > suite/test_gen.py <<PY
+import os, unittest
+
+class NewMarker(unittest.TestCase):
+    def test_done_marker(self):
+        self.assertTrue(os.path.exists("done-$TID.txt"))
+PY
+"""
+
+IMPL_GENERIC = """\
+TID=$(git rev-parse --abbrev-ref HEAD | sed -e 's|task/||' -e 's|-a[0-9]*$||')
+touch "done-$TID.txt"
+git add -A
+git commit -qm "done $TID"
+"""
+
+IMPL_NOOP = """\
+printf '# nothing real\\n' >> README.md
+git add -A
+git commit -qm noop
+"""
+
+
+class WalkerFixture(TaskCycleFixture):
+    """Reuses the repo fixture; swaps in a ratified two-task plan and drives
+    the real CLI."""
+
+    def setUp(self):
+        super().setUp()
+        with open(self.plan_path, "w") as fh:
+            json.dump(
+                {
+                    "contract": 1,
+                    "goal": "Produce done-markers for two tasks.",
+                    "decisions": [{"q": "Marker shape?", "a": "done-<task-id>.txt on main."}],
+                    "tasks": [
+                        {"id": "t-one", "title": "Marker one",
+                         "spec": "Create done-t-one.txt.", "checks": ["true"]},
+                        {"id": "t-two", "title": "Marker two",
+                         "spec": "Create done-t-two.txt.", "checks": ["true"],
+                         "depends_on": ["t-one"]},
+                    ],
+                    "ratified": {"by": "dwijen", "ts": "2026-07-12T00:00:00Z"},
+                },
+                fh,
+            )
+        self.ledger_path = os.path.join(self.tmp.name, "ledger.jsonl")
+
+    def run_cli(self, env_extra=None, plan=None):
+        env = dict(os.environ)
+        env.update(env_extra or {})
+        return subprocess.run(
+            [
+                sys.executable, LOOP_CLI, "run",
+                "--plan", plan or self.plan_path,
+                "--repo", self.repo,
+                "--heldout-out", self.heldout_out,
+                "--launcher", MOCK,
+                "--ledger", self.ledger_path,
+            ],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+    def generic_env(self, impl=IMPL_GENERIC):
+        return {
+            "MOCK_SCRIPT_AUTHOR": self.scenario("author-gen.sh", AUTHOR_GENERIC),
+            "MOCK_SCRIPT_IMPLEMENTER": self.scenario("impl-gen.sh", impl),
+        }
+
+    def ledger_subjects(self):
+        if not os.path.exists(self.ledger_path):
+            return []
+        subjects = []
+        with open(self.ledger_path) as fh:
+            for line in fh:
+                subjects.append(json.loads(line)["subject"])
+        return subjects
+
+    def spawn_count(self):
+        return sum(1 for s in self.ledger_subjects() if "/spawn/" in s)
+
+
+class WalkerTests(WalkerFixture):
+    def test_full_plan_runs_to_exit_0(self):
+        proc = self.run_cli(self.generic_env())
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        for marker in ("done-t-one.txt", "done-t-two.txt"):
+            self.assertTrue(os.path.exists(os.path.join(self.repo, marker)), marker)
+        self.assertEqual(self.spawn_count(), 4)  # 2 authors + 2 implementers
+
+    def test_restart_derives_done_and_respawns_nothing(self):
+        self.assertEqual(self.run_cli(self.generic_env()).returncode, 0)
+        before = self.spawn_count()
+        proc = self.run_cli(self.generic_env())
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertEqual(self.spawn_count(), before, "restart must not re-run merged tasks")
+
+    def test_unratified_plan_refused(self):
+        unratified = os.path.join(self.tmp.name, "unratified.json")
+        with open(self.plan_path) as fh:
+            plan = json.load(fh)
+        del plan["ratified"]
+        with open(unratified, "w") as fh:
+            json.dump(plan, fh)
+        proc = self.run_cli(self.generic_env(), plan=unratified)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("ratified", (proc.stderr + proc.stdout).lower())
+
+    def test_second_loop_refused_by_lock(self):
+        import fcntl
+
+        workdir = os.path.join(self.heldout_out, "_runs", "plan")
+        os.makedirs(workdir, exist_ok=True)
+        with open(os.path.join(workdir, "loop.lock"), "w") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            proc = self.run_cli(self.generic_env())
+            self.assertEqual(proc.returncode, 2)
+            self.assertIn("lock", proc.stderr)
+
+    def test_exhaustion_blocks_halts_all_and_stays_blocked_on_restart(self):
+        proc = self.run_cli(self.generic_env(impl=IMPL_NOOP))
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        blocker_path = os.path.join(self.heldout_out, "_runs", "plan", "blocker.json")
+        with open(blocker_path) as fh:
+            blocker = json.load(fh)
+        self.assertEqual(blocker["reason"], "attempts-exhausted")
+        # halt-all: t-two never started
+        self.assertFalse(any("t-two" in s for s in self.ledger_subjects()))
+        # restart derives the exhaustion from the ledger without new spawns
+        before = self.spawn_count()
+        proc = self.run_cli(self.generic_env(impl=IMPL_NOOP))
+        self.assertEqual(proc.returncode, 1)
+        self.assertEqual(self.spawn_count(), before)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

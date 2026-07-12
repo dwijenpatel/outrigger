@@ -126,9 +126,9 @@ class Loop:
 
     # ---------- workers ----------
 
-    def launch(self, role, attempt, worker, isolation, cwd, instructions, timeout_s):
+    def launch(self, task_id, role, attempt, worker, isolation, cwd, instructions, timeout_s):
         bundle = os.path.join(
-            self.workdir, "bundles", f"{utcnow().replace(':', '')}-{role}-a{attempt}"
+            self.workdir, "bundles", f"{utcnow().replace(':', '')}-{task_id}-{role}-a{attempt}"
         )
         os.makedirs(bundle)
         with open(os.path.join(bundle, "instructions.md"), "w", encoding="utf-8") as fh:
@@ -146,7 +146,9 @@ class Loop:
                 fh,
                 indent=2,
             )
-        self.record("run", f"spawn/{role}-a{attempt}", {"worker": worker, "bundle": bundle})
+        self.record(
+            "run", f"{task_id}/spawn/{role}-a{attempt}", {"worker": worker, "bundle": bundle}
+        )
         proc = run([sys.executable, self.config["launcher"], bundle], timeout=timeout_s + 120)
         result_path = os.path.join(bundle, "result.json")
         result = {}
@@ -235,6 +237,7 @@ class Loop:
         counts = None
         for round_no in (1, 2):
             result = self.launch(
+                task_id=task["id"],
                 role="author",
                 attempt=round_no,
                 worker=self.config["workers"]["author"],
@@ -313,12 +316,19 @@ class Loop:
     def attempt_implementation(self, task, ws, attempt, feedback):
         branch = f"task/{task['id']}-a{attempt}"
         worktree = os.path.join(self.workdir, f"wt-{task['id']}-a{attempt}")
+        # Idempotent redo (decision 7): a crashed prior run may have left the
+        # branch/worktree behind — in-flight work is torn down and redone.
+        git(self.repo, "worktree", "remove", "--force", worktree)
+        git(self.repo, "worktree", "prune")
+        shutil.rmtree(worktree, ignore_errors=True)
+        git(self.repo, "branch", "-D", branch)
         rc, _, err = git(self.repo, "worktree", "add", "-b", branch, worktree, "main")
         if rc != 0:
             raise Blocker("worktree-failed", {"stderr": err})
         try:
             worker_key = f"implementer_a{min(attempt, 2)}"
             result = self.launch(
+                task_id=task["id"],
                 role="implementer",
                 attempt=attempt,
                 worker=self.config["workers"][worker_key],
@@ -397,3 +407,139 @@ class Loop:
             {"task": task["id"], "attempts": self.config["max_attempts"],
              "last_feedback": feedback},
         )
+
+    # ---------- the walker (derive state, walk serially, halt on blocker) ----------
+
+    def subject(self, suffix):
+        return f"exec-loop/{self.plan_name}/{suffix}"
+
+    def task_done(self, task):
+        """Done iff a merge record's sha is an ancestor of current main —
+        the artifacts are the bookkeeping (decision 7)."""
+        for record in reversed(self.ledger_records()):
+            if record.get("subject") == self.subject(f"{task['id']}/merged"):
+                sha = record.get("data", {}).get("sha", "")
+                rc, _, _ = git(self.repo, "merge-base", "--is-ancestor", sha, "main")
+                if rc == 0:
+                    return True
+        return False
+
+    def gates_recorded(self, task_id):
+        """Attempts that reached a gate VERDICT. A crashed mid-attempt spawn
+        with no gate record is redone as the same attempt number."""
+        count = 0
+        for record in self.ledger_records():
+            if record.get("subject", "").startswith(self.subject(f"{task_id}/gate-a")):
+                count += 1
+        return count
+
+    def walk(self):
+        preflight = run(
+            [sys.executable, PREFLIGHT, "check", self.snapshot_path, "--require-ratified"]
+        )
+        if preflight.returncode != 0:
+            print(preflight.stdout or preflight.stderr, file=sys.stderr)
+            raise UsageError("plan refused by preflight (is it ratified?)")
+        order = run([sys.executable, PREFLIGHT, "order", self.snapshot_path])
+        if order.returncode != 0:
+            raise UsageError(f"preflight order failed: {order.stderr.strip()}")
+        tasks_by_id = {t["id"]: t for t in self.plan["tasks"]}
+
+        for task_id in order.stdout.split():
+            task = tasks_by_id[task_id]
+            if self.task_done(task):
+                continue
+            verdicts = self.gates_recorded(task_id)
+            if verdicts >= self.config["max_attempts"]:
+                raise Blocker(
+                    "attempts-exhausted",
+                    {"task": task_id, "attempts": verdicts,
+                     "note": "derived from ledger on startup — prior run exhausted this task"},
+                )
+            self.task_cycle(task, starting_attempt=verdicts + 1)
+        return 0
+
+
+class UsageError(Exception):
+    pass
+
+
+def acquire_lock(workdir):
+    """One loop per repo at a time. flock dies with the process — no stale locks."""
+    import fcntl
+
+    path = os.path.join(workdir, "loop.lock")
+    handle = open(path, "w")
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        handle.close()
+        return None
+    return handle
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog="loop.py", description=__doc__.splitlines()[0])
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    p_run = sub.add_parser("run", help="walk a ratified plan task-by-task")
+    p_run.add_argument("--plan", required=True, help="ratified plan.json")
+    p_run.add_argument("--repo", required=True, help="target git repository")
+    p_run.add_argument("--heldout-out", required=True, help="held-out workspace parent (outside the repo)")
+    p_run.add_argument("--config", help="JSON file overriding DEFAULT_CONFIG keys")
+    p_run.add_argument("--launcher", help="launcher executable (overrides config)")
+    p_run.add_argument("--ledger", help="ledger file (default: <workdir>/ledger.jsonl)")
+    args = parser.parse_args(argv)
+
+    config = json.loads(json.dumps(DEFAULT_CONFIG))  # deep copy
+    if args.config:
+        try:
+            with open(args.config, encoding="utf-8") as fh:
+                config.update(json.load(fh))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"error: cannot read config: {exc}", file=sys.stderr)
+            return 2
+    if args.launcher:
+        config["launcher"] = args.launcher
+    if args.ledger:
+        config["ledger"] = args.ledger
+
+    try:
+        loop = Loop(args.plan, args.repo, args.heldout_out, config)
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    lock = acquire_lock(loop.workdir)
+    if lock is None:
+        print("error: another exec-loop already holds this plan's lock", file=sys.stderr)
+        return 2
+    try:
+        loop.walk()
+        print(json.dumps({"ok": True, "plan": loop.plan_name, "ledger": loop.ledger}))
+        return 0
+    except UsageError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    except Blocker as blocker:
+        payload = {
+            "reason": blocker.reason,
+            "detail": blocker.detail,
+            "ts": utcnow(),
+            "note": "all automated progress is stopped; operator adjudication required",
+        }
+        blocker_path = os.path.join(loop.workdir, "blocker.json")
+        with open(blocker_path, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=2, sort_keys=True)
+            fh.write("\n")
+        try:
+            loop.record("note", f"blocker/{blocker.reason}", blocker.detail)
+        except Blocker:
+            pass  # ledger unavailable must not mask the original blocker
+        print(json.dumps({"ok": False, "blocker": blocker_path, "reason": blocker.reason}))
+        return 1
+    finally:
+        lock.close()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

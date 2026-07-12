@@ -17,6 +17,27 @@ read-attempt probe below — before any real plan uses it. When the Codex CLI la
 (the named first extension), it gets its own smoke; a green Claude smoke says nothing about it.
 Re-run the smoke after any Claude Code release (vendor-build decay).
 
+## What each run has taught (vendor-build facts, build-specific)
+
+- **Run 1** (`acceptEdits` + `permissions.deny Read`): the OS wall held through bash, but
+  headless git commit / python3 aborted on approval prompts nobody could answer.
+- **Run 2** (`bypassPermissions`): commits ran, but the read wall dropped (the permission-layer
+  `Read` deny doesn't survive bypass) — and **the held-out suite caught it**: the implementer's
+  own checks passed, the blind test asserting `DENIED` failed the gate, merge refused. The
+  design's whole thesis, live.
+- **The fix now in `claude_p.py`** (doc-grounded, run 3 is the arbiter): the wall moved to the
+  OS layer (`sandbox.filesystem.denyRead`), `sandbox.autoAllowBashIfSandboxed` runs sandboxed
+  bash unattended, `acceptEdits` covers the edit tool. **Run 3's job: confirm git commit runs
+  with no prompt under auto-allow AND the bash read of the held-out dir is DENIED — both at
+  once.** That combination is the thing every prior run missed.
+
+### Network note
+
+The sandbox's network model is allowlist-based. `network: true` in the isolation intent
+currently means "sandbox default" (local git/python work; reaching external domains needs
+explicit domain allowlisting) — a known gap, unneeded by this smoke, to be closed by its own
+probe when a real task needs outbound network (e.g. `pip install`).
+
 ## Before you run
 
 1. Check window headroom (`/usage` in an interactive session) — don't burn a nearly-empty

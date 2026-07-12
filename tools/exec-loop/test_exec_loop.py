@@ -139,11 +139,21 @@ class ClaudePDryRunTests(unittest.TestCase):
         self.assertEqual(argv[0:2], ["claude", "-p"])
         for token in ["--model", "claude-opus-4-8", "--effort", "xhigh", "--settings"]:
             self.assertIn(token, argv)
+        # commits run unattended via sandbox auto-allow, NOT bypassPermissions
+        # (which dropped the wall in smoke run 2)
+        self.assertIn("acceptEdits", argv)
+        self.assertNotIn("bypassPermissions", argv)
         settings = out["generated_settings"]
-        self.assertIn(f"Read({self.deny})", settings["permissions"]["deny"])
-        self.assertIn(f"Read({self.deny}/**)", settings["permissions"]["deny"])
-        self.assertTrue(settings["sandbox"]["enabled"])
-        self.assertTrue(settings["sandbox"]["network"])
+        # in-process Read tool wall: // = absolute path
+        self.assertIn(f"Read(/{self.deny})", settings["permissions"]["deny"])
+        self.assertIn(f"Read(/{self.deny}/**)", settings["permissions"]["deny"])
+        # OS bash wall + unattended sandboxed bash + no escape hatch
+        sandbox = settings["sandbox"]
+        self.assertTrue(sandbox["enabled"])
+        self.assertTrue(sandbox["autoAllowBashIfSandboxed"])
+        self.assertFalse(sandbox["allowUnsandboxedCommands"])
+        self.assertEqual(sandbox["excludedCommands"], [])
+        self.assertEqual(sandbox["filesystem"]["denyRead"], [self.deny])
         # the settings file is materialized in the bundle for inspection
         with open(os.path.join(bundle, "generated-settings.json")) as fh:
             self.assertEqual(json.load(fh), settings)

@@ -92,21 +92,48 @@ def validate(params):
 def build_settings(isolation):
     """Translate isolation intent into a Claude Code settings object.
 
-    The deny-rule shape (permissions.deny Read rules; denies are monotonic
-    across scopes) is a verified vendor commitment; the sandbox block is
-    best-known vendor-build mechanism — the smoke probe is what proves it.
+    Two layers, learned from smoke runs 1-2 (2026-07-12) + doc research:
+    - The OS wall for arbitrary bash (cat/ls/python open()) is
+      `sandbox.filesystem.denyRead` (Seatbelt/bubblewrap-enforced,
+      independent of permission mode). This is the load-bearing wall.
+    - `permissions.deny: Read(...)` additionally blocks Claude's in-process
+      Read TOOL (which is NOT sandboxed). Absolute paths need the `//` prefix
+      (a single leading `/` is project-relative — a real footgun).
+    - `sandbox.autoAllowBashIfSandboxed` runs sandboxed bash unattended (no
+      approval prompt, so headless git commit / python3 do not abort) WHILE
+      the filesystem wall stays up. This is why bypassPermissions (which
+      dropped the wall in smoke run 2) is not used.
+
+    Confidence: doc-grounded (code.claude.com/docs sandboxing + settings), but
+    the commit-under-auto-allow and denyRead-blocks-bash behaviors are
+    vendor-build — the smoke probe is the arbiter on the target build.
     """
-    deny = []
-    for path in isolation.get("deny_read", []):
-        clean = path.rstrip("/")
-        deny.append(f"Read({clean})")
-        deny.append(f"Read({clean}/**)")
-    settings = {"permissions": {"deny": deny}}
+    deny_read = [p.rstrip("/") for p in isolation.get("deny_read", [])]
+    settings = {}
+    if deny_read:
+        # `f"Read(/{path})"` where path already starts with "/" yields "//path"
+        # = absolute per the permission-rule path syntax.
+        rules = []
+        for path in deny_read:
+            rules.append(f"Read(/{path})")
+            rules.append(f"Read(/{path}/**)")
+        settings["permissions"] = {"deny": rules}
     if isolation.get("sandbox"):
-        settings["sandbox"] = {
+        sandbox = {
             "enabled": True,
-            "network": bool(isolation.get("network", True)),
+            "autoAllowBashIfSandboxed": True,   # unattended sandboxed bash; no prompt/abort
+            "allowUnsandboxedCommands": False,  # close the dangerouslyDisableSandbox escape hatch
+            "excludedCommands": [],             # nothing runs outside the wall
         }
+        if deny_read:
+            sandbox["filesystem"] = {"denyRead": deny_read}
+        if not isolation.get("network", True):
+            # network intent is allowlist-based in the sandbox; false = deny external.
+            # network=true leaves the sandbox default (local ops work; verified-
+            # external-allow is a separate probe, unneeded by the smoke). See
+            # SMOKE.md's network note.
+            sandbox["network"] = {"allowedDomains": []}
+        settings["sandbox"] = sandbox
     return settings
 
 
@@ -121,13 +148,13 @@ def build_argv(worker, settings_path, instructions_path):
         worker["model"],
         "--settings",
         settings_path,
-        # bypassPermissions, deliberately: the OS sandbox is the wall (probed
-        # live 2026-07-12 — a real worker's ls/cat of the denied workspace was
-        # blocked THROUGH BASH). acceptEdits was falsified by smoke run #1:
-        # headless workers cannot answer approval prompts, so git commit and
-        # check commands hung behind "requires approval" and no work landed.
+        # acceptEdits (NOT bypassPermissions): covers the Edit/Write tool for
+        # in-cwd edits so it won't prompt->abort headless; mutating bash is
+        # handled by sandbox.autoAllowBashIfSandboxed, so the OS filesystem wall
+        # (sandbox.filesystem.denyRead) stays enforced. bypassPermissions was
+        # falsified by smoke run 2: it dropped the read wall.
         "--permission-mode",
-        "bypassPermissions",
+        "acceptEdits",
     ]
     if worker.get("effort"):
         # Effort flag semantics are vendor-build: --dry-run shows it, the

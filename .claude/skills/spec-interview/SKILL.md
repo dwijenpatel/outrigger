@@ -44,7 +44,10 @@ enumeration. If an option needs a definition to parse, the definition comes firs
    concerns, substitutability, future replaceability — **name the principle and what it buys
    or forecloses over the long horizon**; immediate pros/cons alone under-inform. And state
    tradeoffs as *couplings* where they are: "including X would cost the separation that
-   motivated decision Y" beats "X is out of scope."
+   motivated decision Y" beats "X is out of scope." When a future desire shapes an option,
+   **ask for its concreteness** — which specific thing, how soon? A named near-term
+   requirement is a design input that sharpens contracts (which fields, which clauses); a
+   vague future buys only insurance.
 2. **Ground yourself before asking.** Read the repo first — locate the code the goal touches,
    its tests, its conventions. Never ask what the codebase already answers; brownfield
    planning is mostly localization. If the repo carries a run-ledger with records of past

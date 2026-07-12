@@ -126,15 +126,43 @@ def cmd_run(args):
             report["merge"]["performed"] = False
         else:
             report["merge"]["performed"] = True
+            ready = True
             if "Already up to date" in (merge.stdout + merge.stderr):
                 report["merge"]["up_to_date"] = True
-            # All checks must pass — and they only run on a successful merge.
-            for cmd in args.check:
-                result = run_check(cmd, worktree, args.timeout)
-                report["checks"].append(result)
-            report["ok"] = bool(report["checks"]) and all(
-                c["exit"] == 0 for c in report["checks"]
-            )
+            else:
+                # Commit the judged merge in the throwaway worktree BEFORE
+                # running checks, so checks see exactly the state a landed
+                # merge would have: HEAD's tree is the judged tree, status is
+                # clean. Without this (smoke run 4, 2026-07-12), HEAD lags the
+                # judged tree and status is dirty by construction — any
+                # legitimate suite test consulting git state fails
+                # environmentally, deterministically, on every attempt.
+                # Synthetic identity; hooks skipped — the gate judges via its
+                # checks, never via the target repo's hooks.
+                committed = git(
+                    worktree,
+                    "-c", "user.name=merge-gate",
+                    "-c", "user.email=merge-gate@invalid",
+                    "commit", "--no-verify", "-q",
+                    "-m", f"merge-gate: judged merge of {source_sha[:12]} onto {base_sha[:12]}",
+                    check=False,
+                )
+                if committed.returncode != 0:
+                    # Fail closed: never run checks against a half-made state.
+                    report["merge"]["commit_error"] = committed.stderr.strip()[:400]
+                    ready = False
+                else:
+                    report["merge"]["judged_commit"] = git(
+                        worktree, "rev-parse", "HEAD", check=False
+                    ).stdout.strip()
+            # All checks must pass — and they only run on a committed merge.
+            if ready:
+                for cmd in args.check:
+                    result = run_check(cmd, worktree, args.timeout)
+                    report["checks"].append(result)
+                report["ok"] = bool(report["checks"]) and all(
+                    c["exit"] == 0 for c in report["checks"]
+                )
     finally:
         git(repo, "worktree", "remove", "--force", worktree, check=False)
         git(repo, "worktree", "prune", check=False)

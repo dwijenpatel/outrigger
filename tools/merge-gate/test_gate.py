@@ -95,6 +95,34 @@ class RunTests(GateFixture):
         for side in ("base", "source"):
             self.assertRegex(report[side]["sha"], r"^[0-9a-f]{40}$")
 
+    def test_checks_see_a_committed_merge_not_a_staged_one(self):
+        """Smoke run 4 regression (2026-07-12): suites legitimately consult
+        git state — when checks run, HEAD must carry the judged tree and
+        status must be clean, exactly like a landed merge."""
+        proc = gate(
+            "run", "--repo", self.repo, "--ref", "feat-pass", "--report", self.report,
+            "--check", 'test -z "$(git status --porcelain)"',
+            "--check", "git show HEAD:feature.txt | grep -q ok",
+            "--check", "git show HEAD:value.txt | grep -q 3",
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        report = self.read_report()
+        self.assertTrue(report["ok"])
+        self.assertRegex(report["merge"]["judged_commit"], r"^[0-9a-f]{40}$")
+
+    def test_self_merge_environment_is_equally_clean(self):
+        """The closure path calls the gate with base == ref (up-to-date merge);
+        git-state checks must behave identically there."""
+        proc = gate(
+            "run", "--repo", self.repo, "--ref", "main", "--report", self.report,
+            "--check", 'test -z "$(git status --porcelain)"',
+            "--check", "git show HEAD:value.txt | grep -q 3",
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        report = self.read_report()
+        self.assertTrue(report["ok"])
+        self.assertTrue(report["merge"]["up_to_date"])
+
     def test_any_failing_check_fails_the_gate(self):
         proc = gate(
             "run", "--repo", self.repo, "--ref", "feat-pass", "--report", self.report,

@@ -49,3 +49,13 @@ python3 <artifact-dir>/heldout.py validate --workspace <your-workspace> --repo <
 **You never run `seal`.** Sealing is the composer's verb, after your role ends. And you never
 assert your suite is good — `validate` and the seal decide; your output is the tests
 themselves.
+
+## The suite's execution environment
+
+Your tests are run by the merge gate in a **detached throwaway worktree where the judged merge
+has been committed**: `HEAD`'s tree IS the judged tree, and `git status` is clean — exactly the
+state a landed merge would present (smoke run 4 made this a contract, 2026-07-12). So tests may
+consult repository **content** freely, including through git (`git show HEAD:<path>`,
+cleanliness checks). Do **not** assert on history *shape* — the gate's merge commit is
+synthetic (its message, author, and parent structure belong to the gate, not the implementer),
+so commit counts, messages, and authorship are outside any spec's observable behavior.

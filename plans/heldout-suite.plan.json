@@ -100,5 +100,9 @@
   ],
   "external": [
     "plan-json-contract"
-  ]
+  ],
+  "ratified": {
+    "by": "dwijen",
+    "ts": "2026-07-12T00:55:05Z"
+  }
 }

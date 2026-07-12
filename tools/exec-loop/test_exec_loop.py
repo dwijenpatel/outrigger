@@ -157,6 +157,11 @@ class ClaudePDryRunTests(unittest.TestCase):
         # sandbox-can't-start must abort, not warn-and-run-unsandboxed
         # (vendor default is the fail-open; operator-caught 2026-07-12)
         self.assertTrue(sandbox["failIfUnavailable"])
+        # binary provenance: dry-run records the resolved path (never execs
+        # for a version — dry-run executes nothing); real runs add version
+        self.assertIn("binary", out)
+        self.assertIn("path", out["binary"])
+        self.assertNotIn("version", out["binary"])
         # the settings file is materialized in the bundle for inspection
         with open(os.path.join(bundle, "generated-settings.json")) as fh:
             self.assertEqual(json.load(fh), settings)

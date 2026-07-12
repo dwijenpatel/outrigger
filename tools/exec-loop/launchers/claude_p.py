@@ -19,6 +19,7 @@ this file's shape, not its imports.
 import datetime
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -144,6 +145,28 @@ def build_settings(isolation):
     return settings
 
 
+def binary_provenance(resolve_version):
+    """Which `claude` will actually run, and (on real runs) its version.
+
+    Vendor builds are the fastest-decaying dependency in the system and the
+    2026-07-12 skew (PATH served 2.1.202 while the desktop app ran 2.1.205)
+    was invisible until someone thought to look. Recording path+version per
+    spawn makes every result self-describing. Version resolution execs the
+    binary, so dry-run (which promises to execute nothing) records the path
+    only.
+    """
+    path = shutil.which("claude")
+    prov = {"path": path}
+    if path and resolve_version:
+        try:
+            r = subprocess.run([path, "--version"], capture_output=True,
+                               text=True, timeout=30)
+            prov["version"] = (r.stdout or r.stderr).strip()
+        except Exception as exc:  # provenance must never break a launch
+            prov["version"] = f"unavailable: {exc}"[:80]
+    return prov
+
+
 def build_argv(worker, settings_path, instructions_path):
     with open(instructions_path, encoding="utf-8") as fh:
         prompt = fh.read()
@@ -208,6 +231,7 @@ def main(argv=None):
                 {
                     "dry_run": True,
                     "argv": argv_out,
+                    "binary": binary_provenance(resolve_version=False),
                     "cwd": params["cwd"],
                     "generated_settings": settings,
                     "timeout_s": params["timeout_s"],
@@ -218,6 +242,7 @@ def main(argv=None):
         )
         return 0
 
+    binary = binary_provenance(resolve_version=True)
     started = utcnow()
     t0 = time.monotonic()
     proc = subprocess.Popen(
@@ -252,6 +277,7 @@ def main(argv=None):
             "finished_at": utcnow(),
             "duration_s": round(time.monotonic() - t0, 3),
             "timed_out": timed_out,
+            "binary": binary,
         },
     )
     return 0 if ok else 1

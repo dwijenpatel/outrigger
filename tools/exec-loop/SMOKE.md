@@ -36,6 +36,13 @@ Re-run the smoke after any Claude Code release (vendor-build decay).
   every visible check still passed. Now it aborts the session instead, and the abort surfaces
   as a failed spawn. Docs don't name the headless path explicitly (the `--settings` precedence
   rule implies it) — run 3 arbitrates this key like the rest.
+- **Run 3** (2026-07-12, build 2.1.202 — **green**): exit 0, merged on attempt 1,
+  `probe-result.txt` = `DENIED`. The combination every prior run missed held **simultaneously**:
+  git commit ran unattended under sandbox auto-allow AND the OS wall denied the held-out read.
+  `failIfUnavailable: true` was accepted by the live CLI (settings not rejected; worker ran
+  normally). Author suite: 3 files, 10 fails-on-base. Full cycle ~15 min, one author + one
+  implementer, no escalation. Caveat: this ran on the stale standalone 2.1.202 (the skew the
+  host convention below now prevents); a 2.1.205 verdict is an operator re-run if wanted.
 
 ### Network note
 
@@ -49,6 +56,17 @@ probe when a real task needs outbound network (e.g. `pip install`).
 1. Check window headroom (`/usage` in an interactive session) — don't burn a nearly-empty
    window on a probe.
 2. `claude --version` — record it; the result is a fact about *this build*.
+
+### Which `claude` runs (host convention, 2026-07-12)
+
+Runs 1–2 executed on 2.1.205 (the desktop app's managed CLI) while run 3 executed on 2.1.202
+(a stale standalone install PATH happened to serve) — two independent updaters had silently
+diverged. Since 2026-07-12, `~/.local/bin/claude` on this host is a **shim that resolves to
+the desktop app's managed CLI** (`~/Library/Application Support/Claude/claude-code/<ver>/…`),
+so terminal and app share one updater and cannot diverge; the shim fails loudly if the app
+layout changes. Independently, every spawn's `result.json` now records the **binary path and
+version actually used** (launcher contract `binary` key) — a version change between runs is a
+recorded fact, and any new build re-triggers the standing re-smoke rule above.
 
 ## Run
 

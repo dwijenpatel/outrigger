@@ -42,9 +42,13 @@ Never launch unwalled and hope.
 
 ## What the launcher must produce (in the bundle dir)
 
-- `result.json` — `{ok, exit, started_at, finished_at, refused_reason?}`. `ok: true` means
-  the worker session ran to completion with exit 0. **Task success is not the launcher's
-  judgment** — gates judge results; the launcher only reports that the session ran.
+- `result.json` — `{ok, exit, started_at, finished_at, refused_reason?, binary?}`. `ok: true`
+  means the worker session ran to completion with exit 0. **Task success is not the launcher's
+  judgment** — gates judge results; the launcher only reports that the session ran. `binary`
+  (recommended) records the tool binary's resolved path and version actually used for this
+  spawn — vendor builds are the fastest-decaying dependency, and the 2026-07-12 version skew
+  (PATH at 2.1.202, app at 2.1.205) showed silent divergence is real; provenance makes every
+  result self-describing.
 - `transcript.txt` — the worker session's captured output.
 
 Launcher exit code: `0` = worker session ran to completion · nonzero = launch failure or

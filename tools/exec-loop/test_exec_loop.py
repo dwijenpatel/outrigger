@@ -529,6 +529,28 @@ git add -A
 git commit -qm noop
 """
 
+# Does its own task correctly AND silently deletes task one's marker — the
+# cross-task regression that per-task gates cannot see (their verifiers only
+# cover the current task). Whole-build closure must catch it.
+IMPL_REGRESSES_PRIOR = """\
+TID=$(git rev-parse --abbrev-ref HEAD | sed -e 's|task/||' -e 's|-a[0-9]*$||')
+rm -f done-t-one.txt
+touch "done-$TID.txt"
+git add -A
+git commit -qm "done $TID (and quietly broke t-one)"
+"""
+
+# Does its own task correctly, but an "external writer" (the operator, another
+# tool) commits to main mid-attempt. The judged tree can then no longer land
+# fast-forward; the loop must refuse rather than land an unjudged merge.
+IMPL_EXTERNAL_WRITER = """\
+git -C "$REPO_PATH" commit --allow-empty -qm "external mid-run commit"
+TID=$(git rev-parse --abbrev-ref HEAD | sed -e 's|task/||' -e 's|-a[0-9]*$||')
+touch "done-$TID.txt"
+git add -A
+git commit -qm "done $TID"
+"""
+
 
 class WalkerFixture(TaskCycleFixture):
     """Reuses the repo fixture; swaps in a ratified two-task plan and drives
@@ -627,6 +649,86 @@ class WalkerTests(WalkerFixture):
             proc = self.run_cli(self.generic_env())
             self.assertEqual(proc.returncode, 2)
             self.assertIn("lock", proc.stderr)
+
+    def test_closure_grants_completion_with_stamp(self):
+        proc = self.run_cli(self.generic_env())
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        closure = [
+            json.loads(line) for line in open(self.ledger_path)
+            if '"exec-loop/plan/closure"' in line
+        ]
+        self.assertEqual(len(closure), 1)
+        data = closure[0]["data"]
+        self.assertTrue(data["ok"])
+        main_sha = subprocess.run(
+            ["git", "-C", self.repo, "rev-parse", "main"],
+            capture_output=True, text=True,
+        ).stdout.strip()
+        self.assertEqual(data["sha"], main_sha)  # bound to final main
+        self.assertTrue(data["plan_sha256"])     # bound to the frozen plan
+        self.assertTrue(os.path.exists(data["report"]))
+        with open(data["report"]) as fh:
+            report = json.load(fh)
+        # closure replayed BOTH suites (verify + run per task) + both checks
+        self.assertEqual(len(report["checks"]), data["checks"])
+        self.assertGreaterEqual(
+            sum(1 for c in report["checks"] if "verify" in c["cmd"]), 2
+        )
+
+    def test_closure_catches_cross_task_regression(self):
+        proc = self.run_cli(self.generic_env(impl=IMPL_REGRESSES_PRIOR))
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        # the regression really landed at task level (both gates passed)...
+        self.assertFalse(os.path.exists(os.path.join(self.repo, "done-t-one.txt")))
+        self.assertTrue(os.path.exists(os.path.join(self.repo, "done-t-two.txt")))
+        # ...and closure is what caught it
+        with open(os.path.join(self.heldout_out, "_runs", "plan", "blocker.json")) as fh:
+            blocker = json.load(fh)
+        self.assertEqual(blocker["reason"], "closure-failed")
+        self.assertTrue(
+            any("t-one" in cmd for cmd in blocker["detail"]["failing"]),
+            blocker["detail"]["failing"],
+        )
+
+    def test_closure_idempotent_on_restart(self):
+        self.assertEqual(self.run_cli(self.generic_env()).returncode, 0)
+        proc = self.run_cli(self.generic_env())
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        closure_count = sum(
+            1 for line in open(self.ledger_path)
+            if '"exec-loop/plan/closure"' in line
+        )
+        self.assertEqual(closure_count, 1, "unchanged main+plan must not re-run closure")
+
+    def test_two_plans_same_repo_contend_on_repo_lock(self):
+        import fcntl
+
+        common = subprocess.run(
+            ["git", "-C", self.repo, "rev-parse", "--git-common-dir"],
+            capture_output=True, text=True,
+        ).stdout.strip()
+        if not os.path.isabs(common):
+            common = os.path.join(self.repo, common)
+        with open(os.path.join(common, "exec-loop.lock"), "w") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            # a DIFFERENTLY-NAMED plan against the same repo must refuse
+            plan2 = os.path.join(self.tmp.name, "second-plan.json")
+            with open(self.plan_path) as src, open(plan2, "w") as dst:
+                json.dump(json.load(src), dst)
+            proc = self.run_cli(self.generic_env(), plan=plan2)
+            self.assertEqual(proc.returncode, 2)
+            self.assertIn("repository", proc.stderr)
+
+    def test_external_main_move_refuses_non_ff_landing(self):
+        env = self.generic_env(impl=IMPL_EXTERNAL_WRITER)
+        env["REPO_PATH"] = self.repo
+        proc = self.run_cli(env)
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        with open(os.path.join(self.heldout_out, "_runs", "plan", "blocker.json")) as fh:
+            blocker = json.load(fh)
+        self.assertEqual(blocker["reason"], "merge-not-fast-forward")
+        # nothing landed: the worker's marker is NOT on main
+        self.assertFalse(os.path.exists(os.path.join(self.repo, "done-t-one.txt")))
 
     def test_exhaustion_blocks_halts_all_and_stays_blocked_on_restart(self):
         proc = self.run_cli(self.generic_env(impl=IMPL_NOOP))

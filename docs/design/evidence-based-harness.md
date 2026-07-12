@@ -132,7 +132,9 @@ hold for *specific feedback regimes*: noise-and-threshold mechanisms (M2) and
 threshold-revealed leaderboard scores (M1's O(log k)) — not for arbitrary rich feedback. The
 v1 policy therefore does not lean on the theorems; it stays trivially inside them: suites are
 **per-task**, failure feedback to the implementer is **counts-only**, and the attempt cap
-(two, then a human) bounds adaptive queries per suite to **≤2**. Any change that raises
+(two, then a human) bounds adaptive queries per suite to **≤2**. (Whole-build closure replays
+every suite once more at plan completion — non-adaptively: those results reach only the
+operator, never a worker, so the adaptive budget is untouched.) Any change that raises
 per-suite queries past the attempt cap — pipelining, suite reuse across tasks, larger caps —
 must first write an actual reuse policy (holdout size, threshold, noise, query budget) and
 show the feedback channel sits inside a guaranteed regime. That is **T12**, and it triggers on

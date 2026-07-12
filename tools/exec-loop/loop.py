@@ -4,9 +4,12 @@
 The first composition (design D3/D4/D5): per task, serially — materialize the
 authoring workspace, launch a fresh test-author, seal the held-out suite,
 launch a fresh implementer in a confined worktree, gate the merged tree,
-merge on pass, record everything in the ledger. Fresh-worker retry with model
-escalation on gate failure; halt-everything with a blocker record when a task
-exhausts attempts.
+land the judged tree fast-forward-only, record everything in the ledger.
+Fresh-worker retry with model escalation on gate failure; halt-everything
+with a blocker record when a task exhausts attempts. After the last task,
+whole-build CLOSURE re-runs every task's checks and every sealed suite
+against final main — exit 0 is granted by that stamped report, never claimed
+from per-task history (D3).
 
 Composition rule (R5): sibling artifacts are invoked ONLY as subprocess CLIs
 (plan-preflight, heldout-suite, merge-gate, run-ledger); workers only through
@@ -20,6 +23,7 @@ Exit codes: 0 plan complete · 1 blocker (see blocker.json) · 2 usage/config er
 
 import argparse
 import datetime
+import hashlib
 import json
 import os
 import re
@@ -436,9 +440,22 @@ class Loop:
                 verify = run([sys.executable, GATE, "verify", "--report", report_path, "--repo", self.repo])
                 if verify.returncode != 0:
                     raise Blocker("gate-stamp-stale", {"report": report_path})
-                rc, _, err = git(self.repo, "merge", "--no-edit", branch)
+                # Land EXACTLY the judged tree, or refuse (closes the
+                # verify->merge race): the branch was cut from the gated base,
+                # so whenever fast-forward holds, the gate-judged merged tree
+                # IS the source tip's tree. --ff-only by the report's pinned
+                # SHA either lands that tree byte-identically or fails. A
+                # non-FF here means main moved mid-flight or the worker
+                # rewrote history — either way nothing lands unjudged.
+                source_sha = report["source"]["sha"]
+                rc, _, err = git(self.repo, "merge", "--ff-only", source_sha)
                 if rc != 0:
-                    raise Blocker("merge-failed", {"stderr": err})
+                    raise Blocker(
+                        "merge-not-fast-forward",
+                        {"stderr": err, "source_sha": source_sha,
+                         "note": "main moved since gating or branch history was "
+                                 "rewritten; nothing was landed — operator adjudication"},
+                    )
                 rc, sha, _ = git(self.repo, "rev-parse", "main")
                 self.record("outcome", f"{task['id']}/merged", {"sha": sha, "attempt": attempt})
                 return {"outcome": "merged", "sha": sha}
@@ -487,6 +504,88 @@ class Loop:
                 count += 1
         return count
 
+    # ---------- whole-build closure ----------
+
+    def plan_sha256(self):
+        with open(self.snapshot_path, "rb") as fh:
+            return hashlib.sha256(fh.read()).hexdigest()
+
+    def closure_already_granted(self, main_sha, plan_hash):
+        """A passing closure record bound to exactly this main SHA and plan
+        snapshot — restart idempotency, same artifacts-are-the-bookkeeping
+        rule as task_done (decision 7)."""
+        for record in reversed(self.ledger_records()):
+            if record.get("subject") == self.subject("closure"):
+                data = record.get("data", {})
+                if (
+                    data.get("ok")
+                    and data.get("sha") == main_sha
+                    and data.get("plan_sha256") == plan_hash
+                ):
+                    return True
+        return False
+
+    def closure(self):
+        """Whole-build closure (D3): plan completion is GRANTED by re-running
+        every task's checks and every sealed held-out suite against final
+        main, bound to this plan snapshot + main SHA — never claimed from
+        per-task history. Per-task gates only run the current task's
+        verifiers, so a later merge can regress an earlier task invisibly;
+        this is the verifier that sees the whole build. Non-adaptive: the
+        results reach only the operator, never a worker, so D2's per-suite
+        reuse budget is untouched."""
+        rc, main_sha, err = git(self.repo, "rev-parse", "main")
+        if rc != 0:
+            raise Blocker("closure-failed", {"stderr": err})
+        plan_hash = self.plan_sha256()
+        if self.closure_already_granted(main_sha, plan_hash):
+            return 0
+        checks = []
+        for task in self.plan["tasks"]:
+            checks += list(task.get("checks", []))
+            try:
+                checks += self.heldout_check_commands(self.workspace(task["id"]))
+            except OSError as exc:
+                raise Blocker(
+                    "closure-missing-suite",
+                    {"task": task["id"], "error": str(exc),
+                     "note": "a sealed suite this plan merged under is gone — "
+                             "closure cannot re-verify it; operator adjudication"},
+                )
+        report_path = os.path.join(self.workdir, f"closure-{main_sha[:12]}.json")
+        gate_argv = [
+            sys.executable, GATE, "run",
+            "--repo", self.repo, "--base", "main", "--ref", "main",
+            "--report", report_path,
+        ]
+        for cmd in checks:
+            gate_argv += ["--check", cmd]
+        gate = run(gate_argv)
+        report = {}
+        if os.path.exists(report_path):
+            with open(report_path, encoding="utf-8") as fh:
+                report = json.load(fh)
+        data = {
+            "ok": gate.returncode == 0,
+            "sha": main_sha,
+            "plan_sha256": plan_hash,
+            "report": report_path,
+            "checks": len(checks),
+        }
+        if gate.returncode == 0:
+            self.record("outcome", "closure", data)
+            return 0
+        data["failing"] = [
+            c["cmd"] for c in report.get("checks", []) if c.get("exit") != 0
+        ]
+        raise Blocker(
+            "closure-failed",
+            {**data,
+             "note": "final main fails checks/suites that were green at their own "
+                     "merges — a later change regressed an accepted task; the plan "
+                     "is NOT complete"},
+        )
+
     def walk(self):
         preflight = run(
             [sys.executable, PREFLIGHT, "check", self.snapshot_path, "--require-ratified"]
@@ -511,7 +610,7 @@ class Loop:
                      "note": "derived from ledger on startup — prior run exhausted this task"},
                 )
             self.task_cycle(task, starting_attempt=verdicts + 1)
-        return 0
+        return self.closure()
 
 
 class UsageError(Exception):
@@ -519,11 +618,34 @@ class UsageError(Exception):
 
 
 def acquire_lock(workdir):
-    """One loop per repo at a time. flock dies with the process — no stale locks."""
+    """One loop per plan-workdir (bundles, gate reports, worktrees live here).
+    flock dies with the process — no stale locks."""
     import fcntl
 
     path = os.path.join(workdir, "loop.lock")
     handle = open(path, "w")
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        handle.close()
+        return None
+    return handle
+
+
+def acquire_repo_lock(repo):
+    """One loop per REPOSITORY (D4's single-writer is repo-scoped): two plans
+    aimed at the same repo must contend no matter what they are named or
+    where their heldout dirs live. The flock sits in the git common dir —
+    shared by every checkout and worktree of the repo, outside any worker
+    diff — and dies with the process."""
+    import fcntl
+
+    rc, common, _ = git(repo, "rev-parse", "--git-common-dir")
+    if rc != 0:
+        return None  # not a git repository — caller reports
+    if not os.path.isabs(common):
+        common = os.path.join(repo, common)
+    handle = open(os.path.join(os.path.realpath(common), "exec-loop.lock"), "w")
     try:
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
@@ -563,8 +685,18 @@ def main(argv=None):
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
+    repo_lock = acquire_repo_lock(loop.repo)
+    if repo_lock is None:
+        print(
+            "error: another exec-loop already holds this repository's lock "
+            "(one writer per repo, regardless of plan name) — or the target "
+            "is not a git repository",
+            file=sys.stderr,
+        )
+        return 2
     lock = acquire_lock(loop.workdir)
     if lock is None:
+        repo_lock.close()
         print("error: another exec-loop already holds this plan's lock", file=sys.stderr)
         return 2
     try:
@@ -593,6 +725,7 @@ def main(argv=None):
         return 1
     finally:
         lock.close()
+        repo_lock.close()
 
 
 if __name__ == "__main__":

@@ -55,8 +55,22 @@ runs).
   record, exit 1. Nothing auto-approves, nothing skips.
 - **No state file** (decision 7): progress derives from git ancestry + seals + the append-only
   ledger on every start; interrupted work (unsealed workspaces, uncommitted worktrees) is torn
-  down and redone; sealed workspaces are never auto-removed. One `flock` per plan directory —
-  two loops cannot walk the same plan.
+  down and redone; sealed workspaces are never auto-removed.
+- **Single-writer is repo-scoped** (D4; hardened 2026-07-12): a `flock` in the target repo's
+  git common dir — two loops cannot write one repository, regardless of plan names or heldout
+  dirs. A second per-plan-workdir `flock` additionally keeps two runs of one plan from sharing
+  bundles/reports.
+- **The judged tree is what lands, or nothing does** (hardened 2026-07-12): after gate verify,
+  the merge is `--ff-only` against the report's pinned source SHA — if main moved mid-flight
+  or the worker rewrote history, the land refuses (`merge-not-fast-forward` blocker) instead
+  of landing a tree no gate ever judged.
+- **Whole-build closure grants completion** (D3; hardened 2026-07-12): per-task gates only run
+  the current task's verifiers, so a later merge can silently regress an earlier task. After
+  the last task, closure re-runs **every task's checks and every sealed suite** against final
+  main via the merge-gate, stamped with the plan-snapshot hash + main SHA and recorded in the
+  ledger; exit 0 exists only behind that report (`closure-failed` blocker otherwise; restart
+  skips only on an exact main+plan match). Closure results reach only the operator — the D2
+  reuse budget is untouched.
 
 ## Threat model
 

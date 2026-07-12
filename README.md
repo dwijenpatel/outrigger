@@ -37,6 +37,7 @@ git tag **`v1-attic`**.
 | [tools/merge-gate/](tools/merge-gate/README.md) | **v2 artifact #2** — blocking gate judging the *merged* tree in a clean worktree (D1/D5), stamped reports, `verify` anti-merge-skew interlock |
 | [tools/plan-preflight/](tools/plan-preflight/README.md) | **v2 artifact #3a** — sound structural validation of the plan.json contract (D7/M7): acyclicity and integrity hard-fail; determinacy signals warn for the ratifier |
 | [.claude/skills/spec-interview/](.claude/skills/spec-interview/README.md) | **v2 artifact #3b** — the clarification interview as a standalone skill emitting the plan.json contract; `/spec-interview` |
+| [tools/heldout-suite/](tools/heldout-suite/README.md) | **v2 artifact #4** — the graded tests' lifecycle (D2/D11): materialize outside the repo, fails-on-base validation, tamper-evident seal + verify, deny-fragment; [ROLE.md](tools/heldout-suite/ROLE.md) is the authoring contract |
 | [tools/budget-governor/](tools/budget-governor/README.md) | Preserved measurement instruments: the spawn-portability probe and the **unexecuted cache-weight experiment (T1** — quota-costing, operator-run only**)** |
 | `tests/` | The corpus link/reference guard (`python3 -m unittest tests.test_reference -q`) |
 

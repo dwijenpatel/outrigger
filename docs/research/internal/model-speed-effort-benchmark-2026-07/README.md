@@ -112,7 +112,10 @@ reasoning as visible text. Effort scaling low→max: Sonnet 4.2×, Opus 3.1×, F
 ### Round 3 — coding at xhigh (median [min–max] over 3 reps)
 
 **Correctness: saturated.** All 4 models solved all 3 tasks in all 3 reps — 36/36
-fully-correct runs, including Haiku on the regex engine. Prompt-scale coding does not
+fully-correct runs, including Haiku on the regex engine. **Correction 2026-07-12** (see
+bottom): 24 of these 36 (GEN + HARD) are re-derived from the committed artifacts by the
+corrected graders; the 12 FIX runs are no longer checkable (workspaces not preserved).
+Prompt-scale coding does not
 discriminate the 2026 lineup; separation only appears at repo-scale / long-horizon
 work (see published agentic benchmarks, e.g. SWE-bench-Verified, where Fable leads).
 
@@ -195,6 +198,43 @@ python3 grade_hard.py # grades HARD against re.fullmatch battery
 
 Scripts expect `claude` at `~/.local/bin/claude` and `python3` + `pytest` on PATH.
 Each script writes `result*_<task>_<model>_<effort|rep>.json` beside itself; graders
-create `grading/` and `ws_fix_*` working dirs. Known wart: `grade.py` was written for
-the scratchpad layout (results and `fixtures/` in the same dir as the script) — keep
-that layout when rerunning.
+create `grading/` and `ws_fix_*` working dirs. The graders find round-3 results in
+either layout (beside the script, or the committed `results/round3-coding-xhigh/`) and
+derive test totals from the fixture files — both fixed 2026-07-12 (see Correction).
+Note FIX is only gradeable in the same session as `run_bench3.sh`: grading reads the
+`ws_fix_*` workspaces the run creates, and those are not preserved in this tree.
+
+## Correction (2026-07-12)
+
+An independent critical review of `docs/` flagged that `grade.py` as committed could not
+have produced the headline correctness result. Re-verification confirmed three defects:
+
+- **Off-by-one grader total:** `grade.py` hardcoded `total = 17` for GEN, but
+  `fixtures/test_eval_hidden.py` has **16** tests (16 at first commit; never changed).
+  `solved` requires `passed == total`, so a perfect 16/16 GEN run could never grade as
+  solved. The committed grader therefore cannot print the GEN "solved" column of the
+  36/36 claim; how that tally was originally produced is not recoverable from the tree.
+- **Broken reproduction path:** both graders globbed `result3_*.json` beside the script
+  (the original scratchpad layout), so against the committed layout they graded zero
+  runs. Disclosed as a "known wart," but a broken A3 reproduction path all the same.
+- **Latent crash:** `result3_hard_*.json` matches `grade.py`'s glob but not its regex —
+  `m.groups()` on `None` raises `AttributeError` when hard results sit in the same dir.
+
+All three are now fixed in `grade.py` / `grade_hard.py` (totals derived from fixtures,
+both layouts searched, non-matching files skipped, FIX non-reproducibility stated
+explicitly). Re-run of the corrected graders against this tree — full transcript in
+`results/regrade-2026-07-12.txt`:
+
+| Task | Re-derivable from committed artifacts? | Result |
+|---|---|---|
+| GEN (12 runs) | yes — solutions in result JSONs + hidden suite | **12/12 solved, 16/16 tests each** |
+| HARD (12 runs) | yes — solutions in result JSONs + 36-case battery | **12/12 solved, 36/36 cases each** |
+| FIX (12 runs) | **no** — `ws_fix_*` workspaces never committed | unverifiable; original run-day observation only |
+
+The headline should be read as: **24/24 re-verified correct; 36/36 as originally
+observed, of which the 12 FIX runs are no longer checkable.** Latency/token/cost numbers
+are unaffected — they come directly from the CLI-emitted result JSONs. Evidence-grading
+consequence: the correctness rows qualify as directly-reproducible (A3) only for GEN and
+HARD; FIX correctness is a single-source run-day claim. Logged in
+`docs/research/internal/v2-ledger.jsonl` (kind `correction`) and reflected in
+[distilled/internal.md](../../distilled/internal.md).

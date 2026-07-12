@@ -1,0 +1,375 @@
+# Regrade 2026-07-12 — corrected graders run against the committed tree
+# (see README 'Correction' section; grader defect: GEN total=17 vs 16-test suite)
+
+--- python3 grade.py ---
+[
+ {
+  "task": "fix",
+  "model": "fable",
+  "rep": 1,
+  "api_s": 59.0,
+  "total_s": 60.1,
+  "out_tok": 2425,
+  "in_tok": 138089,
+  "cost": 0.4968,
+  "turns": 7,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "fix",
+  "model": "fable",
+  "rep": 2,
+  "api_s": 49.8,
+  "total_s": 51.5,
+  "out_tok": 2049,
+  "in_tok": 137273,
+  "cost": 0.4725,
+  "turns": 7,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "fix",
+  "model": "fable",
+  "rep": 3,
+  "api_s": 51.7,
+  "total_s": 53.0,
+  "out_tok": 2159,
+  "in_tok": 165809,
+  "cost": 0.5064,
+  "turns": 7,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "fix",
+  "model": "haiku",
+  "rep": 1,
+  "api_s": 35.9,
+  "total_s": 37.0,
+  "out_tok": 4253,
+  "in_tok": 152050,
+  "cost": 0.0638,
+  "turns": 6,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "fix",
+  "model": "haiku",
+  "rep": 2,
+  "api_s": 35.3,
+  "total_s": 37.1,
+  "out_tok": 3236,
+  "in_tok": 149865,
+  "cost": 0.0566,
+  "turns": 6,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "fix",
+  "model": "haiku",
+  "rep": 3,
+  "api_s": 25.4,
+  "total_s": 27.4,
+  "out_tok": 1860,
+  "in_tok": 147188,
+  "cost": 0.0468,
+  "turns": 6,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "fix",
+  "model": "opus",
+  "rep": 1,
+  "api_s": 59.3,
+  "total_s": 60.0,
+  "out_tok": 3894,
+  "in_tok": 136348,
+  "cost": 0.4597,
+  "turns": 6,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "fix",
+  "model": "opus",
+  "rep": 2,
+  "api_s": 49.8,
+  "total_s": 51.0,
+  "out_tok": 3258,
+  "in_tok": 134415,
+  "cost": 0.2636,
+  "turns": 6,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "fix",
+  "model": "opus",
+  "rep": 3,
+  "api_s": 48.8,
+  "total_s": 50.3,
+  "out_tok": 3543,
+  "in_tok": 135677,
+  "cost": 0.2788,
+  "turns": 6,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "fix",
+  "model": "sonnet",
+  "rep": 1,
+  "api_s": 30.5,
+  "total_s": 32.3,
+  "out_tok": 2500,
+  "in_tok": 190072,
+  "cost": 0.3252,
+  "turns": 6,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "fix",
+  "model": "sonnet",
+  "rep": 2,
+  "api_s": 37.3,
+  "total_s": 38.8,
+  "out_tok": 2977,
+  "in_tok": 231739,
+  "cost": 0.1987,
+  "turns": 7,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "fix",
+  "model": "sonnet",
+  "rep": 3,
+  "api_s": 37.2,
+  "total_s": 38.8,
+  "out_tok": 2584,
+  "in_tok": 193074,
+  "cost": 0.1776,
+  "turns": 6,
+  "passed": 0,
+  "total": 10,
+  "note": "workspace missing \u2014 FIX is only gradeable right after run_bench3.sh (ws_fix_* were not preserved)"
+ },
+ {
+  "task": "gen",
+  "model": "fable",
+  "rep": 1,
+  "api_s": 75.0,
+  "total_s": 74.4,
+  "out_tok": 6507,
+  "in_tok": 4264,
+  "cost": 0.4114,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ },
+ {
+  "task": "gen",
+  "model": "fable",
+  "rep": 2,
+  "api_s": 44.6,
+  "total_s": 46.1,
+  "out_tok": 4054,
+  "in_tok": 4269,
+  "cost": 0.2889,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ },
+ {
+  "task": "gen",
+  "model": "fable",
+  "rep": 3,
+  "api_s": 40.1,
+  "total_s": 40.6,
+  "out_tok": 3589,
+  "in_tok": 4267,
+  "cost": 0.2656,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ },
+ {
+  "task": "gen",
+  "model": "haiku",
+  "rep": 1,
+  "api_s": 128.8,
+  "total_s": 128.9,
+  "out_tok": 21796,
+  "in_tok": 6788,
+  "cost": 0.1233,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ },
+ {
+  "task": "gen",
+  "model": "haiku",
+  "rep": 2,
+  "api_s": 171.3,
+  "total_s": 171.3,
+  "out_tok": 20254,
+  "in_tok": 6794,
+  "cost": 0.1156,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ },
+ {
+  "task": "gen",
+  "model": "haiku",
+  "rep": 3,
+  "api_s": 192.8,
+  "total_s": 193.8,
+  "out_tok": 22466,
+  "in_tok": 6790,
+  "cost": 0.1267,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ },
+ {
+  "task": "gen",
+  "model": "opus",
+  "rep": 1,
+  "api_s": 74.0,
+  "total_s": 73.2,
+  "out_tok": 6772,
+  "in_tok": 2960,
+  "cost": 0.1997,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ },
+ {
+  "task": "gen",
+  "model": "opus",
+  "rep": 2,
+  "api_s": 78.0,
+  "total_s": 78.1,
+  "out_tok": 6648,
+  "in_tok": 2957,
+  "cost": 0.1966,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ },
+ {
+  "task": "gen",
+  "model": "opus",
+  "rep": 3,
+  "api_s": 68.1,
+  "total_s": 68.3,
+  "out_tok": 6150,
+  "in_tok": 2960,
+  "cost": 0.1841,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ },
+ {
+  "task": "gen",
+  "model": "sonnet",
+  "rep": 1,
+  "api_s": 92.4,
+  "total_s": 91.7,
+  "out_tok": 10194,
+  "in_tok": 9298,
+  "cost": 0.1907,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ },
+ {
+  "task": "gen",
+  "model": "sonnet",
+  "rep": 2,
+  "api_s": 68.0,
+  "total_s": 68.1,
+  "out_tok": 7618,
+  "in_tok": 9299,
+  "cost": 0.1521,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ },
+ {
+  "task": "gen",
+  "model": "sonnet",
+  "rep": 3,
+  "api_s": 84.2,
+  "total_s": 86.2,
+  "out_tok": 9601,
+  "in_tok": 9300,
+  "cost": 0.1819,
+  "turns": 1,
+  "passed": 16,
+  "total": 16,
+  "note": ""
+ }
+]
+
+--- AGGREGATE (median [min-max] across reps) ---
+
+GEN  (tests per run: 16)
+model              api_s           out_tok                 cost$   solved   tests
+haiku   171.3 [128.8-192.8]21796 [20254-22466]   0.123 [0.116-0.127]     3/316/16/16
+sonnet  84.2 [68.0-92.4] 9601 [7618-10194]   0.182 [0.152-0.191]     3/316/16/16
+opus    74.0 [68.1-78.0]  6648 [6150-6772]   0.197 [0.184-0.200]     3/316/16/16
+fable   44.6 [40.1-75.0]  4054 [3589-6507]   0.289 [0.266-0.411]     3/316/16/16
+
+FIX  NOT RE-GRADEABLE: no ws_fix_* workspaces exist. The agentic FIX runs edited files in place;
+     those workspaces were never committed, so FIX correctness cannot be re-derived from this tree.
+
+--- python3 grade_hard.py ---
+model    rep   api_s  out_tok    cost$    tests  first fails
+haiku      1    83.2    14554   0.0874    36/36  
+haiku      2   117.5    14160   0.0855    36/36  
+haiku      3    85.9    15725   0.0933    36/36  
+sonnet     1    93.1    10470   0.1957    36/36  
+sonnet     2    91.1    10097   0.1901    36/36  
+sonnet     3   112.7    13020   0.2339    36/36  
+opus       1   190.0    15336    0.415    36/36  
+opus       2    74.1     6165   0.1857    36/36  
+opus       3    54.9     5002   0.1566    36/36  
+fable      1    62.3     5344   0.3557    36/36  
+fable      2    54.1     4683   0.3226    36/36  
+fable      3    69.3     6277   0.4023    36/36  
+
+--- HARD aggregate ---
+haiku    solved 3/3  med_api_s    85.9  med_out_tok   14554  med_cost$ 0.087  tests 36/36/36
+sonnet   solved 3/3  med_api_s    93.1  med_out_tok   10470  med_cost$ 0.196  tests 36/36/36
+opus     solved 3/3  med_api_s    74.1  med_out_tok    6165  med_cost$ 0.186  tests 36/36/36
+fable    solved 3/3  med_api_s    62.3  med_out_tok    5344  med_cost$ 0.356  tests 36/36/36

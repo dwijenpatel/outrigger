@@ -127,7 +127,7 @@ admission-warmup apparatus has *zero* real telemetry.
 
 ## 4. Directly reproducible local measurements `A3`
 
-### The model-speed/effort benchmark (2026-07-05) — qualifies as Tier A
+### The model-speed/effort benchmark (2026-07-05) — Tier A where re-derivable (corrected 2026-07-12)
 
 **Why it qualifies:** the artifact is committed and git-tracked — **73 raw run JSONs** (round 1:
 21, round 2: 16, round 3: 36) plus **9 harness files** (`run_bench*.sh`, `grade.py`,
@@ -135,9 +135,23 @@ admission-warmup apparatus has *zero* real telemetry.
 Strip the artifact and this would be a self-serving single-source measurement — Tier C. **The
 artifact is the warrant.**
 
+**Correction (2026-07-12), against interest:** an independent critical review showed the
+committed `grade.py` could never have printed the GEN "solved" column — it hardcoded a
+17-test total against a 16-test suite (`passed == total` unreachable) and globbed a
+results layout that no longer existed. The lesson is the A3 rule taken seriously: *a
+committed artifact with a broken reproduction path is not yet a warrant; only what
+re-derives is.* Corrected graders re-run against the tree
+([regrade transcript](../internal/model-speed-effort-benchmark-2026-07/results/regrade-2026-07-12.txt),
+[full correction](../internal/model-speed-effort-benchmark-2026-07/README.md)): **GEN 12/12
+solved (16/16 each) and HARD 12/12 solved (36/36 each) re-derive — those rows keep A3. FIX
+correctness (12 runs) does not**: the agentic task edited `ws_fix_*` workspaces that were
+never committed, so it is a single-source run-day observation, demoted accordingly (this
+also weakens FIX's cost-per-*solved*-task column). Latency/token/cost rows are unaffected
+(read directly from the CLI-emitted JSONs).
+
 | Finding | Number | n |
 |---|---|---|
-| Correctness is **saturated** at prompt scale | **36/36** fully-correct runs, including Haiku on a regex engine | full round-3 sample |
+| Correctness is **saturated** at prompt scale | **24/24 re-verified** (GEN 12×16/16, HARD 12×36/36, incl. Haiku on the regex engine); FIX 12/12 observed on run day, **no longer checkable** | full round-3 sample |
 | Speed ranking **inverts by regime** | Fable fastest wall-clock on thinking-heavy (GEN api_s **45** [40–75] vs Opus 74, Sonnet 84, Haiku 171) | n=3, median [min–max] |
 | Token spend varies a lot between identical reps | up to **3×**; worst cell Opus/HARD **5.0k–15.3k tok, 55–190 s, $0.16–$0.42** | n=3 |
 | Token efficiency offsets the price ladder | Opus ≈ Sonnet per solved task (1.08 / 0.95 / 1.40 vs Sonnet=1.0); Fable ≈ **1.6–1.8×** Sonnet on thinking-heavy work, not its 10× price multiple | derived from n=3 medians |

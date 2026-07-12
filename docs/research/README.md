@@ -226,6 +226,17 @@ Corrections produced by the fact-check passes, kept so future readers don't re-i
   FrontierSWE: Fable 5 first at 0.900, Zenith unlisted; HAL GAIA: top entry 74.55%,
   II-Agent unlisted). The RALPH-ablation numbers are author-run, ~n=1 per cell. Mechanisms
   are importable; effect sizes are not.
+- **Corrected 2026-07-12 (found by independent critical review; against interest):** the local
+  speed/effort benchmark's committed `grade.py` could never have produced its GEN "solved"
+  column — it hardcoded a 17-test total against the 16-test hidden suite (`passed == total`
+  unreachable) and globbed a results layout that doesn't exist in the tree; how the original
+  36/36 was tallied is not recoverable. Corrected graders re-derive **GEN 12/12 (16/16 each)
+  and HARD 12/12 (36/36 each)** from the committed JSONs — those rows keep A3 — but **FIX
+  correctness (12 runs) is permanently unverifiable** (`ws_fix_*` workspaces never committed):
+  demoted to a single-source run-day observation, which also weakens FIX's cost-per-solved
+  column. Quote the headline as "24/24 re-verified; 12 FIX observed on run day, no longer
+  checkable," never as "36/36." Latency/token/cost rows unaffected (CLI-emitted JSONs). Regrade
+  transcript: `internal/model-speed-effort-benchmark-2026-07/results/regrade-2026-07-12.txt`.
 
 **Absence-of-feature findings** (strong, but inherently harder to prove than a positive): Kiro
 closure gate; Spec Kit automated final gate; LangGraph built-in critic; any published

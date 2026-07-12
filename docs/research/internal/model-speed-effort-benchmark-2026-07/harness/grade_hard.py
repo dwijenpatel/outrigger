@@ -5,6 +5,8 @@ import json, glob, os, re, shutil, statistics, subprocess, sys
 
 BENCH = os.path.dirname(os.path.abspath(__file__))
 GRADE_DIR = os.path.join(BENCH, "grading")
+# Corrected 2026-07-12: also find results in the committed repo layout (see README "Correction").
+RESULT_DIRS = [os.path.join(os.path.dirname(BENCH), "results", "round3-coding-xhigh"), BENCH]
 
 RUNNER = r'''
 import json, re, sys
@@ -44,8 +46,10 @@ def strip_fences(code):
     m = re.match(r"^```(?:python)?\s*\n(.*)\n```\s*$", code, re.S)
     return m.group(1) if m else code
 
+result_files = next((sorted(glob.glob(os.path.join(d, "result3_hard_*.json")))
+                     for d in RESULT_DIRS if glob.glob(os.path.join(d, "result3_hard_*.json"))), [])
 rows = []
-for f in sorted(glob.glob(os.path.join(BENCH, "result3_hard_*.json"))):
+for f in result_files:
     m = re.match(r"result3_hard_(\w+)_r(\d)\.json", os.path.basename(f))
     model, rep = m.groups()
     d = json.load(open(f))

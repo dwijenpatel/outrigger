@@ -147,5 +147,9 @@
     "merge-gate-cli",
     "plan-preflight-cli",
     "run-ledger-cli"
-  ]
+  ],
+  "ratified": {
+    "by": "dwijen",
+    "ts": "2026-07-12T02:46:33Z"
+  }
 }

@@ -36,6 +36,14 @@ Re-run the smoke after any Claude Code release (vendor-build decay).
   every visible check still passed. Now it aborts the session instead, and the abort surfaces
   as a failed spawn. Docs don't name the headless path explicitly (the `--settings` precedence
   rule implies it) — run 3 arbitrates this key like the rest.
+- **Pending re-probe — `--output-format json` (2026-07-12):** the launcher now runs workers
+  with `--output-format json` and parses the session's own `usage`/`total_cost_usd` into
+  `result.json` (durable spend capture, D14/R4). This changes the vendor invocation and the
+  stdout shape the launcher consumes, so it needs a green smoke on the target build before a
+  real plan relies on the captured numbers. `parse_session` is fail-safe (a schema surprise
+  degrades to `usage:{error}`, never a crash), but "the numbers are right" is vendor-build and
+  only the smoke proves it. **Run 4's added check: `result.json` carries a `usage` block with
+  non-null `output_tokens` and `cost_usd`.**
 - **Run 3** (2026-07-12, build 2.1.202 — **green**): exit 0, merged on attempt 1,
   `probe-result.txt` = `DENIED`. The combination every prior run missed held **simultaneously**:
   git commit ran unattended under sandbox auto-allow AND the OS wall denied the held-out read.

@@ -42,13 +42,18 @@ Never launch unwalled and hope.
 
 ## What the launcher must produce (in the bundle dir)
 
-- `result.json` — `{ok, exit, started_at, finished_at, refused_reason?, binary?}`. `ok: true`
-  means the worker session ran to completion with exit 0. **Task success is not the launcher's
-  judgment** — gates judge results; the launcher only reports that the session ran. `binary`
-  (recommended) records the tool binary's resolved path and version actually used for this
-  spawn — vendor builds are the fastest-decaying dependency, and the 2026-07-12 version skew
-  (PATH at 2.1.202, app at 2.1.205) showed silent divergence is real; provenance makes every
-  result self-describing.
+- `result.json` — `{ok, exit, started_at, finished_at, refused_reason?, binary?, usage?}`.
+  `ok: true` means the worker session ran to completion with exit 0. **Task success is not the
+  launcher's judgment** — gates judge results; the launcher only reports that the session ran.
+  `binary` (recommended) records the tool binary's resolved path and version actually used for
+  this spawn — vendor builds are the fastest-decaying dependency, and the 2026-07-12 version
+  skew (PATH at 2.1.202, app at 2.1.205) showed silent divergence is real; provenance makes
+  every result self-describing. `usage` (recommended) records the session's own token/cost
+  accounting so spend is a durable artifact rather than a forensic recovery (D14/R4): a launcher
+  that can get it reports `{input_tokens, output_tokens, cache_read_tokens,
+  cache_creation_tokens, cost_usd, num_turns, api_duration_ms}` (nulls where the tool doesn't
+  expose a field), or `{error: <reason>}` when the tool's output couldn't be parsed. Capturing
+  usage must be best-effort — a token-accounting miss never fails an otherwise-good launch.
 - `transcript.txt` — the worker session's captured output.
 
 Launcher exit code: `0` = worker session ran to completion · nonzero = launch failure or

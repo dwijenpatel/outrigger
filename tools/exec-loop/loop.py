@@ -71,6 +71,35 @@ def path_inside(child, parent):
     return child == parent or child.startswith(parent + os.sep)
 
 
+def parse_shortstat(text):
+    """`git diff --shortstat` -> {files, insertions, deletions} (0 when absent).
+
+    "how much code did this worker produce" for an implementer (product code).
+    """
+    def n(pat):
+        m = re.search(pat, text or "")
+        return int(m.group(1)) if m else 0
+    return {
+        "files": n(r"(\d+) files? changed"),
+        "insertions": n(r"(\d+) insertions?\(\+\)"),
+        "deletions": n(r"(\d+) deletions?\(-\)"),
+    }
+
+
+def suite_stats(ws):
+    """Lines and file count of the authored held-out suite (test code produced)."""
+    suite_dir = os.path.join(ws, "suite")
+    files = sorted(
+        f for f in os.listdir(suite_dir)
+        if f.startswith("test_") and f.endswith(".py")
+    ) if os.path.isdir(suite_dir) else []
+    lines = 0
+    for f in files:
+        with open(os.path.join(suite_dir, f), encoding="utf-8", errors="replace") as fh:
+            lines += sum(1 for _ in fh)
+    return {"files": len(files), "lines": lines}
+
+
 class Blocker(Exception):
     def __init__(self, reason, detail):
         super().__init__(reason)
@@ -266,6 +295,10 @@ class Loop:
             seal = run([sys.executable, HELDOUT, "seal", "--workspace", ws, "--repo", self.repo])
             if seal.returncode == 0:
                 summary = json.loads(seal.stdout)
+                # Instrument the author leg: token spend (from the launcher's
+                # result.json) + the size of the test code it produced.
+                summary["author_usage"] = result.get("usage")
+                summary["suite"] = suite_stats(ws)
                 self.record("run", f"{task['id']}/seal", summary)
                 return ws
             if "policy" in (seal.stderr or "") and round_no == 1:
@@ -362,6 +395,11 @@ class Loop:
             if rc != 0 or int(ahead or "0") == 0:
                 return {"outcome": "failed", "feedback": "no commit was produced — work not committed does not exist"}
 
+            # Instrument the implementer leg: how much product code it produced
+            # (same three-dot diff the protected-paths check uses below).
+            _, shortstat, _ = git(self.repo, "diff", "--shortstat", f"main...{branch}")
+            churn = parse_shortstat(shortstat)
+
             # Protected paths (decision 8): checked BEFORE any gating.
             rc, names, _ = git(self.repo, "diff", "--name-only", f"main...{branch}")
             touched = [
@@ -391,7 +429,8 @@ class Loop:
             self.record(
                 "run", f"{task['id']}/gate-a{attempt}",
                 {"ok": report["ok"], "report": report_path,
-                 "worker": self.config["workers"][worker_key]},
+                 "worker": self.config["workers"][worker_key],
+                 "impl_usage": result.get("usage"), "churn": churn},
             )
             if gate.returncode == 0:
                 verify = run([sys.executable, GATE, "verify", "--report", report_path, "--repo", self.repo])

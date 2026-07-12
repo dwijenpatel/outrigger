@@ -15,6 +15,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 MOCK = os.path.join(HERE, "launchers", "mock.py")
 CLAUDE_P = os.path.join(HERE, "launchers", "claude_p.py")
 
+sys.path.insert(0, os.path.join(HERE, "launchers"))
+import claude_p  # noqa: E402  (unit-test parse_session directly)
+
 
 def make_bundle(root, *, role="implementer", worker=None, isolation=None, cwd=None,
                 timeout_s=30, instructions="Do the task described in your workspace."):
@@ -112,6 +115,52 @@ class MockLauncherTests(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(bundle, "transcript.txt")))
 
 
+class ParseSessionTests(unittest.TestCase):
+    """The launcher's --output-format json parsing is fail-safe (schema is
+    vendor-build); token capture must never crash a good launch."""
+
+    def test_extracts_usage_and_text(self):
+        raw = json.dumps({
+            "result": "done implementing",
+            "is_error": False,
+            "num_turns": 12,
+            "total_cost_usd": 0.1234,
+            "duration_api_ms": 4567,
+            "usage": {
+                "input_tokens": 100, "output_tokens": 200,
+                "cache_read_input_tokens": 3000, "cache_creation_input_tokens": 40,
+            },
+        })
+        text, usage, is_error = claude_p.parse_session(raw)
+        self.assertEqual(text, "done implementing")
+        self.assertFalse(is_error)
+        self.assertEqual(usage["input_tokens"], 100)
+        self.assertEqual(usage["output_tokens"], 200)
+        self.assertEqual(usage["cache_read_tokens"], 3000)
+        self.assertEqual(usage["cache_creation_tokens"], 40)
+        self.assertEqual(usage["cost_usd"], 0.1234)
+        self.assertEqual(usage["num_turns"], 12)
+
+    def test_unparseable_is_flagged_not_fatal(self):
+        text, usage, is_error = claude_p.parse_session("not json at all")
+        self.assertIn("error", usage)
+        self.assertIsNone(is_error)
+        self.assertEqual(text, "not json at all")
+
+    def test_tolerates_noise_around_json(self):
+        raw = "warning: something\n" + json.dumps({"result": "ok", "usage": {"output_tokens": 5}})
+        text, usage, is_error = claude_p.parse_session(raw)
+        self.assertEqual(text, "ok")
+        self.assertEqual(usage["output_tokens"], 5)
+
+    def test_missing_usage_fields_are_none_not_crash(self):
+        raw = json.dumps({"result": "hi"})  # no usage block at all
+        text, usage, is_error = claude_p.parse_session(raw)
+        self.assertEqual(text, "hi")
+        self.assertIsNone(usage["input_tokens"])
+        self.assertIsNone(usage["cost_usd"])
+
+
 class ClaudePDryRunTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -162,6 +211,9 @@ class ClaudePDryRunTests(unittest.TestCase):
         self.assertIn("binary", out)
         self.assertIn("path", out["binary"])
         self.assertNotIn("version", out["binary"])
+        # structured output so token usage is captured in result.json
+        i = argv.index("--output-format")
+        self.assertEqual(argv[i + 1], "json")
         # the settings file is materialized in the bundle for inspection
         with open(os.path.join(bundle, "generated-settings.json")) as fh:
             self.assertEqual(json.load(fh), settings)
@@ -355,10 +407,22 @@ class TaskCycleTests(TaskCycleFixture):
         self.assertEqual(result["outcome"], "merged")
         with open(os.path.join(self.repo, "notes.py")) as fh:
             self.assertIn("TAGS_ENABLED", fh.read())
-        subjects = [r["subject"] for r in self.loop.ledger_records()]
+        records = self.loop.ledger_records()
+        subjects = [r["subject"] for r in records]
         for expected in ("seal", "gate-a1", "merged"):
             self.assertTrue(any(expected in s for s in subjects), subjects)
         self.assertFalse(os.path.exists(os.path.join(self.loop.workdir, "wt-tags-flag-a1")))
+        # instrumentation: seal carries author suite size; gate carries impl churn
+        seal = next(r for r in records if r["subject"].endswith("/seal"))
+        self.assertEqual(seal["data"]["suite"]["files"], 1)
+        self.assertGreater(seal["data"]["suite"]["lines"], 0)
+        self.assertIn("author_usage", seal["data"])  # None under mock; key present
+        gate = next(r for r in records if "/gate-a1" in r["subject"])
+        churn = gate["data"]["churn"]
+        self.assertEqual(churn["files"], 1)          # only notes.py touched
+        self.assertGreaterEqual(churn["insertions"], 1)
+        self.assertEqual(churn["deletions"], 0)
+        self.assertIn("impl_usage", gate["data"])
 
     def test_gate_fail_escalates_with_redacted_feedback(self):
         self.set_env(

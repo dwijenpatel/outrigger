@@ -185,12 +185,63 @@ def build_argv(worker, settings_path, instructions_path):
         # falsified by smoke run 2: it dropped the read wall.
         "--permission-mode",
         "acceptEdits",
+        # Structured output so the session's own token/cost usage is captured
+        # in result.json instead of being lost (D14/R4: the harness must
+        # measure its own spend). stdout becomes one JSON object; the human
+        # transcript is its `result` field. Schema is vendor-build — parsed
+        # fail-safe (parse_session) and probed by the smoke.
+        "--output-format",
+        "json",
     ]
     if worker.get("effort"):
         # Effort flag semantics are vendor-build: --dry-run shows it, the
         # smoke probe proves it; a wrong flag fails loudly at launch.
         argv += ["--effort", worker["effort"]]
     return argv
+
+
+def parse_session(stdout):
+    """Parse `claude -p --output-format json` stdout.
+
+    Returns (transcript_text, usage, is_error):
+    - transcript_text: the session's final message (.result), for human reading
+    - usage: normalized token/cost dict, or {"error": ...} if unparseable
+    - is_error: the vendor's own error flag, or None if it couldn't be read
+
+    Fail-safe by design: a moved/renamed field or non-JSON output must never
+    crash the launcher (its job is to report that the session ran). Token
+    capture is best-effort; the gate is the correctness authority regardless.
+    Schema decay is vendor-build (validated on the benchmark's 2.1.201 JSONs:
+    .usage.{input,output,cache_read_input,cache_creation_input}_tokens,
+    .total_cost_usd, .num_turns, .duration_api_ms) — re-probed by the smoke.
+    """
+    obj = None
+    try:
+        obj = json.loads((stdout or "").strip())
+    except (json.JSONDecodeError, AttributeError):
+        # Tolerate stray lines around the JSON: take the last line that parses.
+        for line in reversed((stdout or "").splitlines()):
+            line = line.strip()
+            if line.startswith("{"):
+                try:
+                    obj = json.loads(line)
+                    break
+                except json.JSONDecodeError:
+                    continue
+    if not isinstance(obj, dict):
+        return (stdout or "", {"error": "unparseable --output-format json output"}, None)
+    u = obj.get("usage") or {}
+    usage = {
+        "input_tokens": u.get("input_tokens"),
+        "output_tokens": u.get("output_tokens"),
+        "cache_read_tokens": u.get("cache_read_input_tokens"),
+        "cache_creation_tokens": u.get("cache_creation_input_tokens"),
+        "cost_usd": obj.get("total_cost_usd"),
+        "num_turns": obj.get("num_turns"),
+        "api_duration_ms": obj.get("duration_api_ms"),
+    }
+    text = obj.get("result")
+    return (text if isinstance(text, str) else (stdout or ""), usage, bool(obj.get("is_error")))
 
 
 def main(argv=None):
@@ -245,29 +296,38 @@ def main(argv=None):
     binary = binary_provenance(resolve_version=True)
     started = utcnow()
     t0 = time.monotonic()
+    # stderr kept SEPARATE from stdout so stdout is clean JSON to parse;
+    # stderr is preserved only when parsing fails (for debuggability).
     proc = subprocess.Popen(
         argv_out,
         cwd=params["cwd"],
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stderr=subprocess.PIPE,
         text=True,
         start_new_session=True,
     )
     timed_out = False
     try:
-        output, _ = proc.communicate(timeout=params["timeout_s"])
+        out, errout = proc.communicate(timeout=params["timeout_s"])
     except subprocess.TimeoutExpired:
         timed_out = True
         try:
             os.killpg(proc.pid, signal.SIGKILL)
         except (ProcessLookupError, PermissionError):
             pass
-        output, _ = proc.communicate()
+        out, errout = proc.communicate()
 
+    transcript_text, usage, is_error = parse_session(out or "")
     with open(os.path.join(bundle, "transcript.txt"), "w", encoding="utf-8") as fh:
-        fh.write(output or "")
+        if usage.get("error"):
+            # parse failed: keep the raw streams so nothing is lost
+            fh.write((out or "") + (f"\n--- stderr ---\n{errout}" if errout else ""))
+        else:
+            fh.write(transcript_text or "")
 
-    ok = (not timed_out) and proc.returncode == 0
+    # Fail-closed on a vendor-reported session error (is_error), on top of the
+    # exit/timeout checks. is_error is None when unparseable -> exit governs.
+    ok = (not timed_out) and proc.returncode == 0 and not is_error
     write_result(
         bundle,
         {
@@ -278,6 +338,7 @@ def main(argv=None):
             "duration_s": round(time.monotonic() - t0, 3),
             "timed_out": timed_out,
             "binary": binary,
+            "usage": usage,
         },
     )
     return 0 if ok else 1

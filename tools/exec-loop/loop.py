@@ -127,10 +127,19 @@ class Loop:
     # ---------- workers ----------
 
     def launch(self, task_id, role, attempt, worker, isolation, cwd, instructions, timeout_s):
-        bundle = os.path.join(
-            self.workdir, "bundles", f"{utcnow().replace(':', '')}-{task_id}-{role}-a{attempt}"
+        self._bundle_seq = getattr(self, "_bundle_seq", 0) + 1
+        stem = os.path.join(
+            self.workdir, "bundles",
+            f"{utcnow().replace(':', '')}-{self._bundle_seq:03d}-{task_id}-{role}-a{attempt}",
         )
-        os.makedirs(bundle)
+        bundle, suffix = stem, 1
+        while True:  # unique across runs even at same-second timestamps
+            try:
+                os.makedirs(bundle)
+                break
+            except FileExistsError:
+                suffix += 1
+                bundle = f"{stem}-{suffix}"
         with open(os.path.join(bundle, "instructions.md"), "w", encoding="utf-8") as fh:
             fh.write(instructions)
         with open(os.path.join(bundle, "params.json"), "w", encoding="utf-8") as fh:
@@ -218,9 +227,15 @@ class Loop:
     def ensure_suite(self, task):
         ws = self.workspace(task["id"])
         if os.path.exists(ws):
-            if self.suite_fresh(task):
-                return ws
-            # unreachable: suite_fresh raises on any not-fresh condition
+            if os.path.exists(os.path.join(ws, "manifest.json")):
+                if self.suite_fresh(task):
+                    return ws
+                # unreachable: suite_fresh raises on any not-fresh condition
+            else:
+                # Materialized but never sealed: in-flight authoring debris from
+                # an interrupted run — torn down and redone (decision 7). Sealed
+                # workspaces are NEVER auto-removed; that is the operator's call.
+                shutil.rmtree(ws)
         proc = run(
             [
                 sys.executable, HELDOUT, "materialize",

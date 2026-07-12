@@ -317,9 +317,13 @@ class TaskCycleFixture(unittest.TestCase):
         root = os.path.join(self.loop.workdir, "bundles")
         found = []
         for name in sorted(os.listdir(root)):
-            if name.endswith(f"-{role}-a{attempt}"):
-                with open(os.path.join(root, name, "params.json")) as fh:
-                    found.append((os.path.join(root, name), json.load(fh)))
+            params_path = os.path.join(root, name, "params.json")
+            if not os.path.exists(params_path):
+                continue
+            with open(params_path) as fh:
+                params = json.load(fh)
+            if params.get("role") == role and params.get("attempt") == attempt:
+                found.append((os.path.join(root, name), params))
         return found
 
 
@@ -556,6 +560,101 @@ class WalkerTests(WalkerFixture):
         proc = self.run_cli(self.generic_env(impl=IMPL_NOOP))
         self.assertEqual(proc.returncode, 1)
         self.assertEqual(self.spawn_count(), before)
+
+
+AUTHOR_INTERRUPTIBLE = """\
+TID=$(basename "$PWD")
+if [ "$TID" = "t-two" ] && [ ! -f "$MOCK_FLAG_FILE" ]; then
+  echo "simulated interruption before t-two authoring"
+  exit 3
+fi
+mkdir -p suite
+cat > suite/test_gen.py <<PY
+import os, unittest
+
+class NewMarker(unittest.TestCase):
+    def test_done_marker(self):
+        self.assertTrue(os.path.exists("done-$TID.txt"))
+PY
+"""
+
+
+class E2ETests(WalkerFixture):
+    """Task e2e-mock: the ratified integration scenarios through the real CLI.
+    Scenarios 1 (full success), 3 (exhaustion halt-all), and clean-restart are
+    covered by WalkerTests; here: fail-once-escalate, protected-path block,
+    and interrupted-mid-plan resume."""
+
+    def test_fail_once_then_escalate_to_opus_and_complete(self):
+        env = self.generic_env()
+        env["MOCK_SCRIPT_IMPLEMENTER_A1"] = self.scenario("impl-a1-wrong.sh", IMPL_NOOP)
+        env["MOCK_SCRIPT_IMPLEMENTER_A2"] = self.scenario("impl-a2-right.sh", IMPL_GENERIC)
+        proc = self.run_cli(env)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        subjects = self.ledger_subjects()
+        self.assertEqual(sum(1 for s in subjects if s.endswith("gate-a1")), 2)
+        self.assertEqual(sum(1 for s in subjects if s.endswith("gate-a2")), 2)
+        # every attempt-2 bundle carries the escalation triple
+        bundles_root = os.path.join(self.heldout_out, "_runs", "plan", "bundles")
+        a2_params = []
+        for name in os.listdir(bundles_root):
+            params_path = os.path.join(bundles_root, name, "params.json")
+            if os.path.exists(params_path):
+                with open(params_path) as fh:
+                    params = json.load(fh)
+                if params.get("role") == "implementer" and params.get("attempt") == 2:
+                    a2_params.append(params)
+        self.assertEqual(len(a2_params), 2)
+        for params in a2_params:
+            self.assertEqual(params["worker"]["model"], "claude-opus-4-8")
+
+    def test_protected_path_diff_blocks_via_cli(self):
+        config_path = os.path.join(self.tmp.name, "config.json")
+        with open(config_path, "w") as fh:
+            json.dump({"protect_paths": ["protected/"]}, fh)
+        env = self.generic_env(impl=IMPL_PROTECTED)
+        proc = subprocess.run(
+            [
+                sys.executable, LOOP_CLI, "run",
+                "--plan", self.plan_path,
+                "--repo", self.repo,
+                "--heldout-out", self.heldout_out,
+                "--launcher", MOCK,
+                "--ledger", self.ledger_path,
+                "--config", config_path,
+            ],
+            capture_output=True, text=True, env={**os.environ, **env},
+        )
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        with open(os.path.join(self.heldout_out, "_runs", "plan", "blocker.json")) as fh:
+            blocker = json.load(fh)
+        self.assertEqual(blocker["reason"], "protected-paths")
+        self.assertEqual(blocker["detail"]["paths"], ["protected/oops.txt"])
+        self.assertFalse(any("gate" in s for s in self.ledger_subjects()))
+
+    def test_interrupted_mid_plan_resumes_without_rework(self):
+        flag = os.path.join(self.tmp.name, "resume-flag")
+        env = {
+            "MOCK_SCRIPT_AUTHOR": self.scenario("author-int.sh", AUTHOR_INTERRUPTIBLE),
+            "MOCK_SCRIPT_IMPLEMENTER": self.scenario("impl-gen.sh", IMPL_GENERIC),
+            "MOCK_FLAG_FILE": flag,
+        }
+        first = self.run_cli(env)
+        self.assertEqual(first.returncode, 1, first.stdout + first.stderr)
+        self.assertTrue(os.path.exists(os.path.join(self.repo, "done-t-one.txt")))
+        self.assertFalse(os.path.exists(os.path.join(self.repo, "done-t-two.txt")))
+        t_one_spawns = sum(1 for s in self.ledger_subjects() if "t-one/spawn" in s)
+
+        with open(flag, "w") as fh:
+            fh.write("resume\n")
+        second = self.run_cli(env)
+        self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
+        self.assertTrue(os.path.exists(os.path.join(self.repo, "done-t-two.txt")))
+        self.assertEqual(
+            sum(1 for s in self.ledger_subjects() if "t-one/spawn" in s),
+            t_one_spawns,
+            "resume must not re-run the merged task",
+        )
 
 
 if __name__ == "__main__":

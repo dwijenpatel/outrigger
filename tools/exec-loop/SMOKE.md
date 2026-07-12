@@ -48,6 +48,17 @@ Re-run the smoke after any Claude Code release (vendor-build decay).
   matching the actual diff** (churn is pure git, not vendor behavior — it rides along for
   confirmation, not probing). Run 4 is a release check for the instrumentation, not a study:
   green means the telemetry can be trusted from then on.
+- **Run 4** (2026-07-12, build 2.1.207 — **red, and the red is the finding**): every scheduled
+  release check PASSED — wall `DENIED` on both attempts, unattended commits, telemetry live and
+  credible on all 3 workers (author $1.98/24.6k out; implementers $0.58 + $0.84), churn matching
+  diffs, counts-only redaction confirmed. The red: the author legitimately wrote spec tests that
+  consult **git state**, and the gate runs checks in a `--no-ff --no-commit` staged-merge
+  worktree — HEAD lags the judged tree and status is dirty *by construction*, so those tests
+  fail environmentally, deterministically, on every attempt → attempts-exhausted. Predicted
+  after gate-a1, confirmed at gate-a2 (identical failing test names). Not a vendor break; a
+  **gate execution-environment defect** — fix: the gate commits its merge in the throwaway
+  worktree before running checks. The `--output-format json` re-probe is hereby **satisfied**;
+  the environment fix is machinery-only and needs no new smoke.
 - **Run 3** (2026-07-12, build 2.1.202 — **green**): exit 0, merged on attempt 1,
   `probe-result.txt` = `DENIED`. The combination every prior run missed held **simultaneously**:
   git commit ran unattended under sandbox auto-allow AND the OS wall denied the held-out read.

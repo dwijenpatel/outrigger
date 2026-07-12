@@ -52,7 +52,10 @@ decide only as well as they can follow.** Every question and option must also re
    `constraints` entries; they are never left implicit). Where the plan splits work, also ask
    whether the seams warrant an **explicit integration task** (its own spec describing the
    cross-task contract, its own checks, depending on the tasks it integrates) — integration
-   coverage is never a free byproduct of per-task tests.
+   coverage is never a free byproduct of per-task tests. And for any artifact whose value is
+   adversarial — gates, seals, isolation walls, secrets — ask the **tamper question**: who
+   could subvert this, what stops them, and what *notices* them; state honestly what each
+   layer cannot stop.
 5. **Record decisions, not just answers.** Every answer that changes the spec becomes a
    `decisions[]` entry (`q`/`a`), so a fresh implementer never re-decides it. What stays
    genuinely unresolved goes to `open_questions` — visible, never silently dropped.

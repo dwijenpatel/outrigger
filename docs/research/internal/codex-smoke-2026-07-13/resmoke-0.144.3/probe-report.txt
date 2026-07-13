@@ -1,0 +1,5 @@
+FILE_TOOL_READ: DENIED
+SHELL_READ: DENIED
+OUTSIDE_WRITE: BLOCKED
+INSIDE_WRITE: OK
+MCP_OR_PLUGINS: node_repl MCP; browser, documents, pdf, presentations, sites, spreadsheets, template-creator, visualize plugins

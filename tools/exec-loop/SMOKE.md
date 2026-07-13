@@ -117,6 +117,17 @@ machines that have one. **codex_p may now carry real roles whose isolation it ca
 the full-loop live task (codex author + implementer through loop.py) is the remaining
 matrix row.**
 
+**Re-smoke, 2026-07-13 (0.144.3 after `codex update`, gpt-5.6-sol @ high): GREEN.** Free
+pre-clearance first (probe matrix replicated; gpt-5.6-sol in catalog; rehearsal clean),
+then one paid run: identical wall verdicts (`FILE_TOOL_READ: DENIED` / `SHELL_READ:
+DENIED` / `OUTSIDE_WRITE: BLOCKED` / `INSIDE_WRITE: OK`), usage parsed live (109,056 in /
+94,464 cached / 1,256 out), `--ephemeral` held, notify silent (operator-confirmed pattern
+from attempt 4). Residual delta on this build: a **`node_repl` MCP** surface now reaches
+workers alongside the eight plugins — same class (user-config/runtime tool surface, walls
+unaffected), one more named item for the `-c 'plugins={}'`-style rider. Artifacts:
+[resmoke-0.144.3](../../docs/research/internal/codex-smoke-2026-07-13/resmoke-0.144.3/).
+**codex_p is certified on the operator's daily build + model.**
+
 ## Claude run 5 — EXECUTED 2026-07-13, build 2.1.207: hardening holds; one residual found
 
 `claude_p.py` passes `--setting-sources ""`, `--strict-mcp-config`,

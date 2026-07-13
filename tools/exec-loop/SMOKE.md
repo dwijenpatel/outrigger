@@ -78,8 +78,20 @@ launcher combo resolves all the way to "No prompt provided via stdin". Consequen
 the launcher: `--ignore-user-config` is gone (it cannot coexist with the wall); the user's
 config.toml loads UNDER our profile layer; `notify = []` in the generated profile
 neutralizes turn-end hooks; unset user keys are a documented ambient residual; a user
-`sandbox_mode` colliding with the permissions table is probe 5's live question. Probes 1–2
-and 4–6 remain open — **re-run required.**
+`sandbox_mode` colliding with the permissions table is probe 5's live question.
+
+**Attempt 3, 2026-07-13 (0.142.5): probe 3 GREEN live; stopped by the model catalog, ~$0.**
+The session started (`thread.started`) — auth, the per-spawn profile file, and the
+permissions table were all accepted by the real pipeline — then the turn failed server-side
+(400): `gpt-5.6-sol` is not in the 0.142.5 catalog (`codex debug models`: gpt-5.5 /
+gpt-5.4 / gpt-5.4-mini) and "requires a newer version of Codex". The operator's daily
+gpt-5.6-sol use rides a newer surface (the desktop app's engine) — version skew, the codex
+edition; the standalone CLI at `~/.codex/packages/standalone/current` is what launchers
+get. Bonus: the live event stream validated `parse_events` (`turn.failed` → fail-closed
+`ok:false`). Attempt 4: stay on 0.142.5 with in-catalog `CODEX_SMOKE_MODEL=gpt-5.5`
+(updating codex mid-experiment would re-open every vendor-build fact attempts 1–3 just
+pinned; update AFTER a green smoke, which per the per-launcher rule triggers a re-smoke
+anyway). Probes 1–2 and 4–6 remain open.
 
 ## Claude run 5 — EXECUTED 2026-07-13, build 2.1.207: hardening holds; one residual found
 

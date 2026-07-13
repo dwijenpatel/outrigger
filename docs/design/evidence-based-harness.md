@@ -405,8 +405,12 @@ carries the vendor-build decay class.
   committed artifacts).
 - **TBD — the contested question that decides how aggressive context reuse should be:** how
   cache reads weigh against *subscription windows* is officially unanswered (§4; the vendor
-  declined to answer, §2.1). The built, unexecuted experiment (**T1**) settles it and is the
-  highest-value single measurement available.
+  declined to answer, §2.1). **T1's first run (2026-07-12, *internal*) excluded full weight**
+  — cache reads are discounted against the window, direction settled against the
+  community-telemetry "near-full weight" claim — **but the magnitude stayed unidentified**
+  (integer-quantized meter, run sized too small; artifact committed). The append-only
+  discipline's warrant improved from "billing fact + zero marginal cost" to "window-side
+  discount exists, size unknown"; the sizing rerun stays the settling step.
 - **Substrate decay-awareness:** R1 carries a volatility note — multiple concurrent
   subscriptions, or metered API pricing. If either lands, "the wall" pluralizes or becomes a
   budget rather than a reset clock, and this decision is revisited through R6. Not provisioned
@@ -529,7 +533,7 @@ size, non-inferiority margin, decision rule — D14); a row here is a question, 
 
 | # | Question | What settles it |
 |---|---|---|
-| T1 | Do cache reads meaningfully discount *subscription-window* occupancy? | The built cache-weight experiment (operator-run; quota-costing) |
+| T1 | Do cache reads meaningfully discount *subscription-window* occupancy? | The built cache-weight experiment (operator-run; quota-costing). **First run 2026-07-12** ([artifact](../research/internal/cache-weight-experiment-2026-07-12/RESULTS.md)): **full weight excluded** — arm A carried ≥ arm B's weighted tokens at w=1 yet moved the meter less; magnitude **unidentified** (the meter is integer-quantized; both arms landed within ~1 point at F=6k×5 — the pre-registered too-small caveat fired, no w forced). Incidentals: caching toggle verified; first window-capacity bound ≈21–62M weighted tok/5h. Settling step: rerun ≥5× larger (≈$8–15) or find a finer usage surface first |
 | T2 | Does blind validation + a held-out vault pay its overhead vs test-secrecy alone, per risk tier? | Paired-arm A/B on a realistic task set (internal evidence is n=2 *existence* — P3v2-5 + smoke run 2, *internal* §5 — never a rate). **Pilot 1 registered 2026-07-12** ([protocol](../research/internal/t2-pilot-1/protocol.md), ledger-anchored): full harness vs the R2 null first, arbiter-suite oracle; **amended same-day, pre-data, to shadow mode** — comparisons embed in real full-tier work and accumulate from the operator's actual distribution; the secrecy-vs-gating decomposition is pilot 2, gated on pilot 1's outcome |
 | T3 | Does a machine-checkable determinacy bar beat human plan-eyeballing? | Gate-on/gate-off arms measuring downstream integration failures (0/10 products have one, §6) |
 | T4 | What licenses trust in a quiet verifier? | Calibration-canary catch rates, minding M4's coupling caveat |

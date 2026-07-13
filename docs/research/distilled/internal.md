@@ -170,6 +170,26 @@ on the headless path (**109 → 5,947** output tokens, ~55×), and correctness *
 measured cache behavior directly: same model+effort share the prefix cache (27k of 37.5k read);
 **an effort change busts it** (0 read, 37.4k fresh).
 
+### The cache-weight probe (T1 first run, 2026-07-12) — A3 for exactly what it shows
+
+**Artifact:** [cache-weight-experiment-2026-07-12](../internal/cache-weight-experiment-2026-07-12/RESULTS.md)
+— 10 verbatim `claude -p` turn JSONs (both arms), the status-line readings log, and the
+analysis; protocol pre-registered, run by the operator in a fresh 5-hour window, no
+amendments. Model pinned `claude-opus-4-8`, build 2.1.207.
+
+| Claim | Strength |
+|---|---|
+| **Cache reads do NOT count at (or above) full window weight.** Arm A carried ≥ arm B's weighted tokens under w=1 (319k vs 310k) yet moved the meter less (0 vs 1 point). | A3 (the artifact carries it); `vendor-policy` decay |
+| The discount's **magnitude is unidentified** — the meter is integer-quantized and the run was sized too small (pre-registered caveat fired; no w forced). | Honest null on the headline question |
+| `DISABLE_PROMPT_CACHING=1` verified: zero cache activity, linear fresh re-reads. | A3; `vendor-build` |
+| `rate_limits.five_hour.used_percentage` is **integer-quantized** (±0.5-pt floor for any window telemetry, incl. T5). | A3; `vendor-build` |
+| First window-capacity bound: **≈21–62M weighted tokens per 5-hour window** (Max plan, n=1 window). | A3, wide bound; `vendor-policy` |
+| Billing-side echo: arm A moved more total tokens for **56% of arm B's dollars** ($0.86 vs $1.55) — billing discount ≠ window weight remains the open distinction. | A3 |
+
+Supersession note: the community-telemetry lean "cache reads at near-full window weight"
+(external §4 / platform-facts) is **contradicted on this build/plan** — direction now settled
+internal-side; only the size of the discount remains open (T1 rerun, ≥5× larger).
+
 ### The tokenizer study (`tool-surface` §4.3) — **Tier B, not Tier A**
 
 Real measurements (o200k_base via js-tiktoken, official TOON encoder, round-trip losslessness

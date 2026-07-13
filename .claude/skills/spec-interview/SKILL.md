@@ -1,6 +1,6 @@
 ---
 name: spec-interview
-description: Pedantic one-question-at-a-time planning interview that turns a goal into a ratified, machine-checkable plan.json. Use when the operator asks to plan or spec a piece of work, invokes /spec-interview, or hands over a goal that needs pinning down before implementation.
+description: Pedantic one-question-at-a-time planning interview that turns a goal into a ratified, machine-checkable plan.json. Use when the operator asks to plan or spec a piece of work, invokes the skill by name (e.g. /spec-interview), or hands over a goal that needs pinning down before implementation.
 ---
 
 # spec-interview — the clarification interview

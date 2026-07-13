@@ -137,13 +137,18 @@ class CodexPTests(CodexPFixture):
         self.assertTrue(os.path.getsize(os.path.join(bundle, "events.jsonl")) > 0)
         argv = self.stub_argv()
         self.assertEqual(argv[0], "exec")
-        for expected in ("--json", "--skip-git-repo-check", "--ephemeral"):
+        for expected in ("--json", "--skip-git-repo-check", "--ephemeral",
+                         "--ignore-user-config", "--ignore-rules", "--strict-config"):
             self.assertIn(expected, argv)
-        self.assertEqual(argv[argv.index("--sandbox") + 1], "workspace-write")
         self.assertEqual(argv[argv.index("--model") + 1], "gpt-5.2-codex")
         self.assertEqual(argv[argv.index("--cd") + 1], self.workdir)
         self.assertEqual(argv[-1], "-")
-        self.assertIn("sandbox_workspace_write.network_access=true", argv)
+        # the wall is a generated permission profile, never the old sandbox
+        # mechanism (docs: the two are mutually exclusive)
+        self.assertNotIn("--sandbox", argv)
+        self.assertIn('permissions.exec_loop_wall.extends=":workspace"', argv)
+        self.assertIn("permissions.exec_loop_wall.network.enabled=true", argv)
+        self.assertIn('default_permissions="exec_loop_wall"', argv)
 
     def test_effort_flag_and_network_false(self):
         bundle = self.make_bundle({
@@ -154,16 +159,26 @@ class CodexPTests(CodexPFixture):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         argv = self.stub_argv()
         self.assertIn('model_reasoning_effort="high"', argv)
-        self.assertNotIn("sandbox_workspace_write.network_access=true", argv)
+        self.assertIn("permissions.exec_loop_wall.network.enabled=false", argv)
+        self.assertNotIn("permissions.exec_loop_wall.network.enabled=true", argv)
 
-    def test_deny_read_refused_fail_closed(self):
-        bundle = self.make_bundle({"isolation": {"deny_read": ["/somewhere/sealed"]}})
+    def test_deny_read_becomes_profile_carve_outs(self):
+        bundle = self.make_bundle({
+            "isolation": {"deny_read": ["/somewhere/sealed/", "/live/repo"]}})
+        proc = self.run_launcher(bundle)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        argv = self.stub_argv()
+        self.assertIn('permissions.exec_loop_wall.filesystem."/somewhere/sealed"="deny"', argv)
+        self.assertIn('permissions.exec_loop_wall.filesystem."/live/repo"="deny"', argv)
+        # deny entries only exist alongside the workspace base + activation
+        self.assertIn('permissions.exec_loop_wall.extends=":workspace"', argv)
+        self.assertIn('default_permissions="exec_loop_wall"', argv)
+
+    def test_quote_bearing_deny_path_is_refused(self):
+        bundle = self.make_bundle({"isolation": {"deny_read": ['/tmp/a"b']}})
         proc = self.run_launcher(bundle)
         self.assertEqual(proc.returncode, 2)
-        res = self.result(bundle)
-        self.assertFalse(res["ok"])
-        self.assertIn("deny_read", res["refused_reason"])
-        self.assertIn("unwalled", res["refused_reason"])
+        self.assertIn("quotes", self.result(bundle)["refused_reason"])
         self.assertFalse(self.stub_invoked(), "refusal must not launch anything")
 
     def test_unknown_contract_and_wrong_tool_refused(self):
@@ -225,7 +240,7 @@ class CodexPTests(CodexPFixture):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         plan = json.loads(proc.stdout)
         self.assertTrue(plan["dry_run"])
-        self.assertIn("workspace-write", plan["argv"])
+        self.assertIn('default_permissions="exec_loop_wall"', plan["argv"])
         self.assertFalse(self.stub_invoked(), "--dry-run must not execute the binary")
         self.assertFalse(os.path.exists(os.path.join(bundle, "result.json")))
 

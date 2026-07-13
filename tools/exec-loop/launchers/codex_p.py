@@ -7,19 +7,30 @@ mechanisms (`--sandbox workspace-write`, workspace network config), builds the
 `codex exec` invocation from the worker params, enforces the timeout, writes
 result.json and transcript.txt.
 
-Fail-closed: any part of the intent this launcher cannot express -> refuse
-(nonzero exit, refused_reason in result.json), never launch unwalled. The
-load-bearing example: Codex CLI has NO read-deny facility (its sandbox modes
-govern writes and approvals; reads are unrestricted), so any bundle with a
-non-empty isolation.deny_read is REFUSED — the loop's implementer role (which
-walls off the held-out suite) cannot run on this launcher until Codex grows
-one. The author role (deny_read: []) can.
+Isolation mechanism (verified against learn.chatgpt.com/docs/permissions,
+2026-07-13): a generated Codex PERMISSION PROFILE, passed as `-c` config
+overrides. The profile `extends = ":workspace"` (unmentioned paths are
+denied by default, so the preset supplies normal workspace behavior — cwd
+writable, unattended commands) and each isolation.deny_read path becomes a
+`"<path>" = "deny"` carve-out (denies reads AND writes under it); network
+intent maps to `permissions.<name>.network.enabled`. Profiles are documented
+as MUTUALLY EXCLUSIVE with the older `--sandbox`/`sandbox_*` mechanism, so
+this launcher never passes `--sandbox`. `--ignore-user-config` +
+`--ignore-rules` keep ambient personal config from weakening the wall (auth
+is unaffected per `codex exec --help`); `--strict-config` turns unknown
+config keys — e.g. `permissions` on a build too old to speak it — into a
+loud startup failure instead of a silent fallback.
 
-Vendor-mechanism honesty: flag and event-schema semantics are vendor-build
-(probed against codex-cli 0.142.5 --help, 2026-07-13), verified only by this
-launcher's operator-run smoke probe (SMOKE.md) — which spends OpenAI quota
-and has NOT run yet. Until it does, usage capture is best-effort-untested and
-the sandbox translation is doc-grounded only. Self-contained by design.
+Fail-closed: any part of the intent this launcher cannot express -> refuse
+(nonzero exit, refused_reason in result.json), never launch unwalled.
+
+Vendor-mechanism honesty: permission profiles are officially BETA ("may
+change" — fast decay class), the `-c` dotted-path parser's handling of
+quoted path segments is undocumented (a parse failure aborts the spawn
+loudly under --strict-config — the safe direction), and none of this is
+proven on a live run: the operator-run smoke probe (SMOKE.md, spends OpenAI
+quota, NOT yet run) is the arbiter, including a deliberate read attempt
+against a denied path. Self-contained by design.
 """
 
 import datetime
@@ -87,16 +98,10 @@ def validate(params):
         isinstance(p, str) and os.path.isabs(p) for p in deny
     ):
         return "isolation.deny_read must be a list of absolute paths"
-    if deny:
-        # THE fail-closed clause for this tool: Codex sandbox modes
-        # (read-only / workspace-write) restrict writes and approvals; no
-        # mechanism denies reads of specific paths. Launching anyway would
-        # silently void the caller's contamination wall.
-        return (
-            "isolation.deny_read is not expressible by Codex CLI "
-            "(no read-deny facility in its sandbox); refusing rather than "
-            "launching unwalled"
-        )
+    if any('"' in p or "\n" in p for p in deny):
+        # The path is embedded in a quoted TOML key; a quote inside it would
+        # change the key's meaning. No legitimate workspace path contains one.
+        return "isolation.deny_read paths must not contain quotes or newlines"
     if isolation.get("sandbox") is not True:
         # `codex exec` without an explicit sandbox flag inherits whatever
         # ~/.codex/config.toml says — unknowable here. This launcher only
@@ -132,16 +137,43 @@ def binary_provenance(resolve_version):
     return prov
 
 
+PROFILE = "exec_loop_wall"
+
+
+def build_profile_overrides(isolation):
+    """The generated permission profile, as `-c` config overrides.
+
+    Shape (docs/permissions, verified 2026-07-13): a profile named by
+    `default_permissions`; `extends = ":workspace"` supplies the normal
+    workspace behavior (unmentioned paths are DENIED by default, so a bare
+    profile would break the worker — the preset is load-bearing); each
+    deny_read path is a `"<path>" = "deny"` filesystem carve-out (denies
+    reads and writes beneath it); network policy is per-profile. Profiles do
+    not compose with the older sandbox settings — never add `--sandbox` or
+    `sandbox_*` keys alongside these.
+    """
+    overrides = [f'permissions.{PROFILE}.extends=":workspace"']
+    for path in isolation.get("deny_read", []):
+        overrides.append(
+            f'permissions.{PROFILE}.filesystem."{path.rstrip("/")}"="deny"'
+        )
+    enabled = "true" if isolation.get("network", True) else "false"
+    overrides.append(f"permissions.{PROFILE}.network.enabled={enabled}")
+    overrides.append(f'default_permissions="{PROFILE}"')
+    return overrides
+
+
 def build_argv(worker, isolation, cwd, last_message_path):
     """Translate params into `codex exec` argv. The prompt travels via stdin
     (explicit `-`), never argv — instructions.md can be long.
 
-    Flag facts (codex-cli 0.142.5 --help, vendor-build):
-    - `--sandbox workspace-write`: cwd writable, everything else read-only to
-      writes; commands inside the workspace run without approval prompts —
-      the headless-safe wall.
-    - workspace-write denies NETWORK by default; network intent true is
-      granted back via `-c sandbox_workspace_write.network_access=true`.
+    Flag facts (codex-cli 0.142.5 --help + docs/permissions, vendor-build):
+    - the generated permission profile (build_profile_overrides) is the wall;
+    - `--ignore-user-config` / `--ignore-rules`: ambient personal config and
+      execpolicy rules cannot weaken the wall (a user-config `sandbox_mode`
+      would otherwise conflict with profiles); auth still uses CODEX_HOME;
+    - `--strict-config`: unknown keys (e.g. `permissions` on an old build)
+      abort loudly instead of silently degrading;
     - `--skip-git-repo-check`: the author role's cwd (a suite workspace) is
       not a git repository; without this codex refuses to start there.
     - `--ephemeral`: workers are one-shot by contract; persist no session.
@@ -155,7 +187,9 @@ def build_argv(worker, isolation, cwd, last_message_path):
         "--color", "never",
         "--cd", cwd,
         "--model", worker["model"],
-        "--sandbox", "workspace-write",
+        "--ignore-user-config",
+        "--ignore-rules",
+        "--strict-config",
         "--skip-git-repo-check",
         "--ephemeral",
         "--output-last-message", last_message_path,
@@ -164,8 +198,8 @@ def build_argv(worker, isolation, cwd, last_message_path):
         # Effort names are vendor-interpreted (model_reasoning_effort);
         # a wrong value fails loudly at launch — same doctrine as claude_p.
         argv += ["-c", f'model_reasoning_effort="{worker["effort"]}"']
-    if isolation.get("network", True):
-        argv += ["-c", "sandbox_workspace_write.network_access=true"]
+    for override in build_profile_overrides(isolation):
+        argv += ["-c", override]
     argv.append("-")  # prompt from stdin
     return argv
 

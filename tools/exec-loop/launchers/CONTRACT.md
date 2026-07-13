@@ -84,15 +84,17 @@ what actually holds.
   per-spawn settings (Read-deny rules), `sandbox`/`network` into the sandbox configuration;
   refuses `network: false` without `sandbox: true` (no mechanism exists to express it).
 - `codex_p.py` — Codex CLI headless (`codex exec`, the contract's named first extension;
-  probed against codex-cli 0.142.5). Translates `sandbox` into `--sandbox workspace-write`
-  and `network` into the workspace network config; prompt via stdin; usage parsed
-  best-effort from `--json` events. **Refuses any non-empty `deny_read`** — Codex has no
-  read-deny facility, and launching without the wall the caller asked for is exactly what
-  fail-closed forbids. Consequence: roles whose isolation needs `deny_read` (the loop's
-  implementer, shadow-pilot's workers) cannot run on Codex today; the author role
-  (`deny_read: []`) can. Also refuses `sandbox: false` (without an explicit sandbox flag,
-  codex inherits unknowable user config). **Its smoke probe has not run yet** — see
-  SMOKE.md's codex section before first real use.
+  flags probed against codex-cli 0.142.5, mechanism verified against
+  learn.chatgpt.com/docs/permissions 2026-07-13). Translates the whole isolation intent into
+  a **generated permission profile** (beta): `extends = ":workspace"` for normal workspace
+  behavior, each `deny_read` path a `"<path>" = "deny"` carve-out (profiles CAN deny reads —
+  every loop role is codex-eligible), `network` via `permissions.<name>.network.enabled`;
+  never combined with `--sandbox` (documented as mutually exclusive).
+  `--ignore-user-config`/`--ignore-rules`/`--strict-config` keep ambient config from
+  weakening the wall. Prompt via stdin; usage parsed best-effort from `--json` events.
+  Refuses `sandbox: false` and quote-bearing deny paths. **Its smoke probe has not run yet**
+  (beta mechanism + unprobed `-c` quoted-key parsing) — see SMOKE.md's codex section; no
+  real plan uses it before that passes.
 - `mock.py` — the test substrate: executes a scripted scenario (`MOCK_SCRIPT`) in `cwd` as
   the "worker"; honors a `#MOCK_REFUSE <reason>` first-line directive to simulate a
   fail-closed refusal.

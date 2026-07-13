@@ -197,6 +197,17 @@ def build_argv(worker, settings_path, instructions_path):
         # fail-safe (parse_session) and probed by the smoke.
         "--output-format",
         "json",
+        # Ambient-config hardening (flags verified present on 2.1.207 --help;
+        # semantics are vendor-build — smoke run 5 is the arbiter): a worker
+        # must be reproducible, not shaped by whoever's machine it runs on.
+        # User/project/local settings (hooks! could act on every tool call)
+        # are excluded — our generated --settings file is a separate source
+        # and still applies; managed policy always applies. NOT --bare: that
+        # kills OAuth/keychain auth, which the subscription path needs.
+        "--setting-sources", "",
+        "--strict-mcp-config",        # no --mcp-config given -> zero MCP servers
+        "--disable-slash-commands",   # workers follow instructions.md, not skills
+        "--no-session-persistence",   # one-shot workers leave no resumable state
     ]
     if worker.get("effort"):
         # Effort flag semantics are vendor-build: --dry-run shows it, the
@@ -280,6 +291,11 @@ def main(argv=None):
         fh.write("\n")
 
     argv_out = build_argv(params["worker"], settings_path, instructions)
+    # Auto-memory would leak the operator's accumulated context into a worker
+    # that is supposed to see only its bundle. Env-var name is community-
+    # reported, unverified on this build — harmless if ignored, and smoke
+    # run 5 checks the transcript for memory traces either way.
+    env_extra = {"CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"}
 
     if dry_run:
         print(
@@ -289,6 +305,7 @@ def main(argv=None):
                     "argv": argv_out,
                     "binary": binary_provenance(resolve_version=False),
                     "cwd": params["cwd"],
+                    "env_extra": env_extra,
                     "generated_settings": settings,
                     "timeout_s": params["timeout_s"],
                 },
@@ -310,6 +327,7 @@ def main(argv=None):
         stderr=subprocess.PIPE,
         text=True,
         start_new_session=True,
+        env={**os.environ, **env_extra},
     )
     timed_out = False
     try:

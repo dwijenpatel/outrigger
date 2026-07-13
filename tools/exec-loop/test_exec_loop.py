@@ -227,6 +227,15 @@ class ClaudePDryRunTests(unittest.TestCase):
         self.assertIn("binary", out)
         self.assertIn("path", out["binary"])
         self.assertNotIn("version", out["binary"])
+        # ambient-config hardening: the worker is shaped by its bundle, not
+        # by whoever's machine it runs on (flags present on 2.1.207; smoke
+        # run 5 arbitrates semantics). NOT --bare — that kills OAuth auth.
+        self.assertEqual(argv[argv.index("--setting-sources") + 1], "")
+        for flag in ("--strict-mcp-config", "--disable-slash-commands",
+                     "--no-session-persistence"):
+            self.assertIn(flag, argv)
+        self.assertNotIn("--bare", argv)
+        self.assertEqual(out["env_extra"], {"CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"})
         # structured output so token usage is captured in result.json
         i = argv.index("--output-format")
         self.assertEqual(argv[i + 1], "json")

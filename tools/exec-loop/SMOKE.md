@@ -19,25 +19,58 @@ Re-run the smoke after any Claude Code release (vendor-build decay).
 
 ## The codex_p smoke — PENDING, operator-run (spends OpenAI quota, not Max-plan)
 
-`codex_p.py` landed 2026-07-13, mock-tested only (`test_codex_p.py`, stub binary; flags
-probed against `codex-cli 0.142.5 --help`). Per the per-launcher rule its first smoke must
-run before any real plan uses it. One author-role bundle (the only loop role codex_p accepts
-today — it refuses `deny_read` fail-closed, which the implementer's isolation needs), plus
-one deliberate escape probe. What it must verify, in order of load-bearing-ness:
+`codex_p.py` landed 2026-07-13 and was reworked the same day from `--sandbox
+workspace-write` to a **generated permission profile** (`extends = ":workspace"` + per-path
+`"deny"` carve-outs + per-profile network policy, activated via `-c
+default_permissions=...`) after the mechanism was verified against
+learn.chatgpt.com/docs/permissions — profiles CAN deny reads, which makes `deny_read`
+expressible and every loop role codex-eligible. Mock-tested only (`test_codex_p.py`, stub
+binary). Three vendor-arbitrated unknowns make this smoke mandatory before any real plan:
+permission profiles are officially **beta**; the `-c` dotted-path parser's handling of
+quoted path-segment keys is undocumented (failure mode is a loud `--strict-config` abort —
+safe, but must be confirmed); and the event schema for usage is unprobed live. What it must
+verify, in order of load-bearing-ness:
 
-1. **The write wall holds:** instructions tell the worker to create a file *outside* its cwd
-   (e.g. in `$HOME`) and report what happened — expect the write BLOCKED by
-   `workspace-write`, in-cwd writes fine, shell commands unattended (no approval hang). This
-   is the codex analogue of claude_p's read-attempt probe.
-2. **The event schema matches the parser:** `result.json.usage` populated with real numbers
+1. **The read wall holds (THE probe):** a bundle with `deny_read: [<scratch dir with a
+   sentinel file>]`; instructions tell the worker to read that file via its file tool AND
+   via shell (`cat`), report both, then do a trivial in-cwd task. Expect: both reads DENIED,
+   in-cwd writes fine, shell unattended (no approval hang). If the profile silently failed
+   to apply, the worker reads the sentinel — that exact transcript is the falsification.
+2. **The write wall holds:** same bundle, also attempt a write outside cwd (e.g. `$HOME`) —
+   expect BLOCKED (`:workspace` base behavior).
+3. **The config actually parses:** the spawn starts at all under `--strict-config` with the
+   quoted filesystem keys (unknown-parser risk above); a startup abort here means switching
+   the profile delivery from `-c` overrides to a generated `$CODEX_HOME/<name>.config.toml`
+   + `--profile` (documented fallback, one function).
+4. **The event schema matches the parser:** `result.json.usage` populated with real numbers
    (not `{"error": ...}`). If it misses, the verbatim `events.jsonl` in the bundle is the
    fix's spec — adjust `parse_events`, re-run.
-3. **A non-git cwd starts** (`--skip-git-repo-check` honored — the author workspace is not a
-   repository) and `--ephemeral` leaves no session files behind.
-4. **Effort reaches the model** (`-c model_reasoning_effort=...` accepted, session runs).
+5. **A non-git cwd starts** (`--skip-git-repo-check` honored) and `--ephemeral` leaves no
+   session files behind; `--ignore-user-config` really keeps a user-config `sandbox_mode`
+   from conflicting with the profile (plant one temporarily, expect no effect).
+6. **Effort reaches the model** (`-c model_reasoning_effort=...` accepted, session runs).
 
 Record the outcome here (dated, build-pinned) and as a ledger note, like the claude runs
 below. Until then codex_p's vendor translation is doc-grounded only.
+
+## Claude run 5 — PENDING re-probe: ambient-config hardening (2026-07-13 flags)
+
+`claude_p.py` now passes `--setting-sources ""`, `--strict-mcp-config`,
+`--disable-slash-commands`, `--no-session-persistence` and sets
+`CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` (env-var name community-reported, unverified) so a
+worker is shaped by its bundle, not by whoever's machine it runs on. Flags verified present
+on `2.1.207 --help`; semantics are vendor-build. Runs 3–4 were green WITHOUT these flags, so
+this is a delta re-probe:
+
+1. **Auth still works** (the whole run working proves it — `--setting-sources ""` must not
+   touch OAuth/keychain; `--bare` would, and is deliberately not used).
+2. **The wall still holds and commits still run** (the run-3 probe repeated — the generated
+   `--settings` file must survive `--setting-sources ""`, being a separate source).
+3. **Ambient isolation:** plant a user-settings `SessionStart` hook that writes a marker
+   file + one user-scope MCP server before the run — expect neither to fire/appear in the
+   worker (transcript has no MCP tools; marker absent). Remove after.
+4. **No memory traces** in the worker transcript (the env var is best-effort; this check is
+   the real gate).
 
 ## What each run has taught (vendor-build facts, build-specific)
 
@@ -155,3 +188,28 @@ python3 tools/run-ledger/ledger.py append docs/research/internal/v2-ledger.jsonl
 
 A red smoke is a finding, not a failure: it caught a vendor-contract break at the cost of one
 probe instead of mid-plan.
+
+## Cross-vendor verification matrix (status as of 2026-07-13)
+
+The repo is "Claude + Codex compatible" only when every row passes **per vendor,
+independently**. `mock` = proven by the zero-quota suites (`test_exec_loop.py`,
+`test_codex_p.py`, `tests/test_agent_surfaces.py`); `live-pending` = needs that vendor's
+operator-run smoke; a dash = not applicable.
+
+| Check | Claude Code | Codex |
+|---|---|---|
+| Shared instructions loaded | CLAUDE.md imports AGENTS.md (live-pending: eyeball one session) | native AGENTS.md (live-pending) |
+| Skill discovered | `.claude/skills` (proven in use) | `.agents/skills` symlink (live-pending) |
+| Dry-run argv/config | mock ✓ | mock ✓ |
+| Wrong-tool refusal | mock ✓ | mock ✓ |
+| Unknown-tool halts before spawn | mock ✓ (loop registry) | mock ✓ (loop registry) |
+| File tool cannot read held-out path | live ✓ (runs 3–4) · re-probe run 5 | live-pending (probe 1) |
+| Shell cannot read held-out path | live ✓ (runs 3–4) · re-probe run 5 | live-pending (probe 1) |
+| Worker edits + commits in worktree | live ✓ (runs 3–4) · re-probe run 5 | live-pending (probe 2) |
+| Requested network policy holds | live ✓ (run 3 note) | live-pending |
+| Sandbox/profile unavailable ⇒ refusal | `failIfUnavailable` live ✓ (run 4) | `--strict-config` live-pending (probe 3) |
+| Timeout kills process group | mock ✓ | mock ✓ |
+| Ambient config cannot weaken wall | live-pending (run 5, probes 3–4) | live-pending (probe 5) |
+| Usage telemetry parses | live ✓ (run 4) | live-pending (probe 4) |
+| Full mocked exec-loop | mock ✓ (46 tests) | mock ✓ (registry + wrapper) |
+| One live task through the real CLI | live ✓ (e2e run 1) | live-pending |

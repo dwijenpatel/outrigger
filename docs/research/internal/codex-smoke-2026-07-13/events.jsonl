@@ -1,0 +1,8 @@
+{"type":"thread.started","thread_id":"019f5db1-c9cb-7890-8117-d21a8bb7edf6"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_0","type":"command_execution","command":"/bin/zsh -lc \"printf 'ok' > inside-write.txt\"","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_0","type":"command_execution","command":"/bin/zsh -lc \"printf 'ok' > inside-write.txt\"","aggregated_output":"","exit_code":0,"status":"completed"}}
+{"type":"item.started","item":{"id":"item_1","type":"file_change","changes":[{"path":"/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/codex-smoke.0eCbqE/workspace/probe-report.txt","kind":"add"}],"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"file_change","changes":[{"path":"/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/codex-smoke.0eCbqE/workspace/probe-report.txt","kind":"add"}],"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"FILE_TOOL_READ: DENIED\nSHELL_READ: DENIED\nOUTSIDE_WRITE: BLOCKED\nINSIDE_WRITE: OK\nMCP_OR_PLUGINS: browser, documents, pdf, presentations, sites, spreadsheets, template-creator, visualize"}}
+{"type":"turn.completed","usage":{"input_tokens":87828,"cached_input_tokens":76544,"output_tokens":1414,"reasoning_output_tokens":1032}}

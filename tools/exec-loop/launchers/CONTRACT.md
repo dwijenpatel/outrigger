@@ -103,9 +103,11 @@ what actually holds.
   neutralized in-file), unset keys are a documented ambient residual, and a user
   `sandbox_mode` collision is a live smoke probe. `--ignore-rules`/`--strict-config` stay.
   Prompt via stdin; usage parsed best-effort from `--json` events. Refuses `sandbox: false`
-  and quote-bearing deny paths. **Its live smoke has not passed yet** (two $0 config-stage
-  attempts, both findings) — see SMOKE.md's codex section; no real plan uses it before a
-  green run.
+  and quote-bearing deny paths. **Live smoke GREEN 2026-07-13** (0.142.5, gpt-5.5): the
+  deny carve-out held against the file tool AND shell, `:workspace` write confinement held,
+  usage parsed from live `turn.completed` events. Named residual: the user's `[plugins.*]`
+  entries reach workers (user config must load for profiles to load — probed); the walls
+  are unaffected. Remaining before real plans: the full-loop live task (commit path).
 - `mock.py` — the test substrate: executes a scripted scenario (`MOCK_SCRIPT`) in `cwd` as
   the "worker"; honors a `#MOCK_REFUSE <reason>` first-line directive to simulate a
   fail-closed refusal.

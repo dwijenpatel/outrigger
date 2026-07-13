@@ -1,0 +1,22 @@
+{
+  "binary": {
+    "path": "/Users/dwijen/.local/bin/codex",
+    "version": "codex-cli 0.142.5"
+  },
+  "contract": 1,
+  "duration_s": 35.571,
+  "exit": 0,
+  "finished_at": "2026-07-13T22:56:35Z",
+  "ok": true,
+  "started_at": "2026-07-13T22:55:59Z",
+  "timed_out": false,
+  "usage": {
+    "api_duration_ms": null,
+    "cache_creation_tokens": null,
+    "cache_read_tokens": 76544,
+    "cost_usd": null,
+    "input_tokens": 87828,
+    "num_turns": 1,
+    "output_tokens": 1414
+  }
+}

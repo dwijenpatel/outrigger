@@ -93,6 +93,29 @@ get. Bonus: the live event stream validated `parse_events` (`turn.failed` → fa
 pinned; update AFTER a green smoke, which per the per-launcher rule triggers a re-smoke
 anyway). Probes 1–2 and 4–6 remain open.
 
+**Attempt 4, 2026-07-13 (0.142.5, gpt-5.5 @ high): GREEN — the wall is live-proven on
+Codex.** Launcher exit 0; the worker's report, verbatim: `FILE_TOOL_READ: DENIED` /
+`SHELL_READ: DENIED` (probe 1 — the permission-profile deny carve-out holds against both
+the native file tool and shell) / `OUTSIDE_WRITE: BLOCKED` / `INSIDE_WRITE: OK` (probe 2 —
+`:workspace` confinement). Probe 3 was green since attempt 3. Probe 4: usage parsed live —
+`turn.completed` carries `{input_tokens: 87828, cached_input_tokens: 76544, output_tokens:
+1414, reasoning_output_tokens: 1032}`, the parser's primary branch. Probe 5: non-git cwd
+started; sessions count unchanged (`--ephemeral` held). Probe 6: effort accepted
+(reasoning tokens present). Artifacts:
+[codex-smoke-2026-07-13](../../docs/research/internal/codex-smoke-2026-07-13/).
+
+**Residuals, named:** (a) the worker reported the operator's *plugins* (browser, documents,
+pdf, presentations, sites, spreadsheets, template-creator, visualize) — user config must
+load for profiles to load (attempt 2), and its `[plugins.*]` entries widen the worker's
+tool surface; no per-invocation disable exists on 0.142.5 (`codex plugin` is persistent
+add/remove only). The isolation WALLS are unaffected. Follow-up rider for the next paid
+run: `-c 'plugins={}'` (vendor-arbitrated, unverified — do not ship blind). (b) notify
+neutralizer: operator to confirm the turn-end notification stayed silent. (c) user
+`sandbox_mode` collision: n/a on this machine (none configured); stays a live question for
+machines that have one. **codex_p may now carry real roles whose isolation it can express;
+the full-loop live task (codex author + implementer through loop.py) is the remaining
+matrix row.**
+
 ## Claude run 5 — EXECUTED 2026-07-13, build 2.1.207: hardening holds; one residual found
 
 `claude_p.py` passes `--setting-sources ""`, `--strict-mcp-config`,
@@ -258,13 +281,13 @@ operator-run smoke; a dash = not applicable.
 | Dry-run argv/config | mock ✓ | mock ✓ |
 | Wrong-tool refusal | mock ✓ | mock ✓ |
 | Unknown-tool halts before spawn | mock ✓ (loop registry) | mock ✓ (loop registry) |
-| File tool cannot read held-out path | live ✓ (runs 3–5) | live-pending (probe 1) |
-| Shell cannot read held-out path | live ✓ (runs 3–5) | live-pending (probe 1) |
-| Worker edits + commits in worktree | live ✓ (runs 3–5) | live-pending (probe 2) |
-| Requested network policy holds | live ✓ (run 3 note) | live-pending |
-| Sandbox/profile unavailable ⇒ refusal | `failIfUnavailable` live ✓ (run 4) | `--strict-config` live-pending (probe 3) |
+| File tool cannot read held-out path | live ✓ (runs 3–5) | live ✓ (smoke 2026-07-13) |
+| Shell cannot read held-out path | live ✓ (runs 3–5) | live ✓ (smoke 2026-07-13) |
+| Worker edits + commits in worktree | live ✓ (runs 3–5) | writes live ✓; commit rides the full-loop live task |
+| Requested network policy holds | live ✓ (run 3 note) | enabled=true ran live; the deny variant unprobed |
+| Sandbox/profile unavailable ⇒ refusal | `failIfUnavailable` live ✓ (run 4) | live ✓ (attempts 1–2: loud config/profile aborts, $0) |
 | Timeout kills process group | mock ✓ | mock ✓ |
-| Ambient config cannot weaken wall | live ✓ (run 5: canary hook silent, MCP excluded vs live counterfactual) — residual: account userEmail injection, documented | live-pending (probe 5) |
-| Usage telemetry parses | live ✓ (runs 4–5) | live-pending (probe 4) |
+| Ambient config cannot weaken wall | live ✓ (run 5: canary hook silent, MCP excluded vs live counterfactual) — residual: account userEmail injection, documented | wall unweakened with user config loaded, live ✓ — residual: plugin tool-surface leaks (named); notify neutralizer pending operator confirmation |
+| Usage telemetry parses | live ✓ (runs 4–5) | live ✓ (turn.completed usage, primary parser branch) |
 | Full mocked exec-loop | mock ✓ (46 tests) | mock ✓ (registry + wrapper) |
 | One live task through the real CLI | live ✓ (e2e run 1) | live-pending |

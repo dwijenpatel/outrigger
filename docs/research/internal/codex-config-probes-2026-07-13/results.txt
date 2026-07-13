@@ -1,0 +1,15 @@
+A. bad-TOML profile file, NO --ignore-user-config (is the file read at all?)
+  exit=1  last-line:   |      ^
+
+B. bad-TOML profile file, WITH --ignore-user-config (does the flag suppress it?)
+  exit=1  last-line: Error: default_permissions requires a `[permissions]` table
+
+C. good profile file, WITH --ignore-user-config + --strict-config (the launcher's exact combo)
+  exit=1  last-line: Error: default_permissions requires a `[permissions]` table
+
+D. good profile file, NO --ignore-user-config, WITH --strict-config
+  exit=1  last-line: No prompt provided via stdin.
+
+E. good [permissions] table directly in config.toml, WITH --strict-config (no --profile at all)
+  exit=1  last-line: No prompt provided via stdin.
+

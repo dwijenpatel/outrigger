@@ -103,7 +103,7 @@ else
 fi
 echo "  usage:      $(python3 -c "import json;print(json.load(open('$BUNDLE/result.json')).get('usage'))" 2>/dev/null || echo unreadable)"
 echo "  ephemeral:  sessions files before=$SESS_BEFORE after=$SESS_AFTER (must be equal)"
-echo "  notify:     if your usual Codex turn-end notification did NOT fire, --ignore-user-config held"
+echo "  notify:     if your usual Codex turn-end notification did NOT fire, the profile's notify=[] neutralizer held"
 echo "  artifacts:  $BUNDLE/result.json | transcript.txt | events.jsonl"
 echo ""
 echo "record the outcome (SMOKE.md); codex: $(codex --version 2>/dev/null || echo 'NOT FOUND')"

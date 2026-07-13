@@ -46,8 +46,11 @@ verify, in order of load-bearing-ness:
    (not `{"error": ...}`). If it misses, the verbatim `events.jsonl` in the bundle is the
    fix's spec — adjust `parse_events`, re-run.
 5. **A non-git cwd starts** (`--skip-git-repo-check` honored) and `--ephemeral` leaves no
-   session files behind; `--ignore-user-config` really keeps a user-config `sandbox_mode`
-   from conflicting with the profile (plant one temporarily, expect no effect).
+   session files behind; the profile's `notify = []` neutralizer keeps the user's turn-end
+   notification silent (its firing = the layering failed). Separately, planting a
+   `sandbox_mode` in user config must produce a LOUD conflict abort or no effect — record
+   which (profiles and sandbox settings are documented as non-composing; the failure shape
+   is vendor-arbitrated).
 6. **Effort reaches the model** (`-c model_reasoning_effort=...` accepted, session runs).
 
 Record the outcome here (dated, build-pinned) and as a ledger note, like the claude runs
@@ -62,7 +65,21 @@ feature exists on this build. The pre-registered fallback is now implemented: th
 DEFINITION travels as a per-spawn `$CODEX_HOME/<uniq>.config.toml` loaded via
 `--profile <uniq>` (quoted keys are ordinary TOML in a file), while ACTIVATION stays on the
 flat `-c default_permissions=…` so a failed file load aborts as an unknown profile rather
-than running unwalled. Probes 1–2 and 4–6 remain open — **re-run required.**
+than running unwalled.
+
+**Attempt 2, 2026-07-13 (0.142.5): the fail-closed backstop fired as designed, $0.**
+Abort at 0.064 s, pre-API: `default_permissions requires a [permissions] table` — the
+activation key was seen but the profile file never loaded. Free discriminator probes
+([codex-config-probes-2026-07-13](../../docs/research/internal/codex-config-probes-2026-07-13/results.txt),
+five `codex exec` variants, all aborting pre-API against an auth-less scratch CODEX_HOME)
+pinned it: **`--ignore-user-config` suppresses `--profile` files too** (bad-TOML canary in
+the profile file errors without the flag, vanishes with it), and without the flag the exact
+launcher combo resolves all the way to "No prompt provided via stdin". Consequence, now in
+the launcher: `--ignore-user-config` is gone (it cannot coexist with the wall); the user's
+config.toml loads UNDER our profile layer; `notify = []` in the generated profile
+neutralizes turn-end hooks; unset user keys are a documented ambient residual; a user
+`sandbox_mode` colliding with the permissions table is probe 5's live question. Probes 1–2
+and 4–6 remain open — **re-run required.**
 
 ## Claude run 5 — EXECUTED 2026-07-13, build 2.1.207: hardening holds; one residual found
 

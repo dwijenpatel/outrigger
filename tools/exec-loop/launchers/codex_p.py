@@ -11,19 +11,27 @@ Isolation mechanism (verified against learn.chatgpt.com/docs/permissions,
 2026-07-13): a generated Codex PERMISSION PROFILE, written per spawn as
 $CODEX_HOME/<uniq>.config.toml and loaded via `--profile <uniq>` (smoke
 attempt 1 proved `-c` cannot carry quoted path keys; activation stays on the
-flat `-c default_permissions=...` so a failed file load aborts loudly as an
-unknown profile, never an unwalled run). The profile `extends = ":workspace"`
+flat `-c default_permissions=...` so a failed file load aborts loudly —
+"requires a [permissions] table" — never an unwalled run; smoke attempt 2
+demonstrated that abort live). The profile `extends = ":workspace"`
 (unmentioned paths are denied by default, so the preset supplies normal
 workspace behavior — cwd writable, unattended commands) and each
 isolation.deny_read path becomes a `"<path>" = "deny"` carve-out (denies
 reads AND writes under it); network intent maps to
 `permissions.<name>.network.enabled`. Profiles are documented as MUTUALLY
 EXCLUSIVE with the older `--sandbox`/`sandbox_*` mechanism, so this launcher
-never passes `--sandbox`. `--ignore-user-config` + `--ignore-rules` keep
-ambient personal config from weakening the wall (auth is unaffected per
-`codex exec --help`); `--strict-config` turns unknown config keys — e.g.
-`permissions` on a build too old to speak it — into a loud startup failure
-instead of a silent fallback.
+never passes `--sandbox`.
+
+Ambient config: `--ignore-user-config` is deliberately ABSENT — free probes
+(docs/research/internal/codex-config-probes-2026-07-13/) proved it
+suppresses --profile files too, so the wall and that flag cannot coexist.
+The user's config.toml loads underneath our profile layer: keys the launcher
+sets win (model/effort on argv; `notify = []` in the profile file), unset
+keys are a documented ambient residual, and a user `sandbox_mode` colliding
+with the permissions table is a live smoke probe. `--ignore-rules` drops
+ambient execpolicy rules; `--strict-config` turns unknown config keys —
+e.g. `permissions` on a build too old to speak it — into a loud startup
+failure instead of a silent fallback.
 
 Fail-closed: any part of the intent this launcher cannot express -> refuse
 (nonzero exit, refused_reason in result.json), never launch unwalled.
@@ -167,6 +175,12 @@ def build_profile_toml(isolation):
     """
     lines = [
         "# generated per-spawn by codex_p.py — removed after the run",
+        # This file LAYERS OVER the user's config.toml (which must load —
+        # probes 2026-07-13 proved --ignore-user-config suppresses profile
+        # files too), so top-level keys here neutralize ambient behavior the
+        # user config would otherwise inject. notify: no turn-end hooks fire
+        # for workers.
+        "notify = []",
         f"[permissions.{PROFILE}]",
         'extends = ":workspace"',
     ]
@@ -191,10 +205,17 @@ def build_argv(worker, cwd, last_message_path, profile_name):
     - `--profile <name>` loads the generated $CODEX_HOME/<name>.config.toml
       (the wall's definition — build_profile_toml); the flat
       `-c default_permissions=...` activates it and makes a failed file load
-      a loud unknown-profile abort, never an unwalled run;
-    - `--ignore-user-config` / `--ignore-rules`: ambient personal config and
-      execpolicy rules cannot weaken the wall (a user-config `sandbox_mode`
-      would otherwise conflict with profiles); auth still uses CODEX_HOME;
+      a loud "requires a [permissions] table" abort, never an unwalled run
+      (exactly how smoke attempt 2 failed, safely);
+    - NO `--ignore-user-config`: free probes (2026-07-13, committed under
+      docs/research/internal/codex-config-probes-2026-07-13/) proved it
+      suppresses --profile files too, so it cannot coexist with the wall.
+      The user's config.toml therefore loads UNDERNEATH our profile layer:
+      keys we set win (notify neutralized in-file; --model and effort on
+      argv), keys we don't set are a documented ambient residual, and a
+      user-config `sandbox_mode` meeting our permissions table is the
+      smoke's live conflict probe;
+    - `--ignore-rules`: no ambient execpolicy rules;
     - `--strict-config`: unknown keys (e.g. `permissions` on an old build)
       abort loudly instead of silently degrading;
     - `--skip-git-repo-check`: the author role's cwd (a suite workspace) is
@@ -210,7 +231,6 @@ def build_argv(worker, cwd, last_message_path, profile_name):
         "--color", "never",
         "--cd", cwd,
         "--model", worker["model"],
-        "--ignore-user-config",
         "--ignore-rules",
         "--strict-config",
         "--skip-git-repo-check",

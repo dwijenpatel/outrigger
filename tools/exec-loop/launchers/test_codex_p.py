@@ -147,15 +147,18 @@ class CodexPTests(CodexPFixture):
         argv = self.stub_argv()
         self.assertEqual(argv[0], "exec")
         for expected in ("--json", "--skip-git-repo-check", "--ephemeral",
-                         "--ignore-user-config", "--ignore-rules", "--strict-config"):
+                         "--ignore-rules", "--strict-config"):
             self.assertIn(expected, argv)
         self.assertEqual(argv[argv.index("--model") + 1], "gpt-5.2-codex")
         self.assertEqual(argv[argv.index("--cd") + 1], self.workdir)
         self.assertEqual(argv[-1], "-")
         # the wall is a generated permission-profile FILE (never the old
         # sandbox mechanism, never quoted keys on -c — smoke attempt 1):
-        # --profile names it, the flat -c activates it
+        # --profile names it, the flat -c activates it. --ignore-user-config
+        # must NOT appear: it suppresses --profile files too (probes
+        # 2026-07-13) — the wall and that flag cannot coexist.
         self.assertNotIn("--sandbox", argv)
+        self.assertNotIn("--ignore-user-config", argv)
         self.assertTrue(argv[argv.index("--profile") + 1].startswith("codex-p-"))
         self.assertIn('default_permissions="exec_loop_wall"', argv)
         self.assertFalse([a for a in argv if a.startswith("permissions.")],
@@ -164,6 +167,10 @@ class CodexPTests(CodexPFixture):
         self.assertIn("[permissions.exec_loop_wall]", profile)
         self.assertIn('extends = ":workspace"', profile)
         self.assertIn("enabled = true", profile)
+        # ambient neutralizer: user notify hooks must not fire for workers
+        self.assertIn("notify = []", profile)
+        self.assertLess(profile.index("notify = []"), profile.index("[permissions"),
+                        "top-level keys must precede the first TOML table header")
         # per-spawn file removed from CODEX_HOME after the run
         self.assertEqual(self.profile_leftovers(), [])
 

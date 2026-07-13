@@ -94,12 +94,18 @@ what actually holds.
   a **generated permission profile** (beta): `extends = ":workspace"` for normal workspace
   behavior, each `deny_read` path a `"<path>" = "deny"` carve-out (profiles CAN deny reads —
   every loop role is codex-eligible), `network` via `permissions.<name>.network.enabled`;
-  never combined with `--sandbox` (documented as mutually exclusive).
-  `--ignore-user-config`/`--ignore-rules`/`--strict-config` keep ambient config from
-  weakening the wall. Prompt via stdin; usage parsed best-effort from `--json` events.
-  Refuses `sandbox: false` and quote-bearing deny paths. **Its smoke probe has not run yet**
-  (beta mechanism + unprobed `-c` quoted-key parsing) — see SMOKE.md's codex section; no
-  real plan uses it before that passes.
+  never combined with `--sandbox` (documented as mutually exclusive). The definition
+  travels as a per-spawn `$CODEX_HOME/<uniq>.config.toml` via `--profile` (smoke attempt 1:
+  `-c` cannot carry quoted path keys); the flat `-c default_permissions=…` activation makes
+  a failed file load a loud abort (smoke attempt 2 demonstrated it live). No
+  `--ignore-user-config` — probed 2026-07-13: it suppresses profile files too. The user's
+  config.toml therefore loads under the profile layer: launcher-set keys win (`notify = []`
+  neutralized in-file), unset keys are a documented ambient residual, and a user
+  `sandbox_mode` collision is a live smoke probe. `--ignore-rules`/`--strict-config` stay.
+  Prompt via stdin; usage parsed best-effort from `--json` events. Refuses `sandbox: false`
+  and quote-bearing deny paths. **Its live smoke has not passed yet** (two $0 config-stage
+  attempts, both findings) — see SMOKE.md's codex section; no real plan uses it before a
+  green run.
 - `mock.py` — the test substrate: executes a scripted scenario (`MOCK_SCRIPT`) in `cwd` as
   the "worker"; honors a `#MOCK_REFUSE <reason>` first-line directive to simulate a
   fail-closed refusal.

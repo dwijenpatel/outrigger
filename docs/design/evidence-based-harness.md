@@ -6,6 +6,17 @@ composable artifacts), composability touch-ups to D7/D8/D12/D14, +T11, sequencin
 substrate-volatility note on R1 (multiple subscriptions; metered API pricing).
 **Third amendment, 2026-07-11:** D8 gains the cold-reader rule for operator-facing surfaces
 (operator feedback from the first live spec-interview run).
+**Fifth amendment, 2026-07-12 (operator direction — risk-tiered composition):** plans now
+carry an operator-declared risk tier (`risk_tier`/`tier`: `full` / `gate-only` / `bare`,
+absent = `full`), asked once per plan by the interview (blast radius + budget — SKILL.md
+ground rule 8), validated by preflight as an additive-optional field within plan contract 1,
+composed by the loop (D15's "risk-conditional configuration = choosing the compose set" made
+concrete), and stamped on ledger records so lowering the guard is always a visible, recorded
+choice. **Defaults unchanged: full remains the default everywhere.** The evidence question —
+*where* the full apparatus earns its cost — moves to T2 pilot 1, amended (pre-data) from a
+standalone 8-task study to **shadow mode**: comparisons embedded in real full-tier work
+(harness arm = the real task; shadow null + arbiter ≈ $3–4 marginal each), accumulating from
+the operator's actual task distribution.
 **Fourth amendment, 2026-07-12 (metabolizing an independent adversarial review of `docs/`,
 operator-run):** evidence language tightened to the grading method's own bounds — D1/D10
 gaming-ledger claims sample-bounded, D7's M7 citation narrowed (acyclicity is *a* decidable
@@ -519,7 +530,7 @@ size, non-inferiority margin, decision rule — D14); a row here is a question, 
 | # | Question | What settles it |
 |---|---|---|
 | T1 | Do cache reads meaningfully discount *subscription-window* occupancy? | The built cache-weight experiment (operator-run; quota-costing) |
-| T2 | Does blind validation + a held-out vault pay its overhead vs test-secrecy alone, per risk tier? | Paired-arm A/B on a realistic task set (internal evidence is n=2 *existence* — P3v2-5 + smoke run 2, *internal* §5 — never a rate). **Pilot 1 registered 2026-07-12** ([protocol](../research/internal/t2-pilot-1/protocol.md), ledger-anchored): full harness vs the R2 null first, arbiter-suite oracle; the secrecy-vs-gating decomposition is pilot 2, gated on pilot 1's outcome |
+| T2 | Does blind validation + a held-out vault pay its overhead vs test-secrecy alone, per risk tier? | Paired-arm A/B on a realistic task set (internal evidence is n=2 *existence* — P3v2-5 + smoke run 2, *internal* §5 — never a rate). **Pilot 1 registered 2026-07-12** ([protocol](../research/internal/t2-pilot-1/protocol.md), ledger-anchored): full harness vs the R2 null first, arbiter-suite oracle; **amended same-day, pre-data, to shadow mode** — comparisons embed in real full-tier work and accumulate from the operator's actual distribution; the secrecy-vs-gating decomposition is pilot 2, gated on pilot 1's outcome |
 | T3 | Does a machine-checkable determinacy bar beat human plan-eyeballing? | Gate-on/gate-off arms measuring downstream integration failures (0/10 products have one, §6) |
 | T4 | What licenses trust in a quiet verifier? | Calibration-canary catch rates, minding M4's coupling caveat |
 | T5 | Is unattended window capacity actually wasted without admission machinery? | Instrumented halt/park/resume telemetry over real weeks |

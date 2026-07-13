@@ -1,7 +1,7 @@
 {
-  "state": "UNFROZEN — placeholder. No task may run before this manifest is frozen.",
-  "freeze_rule": "Fill tasks[], set state=FROZEN, commit, append the file sha256 to the v2 ledger (kind=note, subject=t2/pilot-1/manifest-frozen) BEFORE the first worker spawns. Post-freeze edits are amendments.",
-  "protocol": "protocol.md (registered 2026-07-12)",
+  "state": "RETAINED FOR SEEDED CANARIES ONLY — Amendment 1 (2026-07-12) moved routine comparisons to shadow mode; they accumulate in shadow-log.jsonl, not here.",
+  "freeze_rule": "For any deliberately seeded canary task: fill tasks[], set state=FROZEN, commit, append the file sha256 to the v2 ledger (kind=note, subject=t2/pilot-1/manifest-frozen) BEFORE the first worker spawns. Post-freeze edits are amendments.",
+  "protocol": "protocol.md (registered 2026-07-12; Amendment 1 same-day, pre-data)",
   "repos": [],
   "tasks": [],
   "task_shape": {

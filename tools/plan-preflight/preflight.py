@@ -26,6 +26,12 @@ import sys
 CONTRACT = 1
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
+# Risk tiers (added 2026-07-12, additive-optional within contract 1): the
+# operator's declared blast-radius/budget context, set in the interview.
+# Consumers compose machinery per tier; absence means "full" — lowering the
+# guard is always an explicit, recorded choice, never a default.
+TIERS = ("full", "gate-only", "bare")
+
 TOP_KEYS = {
     "contract",
     "goal",
@@ -36,8 +42,9 @@ TOP_KEYS = {
     "tasks",
     "external",
     "ratified",
+    "risk_tier",
 }
-TASK_KEYS = {"id", "title", "spec", "depends_on", "checks", "provides", "requires"}
+TASK_KEYS = {"id", "title", "spec", "depends_on", "checks", "provides", "requires", "tier"}
 TASK_REQUIRED = ("id", "title", "spec")
 
 
@@ -75,6 +82,11 @@ def validate(plan):
     for key in ("non_goals", "constraints", "open_questions", "external"):
         if key in plan and not is_str_list(plan[key]):
             errors.append(f"{key} must be a list of non-empty strings")
+
+    if "risk_tier" in plan and plan["risk_tier"] not in TIERS:
+        errors.append(
+            f"risk_tier must be one of {'/'.join(TIERS)} (found {plan['risk_tier']!r})"
+        )
 
     if "decisions" in plan:
         if not isinstance(plan["decisions"], list):
@@ -136,6 +148,10 @@ def validate(plan):
         for key in ("depends_on", "checks", "provides", "requires"):
             if key in task and not is_str_list(task[key]):
                 errors.append(f"task {tid}: {key} must be a list of non-empty strings")
+        if "tier" in task and task["tier"] not in TIERS:
+            errors.append(
+                f"task {tid}: tier must be one of {'/'.join(TIERS)} (found {task['tier']!r})"
+            )
         tasks_by_id[tid] = task
 
     # Dependency integrity (sound).
@@ -156,11 +172,17 @@ def validate(plan):
     provided = set(plan.get("external", []))
     for task in tasks_by_id.values():
         provided.update(task.get("provides", []))
+    plan_tier = plan.get("risk_tier", "full")
     for tid, task in sorted(tasks_by_id.items()):
+        effective_tier = task.get("tier", plan_tier) if plan_tier in TIERS else task.get("tier", "full")
         if not task.get("checks"):
             warnings.append(
                 f"task {tid} has no acceptance checks — completion will rest on judgment, not execution"
             )
+            if effective_tier == "gate-only":
+                warnings.append(
+                    f"task {tid} is gate-only with no checks — a gate with nothing to run is a rubber stamp; the loop will refuse it"
+                )
         for req in task.get("requires", []):
             if req not in provided:
                 warnings.append(

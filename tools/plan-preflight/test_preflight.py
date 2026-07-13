@@ -110,6 +110,30 @@ class SoundChecksHardFail(unittest.TestCase):
         self.assertIn("unknown top-level key(s): extra", errors_text(body))
         self.assertIn("unknown key(s): dependson", errors_text(body))
 
+    def test_risk_tiers_validated(self):
+        # valid: plan-level tier + per-task override
+        plan = copy.deepcopy(VALID)
+        plan["risk_tier"] = "gate-only"
+        plan["tasks"][0]["tier"] = "full"
+        code, body = check(plan)
+        self.assertEqual(code, 0, body)
+        # invalid values are sound errors at both levels
+        plan = copy.deepcopy(VALID)
+        plan["risk_tier"] = "yolo"
+        plan["tasks"][0]["tier"] = "medium"
+        code, body = check(plan)
+        self.assertEqual(code, 1)
+        self.assertIn("risk_tier must be one of full/gate-only/bare", errors_text(body))
+        self.assertIn("tier must be one of full/gate-only/bare", errors_text(body))
+
+    def test_gate_only_without_checks_warns(self):
+        plan = copy.deepcopy(VALID)
+        plan["tasks"][0]["tier"] = "gate-only"
+        del plan["tasks"][0]["checks"]
+        code, body = check(plan)
+        self.assertEqual(code, 0, body)  # judgment signal, not a sound error
+        self.assertIn("rubber stamp", warnings_text(body))
+
     def test_duplicate_and_malformed_ids(self):
         plan = copy.deepcopy(VALID)
         plan["tasks"][1]["id"] = "schema"

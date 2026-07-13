@@ -82,6 +82,19 @@ enumeration. If an option needs a definition to parse, the definition comes firs
    "a door to walk through"). A plainly-named cost is what earns the operator's attention; a
    euphemized one slips past scrutiny, and that is over-reliance manufacturing. When a high
    cost is deliberate design, lead with the consequence, then argue why it is worth paying.
+8. **Ask the stakes once, early: the risk tier.** One question per plan (revisit per task only
+   where stakes genuinely differ): *what is the blast radius if this ships wrong, and how
+   tight is budget?* Map the answer to a tier, record it (`risk_tier` at plan level, `tier` on
+   deviating tasks) plus a `decisions[]` entry in the operator's own words:
+   - **full** *(the default)* — a separate blind worker writes hidden acceptance tests from
+     the spec; merge happens only behind the gate. For auth, data-touching,
+     externally-visible, or hard-to-reverse work. Cost: one extra worker session per task.
+   - **gate-only** — the task's stated checks run behind the merge gate; no hidden tests.
+     Ordinary internal work. A gate-only task with no checks will be refused at execution.
+   - **bare** — one strong session implements and commits; no gate (machinery-protected paths
+     still never auto-merge). Experiments and throwaways.
+   An absent field means **full**: lowering the guard is always an explicit, recorded choice,
+   never a drift. If the operator waves the question off, that is an answer — record full.
 
 ## Stop condition
 
@@ -100,6 +113,7 @@ keys are contract violations:
 {
   "contract": 1,
   "goal": "One self-contained paragraph of what done looks like.",
+  "risk_tier": "full | gate-only | bare — optional; absent means full (ground rule 8)",
   "non_goals": ["What this deliberately does not do."],
   "constraints": ["Invariants, incl. every irreversible/externally-visible action carve-out."],
   "decisions": [{"q": "The question that mattered.", "a": "The operator's answer."}],
@@ -112,7 +126,8 @@ keys are contract violations:
       "depends_on": ["other-task-id"],
       "checks": ["python3 -m pytest tests/test_x.py -q"],
       "provides": ["seam-label"],
-      "requires": ["seam-label-from-another-task-or-external"]
+      "requires": ["seam-label-from-another-task-or-external"],
+      "tier": "optional per-task override of risk_tier (ground rule 8)"
     }
   ],
   "external": ["requires satisfied outside this plan"]

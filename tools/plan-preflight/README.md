@@ -31,11 +31,14 @@ One JSON object. Unknown keys are errors at both levels (typos must die loudly).
 | `tasks` | yes | ≥1 task objects (below) |
 | `external` | no | `requires` satisfied outside the plan |
 | `ratified` | no | `{"by": …, "ts": …}` — present ⇔ a human ratified this exact content |
+| `risk_tier` | no | `full` \| `gate-only` \| `bare` — operator-declared stakes (added 2026-07-12, additive within contract 1); absent ⇒ `full` |
 
 Task object: `id` (required, `[a-z0-9][a-z0-9-]*`, unique), `title` (required), `spec`
 (required — self-contained enough for a fresh implementer; markdown welcome), `depends_on`
 (ids; acyclic), `checks` (shell commands — sound verifiers; empty ⇒ warning), `provides` /
-`requires` (free-form seam labels; unmatched `requires` ⇒ warning).
+`requires` (free-form seam labels; unmatched `requires` ⇒ warning), `tier` (optional per-task
+override of `risk_tier`, same enum; a `gate-only` task with no checks ⇒ warning — the
+execution loop refuses it outright).
 
 ## Commands
 

@@ -1,12 +1,15 @@
 # T2 Pilot 1 — harness vs. null: pre-registered protocol
 
-**Status: REGISTERED, not yet scheduled.** Registered 2026-07-12; the registration is anchored
+**Status: REGISTERED — AMENDED to shadow mode (Amendment 1, same-day, pre-data), not yet
+running.** Registered 2026-07-12; the registration is anchored
 in [v2-ledger.jsonl](../v2-ledger.jsonl) (`kind=note`, `subject=t2/pilot-1/protocol-registered`)
 with this file's sha256, per D14's pre-registration discipline
 ([design](../../../design/evidence-based-harness.md) — experiments fix hypothesis, arms,
 metrics, and decision rules *before* running). Any post-registration change is an **amendment**:
 recorded in the ledger, dated, and listed in the results write-up. Results reported without
-their amendments list are invalid.
+their amendments list are invalid. **Read §1–§11 as the original design, then Amendment 1
+(bottom), which supersedes the run-mechanics (§4 sourcing, §6 ordering, §10 budget) while
+keeping the oracle, outcomes, and decision rules.**
 
 ## 1. The question
 
@@ -182,3 +185,55 @@ review sheets, per-task reports — committed before any narrative). Results wri
 the design doc's T2 row and D2 evidence line; `distilled/internal.md` (graded by its actual
 warrant: existence-level, artifact-backed); the corrections ledger if any harness defect
 surfaced mid-pilot. Every claim carries its amendment list.
+
+---
+
+## Amendment 1 — 2026-07-12 (same-day, pre-data: nothing had run, no manifest was frozen)
+
+**Why.** The operator challenged the standalone study's information-per-dollar — n ≤ 12 buys
+existence evidence only, at full two-arm cost on tasks that exist only for the experiment —
+and identified the target architecture directly: risk-tiered composition, now built (plans
+carry an operator-declared `full`/`gate-only`/`bare` tier; the interview asks the
+blast-radius/budget question; defaults unchanged at `full`).
+
+**The pilot converts from a standalone study to SHADOW MODE, embedded in real work:**
+
+- **The harness arm is a real full-tier task** the operator wanted done anyway — its cost is
+  no longer experiment spend.
+- After the real task completes (merged or blocked), a **shadow null run** executes the same
+  ratified spec in a throwaway clone cut from the task's recorded base SHA — one strong plain
+  session, exactly §3's Arm N0. The shadow **never lands anywhere**.
+- The **arbiter suite** (§5, unchanged) is authored from the spec against that same base SHA
+  and sealed **before the shadow spawns**; the arbiter author reads spec + base checkout only
+  and never sees either implementation. It grades the harness's landed state and the shadow's
+  committed state after both exist.
+- Comparisons accumulate in `shadow-log.jsonl` in this directory (one record per comparison:
+  task, tier, base SHA, arbiter manifest sha, both arms' verdicts and spends), appended at
+  comparison time — replacing the frozen upfront manifest
+  ([tasks-manifest.json](tasks-manifest.json) is retained for any deliberately *seeded canary*
+  task the operator schedules). **n grows with real usage** toward statistical usefulness,
+  drawn from the actual task distribution, stratified by declared tier.
+- **Marginal cost per comparison ≈ $3–4** (shadow ~$1–2 + arbiter ~$2), versus $6–9 under the
+  standalone design.
+
+**Known bias, accepted because its direction is conservative:** the harness arm always runs
+first (it is the real work), so the shadow may enjoy a warmer account-side prompt cache and
+its recorded spend reads *low*. That favors the null on cost — i.e., **against** the
+harness's case — so it cannot manufacture a pro-harness result. Stated here so nobody
+discovers it later.
+
+**Oracle channels, restated:** the executable arbiter remains the bar for anything recorded
+as a finding. The operator's blinded review continues, now explicitly tool-assisted (frontier
+models of their choice as analysis aids) — a qualitative channel, with the standing caveat
+that model judgment advises and executions decide (the phantom-vuln / correlated-errors
+evidence, §3.1 of the distilled corpus).
+
+**Unchanged:** hypotheses (§2), the arms' definitions (§3), the oracle design (§5), outcomes
+(§7), decision rules and small-n honesty (§8) — which now have a growth path instead of a
+cap — and threats (§9). §6's alternating order is superseded by harness-always-first (the
+bias note above). §10's budget is superseded by the marginal-cost figure.
+
+**Anchors:** original registration sha256
+`fc33319babcfd4319d25d205e9f8e151e390509c528c4f834b37c12ce20227f4`
+(`t2/pilot-1/protocol-registered`); this amended file's sha256 is appended to the ledger as
+`t2/pilot-1/amendment-1`.

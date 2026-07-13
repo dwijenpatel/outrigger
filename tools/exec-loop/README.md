@@ -42,6 +42,15 @@ runs).
 
 - **Admission**: refuses any plan that fails `plan-preflight check --require-ratified`; task
   order comes from `plan-preflight order` — DAG logic is never reimplemented.
+- **Risk tiers (operator-declared, 2026-07-12)**: `plan.risk_tier` / per-task `tier` ∈
+  `full | gate-only | bare`, absent = **full**. `full` = the whole pipeline as below.
+  `gate-only` = the task's stated checks behind the gate, no held-out suite (a gate-only task
+  with zero checks is refused — a gate with nothing to run is a rubber stamp). `bare` = one
+  strong session (config `workers.bare`), single attempt, no gate. At **every** tier:
+  protected paths never auto-merge, landing is ff-only-or-refuse, and the tier is stamped on
+  spawn/gate/merged ledger records — lowering the guard is always visible in the record.
+  Closure replays suites only where suites exist and records an all-bare composition honestly
+  (`checks: 0`).
 - **Blindness by ordering**: the suite is sealed before the implementer's first token; the
   seal's timestamp precedes the implementation branch — provable from artifacts.
 - **Confinement intent per spawn**: the implementer's launcher receives

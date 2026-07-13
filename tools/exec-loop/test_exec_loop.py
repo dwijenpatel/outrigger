@@ -383,6 +383,22 @@ class TaskCycleFixture(unittest.TestCase):
     def task(self):
         return self.loop.plan["tasks"][0]
 
+    def retier(self, plan_tier=None, task_tier=None, drop_checks=False):
+        """Rewrite the plan with tier fields and rebuild the Loop."""
+        with open(self.plan_path) as fh:
+            plan = json.load(fh)
+        if plan_tier:
+            plan["risk_tier"] = plan_tier
+        if task_tier:
+            plan["tasks"][0]["tier"] = task_tier
+        if drop_checks:
+            plan["tasks"][0].pop("checks", None)
+        with open(self.plan_path, "w") as fh:
+            json.dump(plan, fh)
+        self.loop = loop_mod.Loop(
+            self.plan_path, self.repo, self.heldout_out, self.loop.config
+        )
+
     def bundles_for(self, role, attempt):
         root = os.path.join(self.loop.workdir, "bundles")
         found = []
@@ -423,6 +439,60 @@ class TaskCycleTests(TaskCycleFixture):
         self.assertGreaterEqual(churn["insertions"], 1)
         self.assertEqual(churn["deletions"], 0)
         self.assertIn("impl_usage", gate["data"])
+
+    def test_gate_only_skips_author_and_gates_on_task_checks(self):
+        self.retier(task_tier="gate-only")
+        # no author scenario set: an author spawn would fail loudly
+        self.set_env(MOCK_SCRIPT_IMPLEMENTER=self.scenario("impl.sh", IMPL_CORRECT))
+        result = self.loop.task_cycle(self.task())
+        self.assertEqual(result["outcome"], "merged")
+        records = self.loop.ledger_records()
+        subjects = [r["subject"] for r in records]
+        self.assertFalse(any("/seal" in s for s in subjects), subjects)
+        self.assertFalse(any("author" in s for s in subjects), subjects)
+        self.assertFalse(os.path.exists(self.loop.workspace("tags-flag")))
+        gate = next(r for r in records if "/gate-a1" in r["subject"])
+        self.assertEqual(gate["data"]["tier"], "gate-only")
+
+    def test_gate_only_with_no_checks_blocks_before_any_spawn(self):
+        self.retier(task_tier="gate-only", drop_checks=True)
+        with self.assertRaises(loop_mod.Blocker) as ctx:
+            self.loop.task_cycle(self.task())
+        self.assertEqual(ctx.exception.reason, "gate-only-task-has-no-checks")
+        self.assertFalse(any("/spawn/" in r["subject"] for r in self.loop.ledger_records()))
+
+    def test_bare_lands_a_single_strong_session_without_gate(self):
+        self.retier(task_tier="bare")
+        self.set_env(MOCK_SCRIPT_IMPLEMENTER=self.scenario("impl.sh", IMPL_CORRECT))
+        result = self.loop.task_cycle(self.task())
+        self.assertEqual(result["outcome"], "merged")
+        records = self.loop.ledger_records()
+        subjects = [r["subject"] for r in records]
+        self.assertFalse(any("/gate-" in s for s in subjects), subjects)
+        self.assertFalse(any("/seal" in s for s in subjects), subjects)
+        merged = next(r for r in records if "/merged" in r["subject"])
+        self.assertEqual(merged["data"]["tier"], "bare")
+        self.assertIn("churn", merged["data"])  # telemetry home for gateless bare
+        # the single session is the STRONG worker
+        [(_, params)] = self.bundles_for("implementer", 1)
+        self.assertEqual(params["worker"]["model"], "claude-opus-4-8")
+
+    def test_bare_failure_blocks_without_escalation(self):
+        self.retier(task_tier="bare")
+        self.set_env(MOCK_SCRIPT_IMPLEMENTER=self.scenario("impl.sh", "true\n"))
+        with self.assertRaises(loop_mod.Blocker) as ctx:
+            self.loop.task_cycle(self.task())
+        self.assertEqual(ctx.exception.reason, "bare-task-failed")
+        spawns = [r for r in self.loop.ledger_records() if "/spawn/" in r["subject"]]
+        self.assertEqual(len(spawns), 1, "bare gets one attempt, never an escalation")
+
+    def test_plan_level_risk_tier_is_the_task_default(self):
+        self.retier(plan_tier="bare")
+        self.set_env(MOCK_SCRIPT_IMPLEMENTER=self.scenario("impl.sh", IMPL_CORRECT))
+        result = self.loop.task_cycle(self.task())
+        self.assertEqual(result["outcome"], "merged")
+        merged = next(r for r in self.loop.ledger_records() if "/merged" in r["subject"])
+        self.assertEqual(merged["data"]["tier"], "bare")
 
     def test_gate_fail_escalates_with_redacted_feedback(self):
         self.set_env(
@@ -688,6 +758,27 @@ class WalkerTests(WalkerFixture):
         self.assertTrue(
             any("t-one" in cmd for cmd in blocker["detail"]["failing"]),
             blocker["detail"]["failing"],
+        )
+
+    def test_mixed_tier_plan_closure_replays_only_full_suites(self):
+        with open(self.plan_path) as fh:
+            plan = json.load(fh)
+        plan["tasks"][1]["tier"] = "gate-only"
+        with open(self.plan_path, "w") as fh:
+            json.dump(plan, fh)
+        proc = self.run_cli(self.generic_env())
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertEqual(self.spawn_count(), 3, "1 author (t-one only) + 2 implementers")
+        closure = [
+            json.loads(line) for line in open(self.ledger_path)
+            if '"exec-loop/plan/closure"' in line
+        ]
+        self.assertEqual(len(closure), 1)
+        with open(closure[0]["data"]["report"]) as fh:
+            cmds = [c["cmd"] for c in json.load(fh)["checks"]]
+        self.assertTrue(any("t-one" in c for c in cmds), cmds)   # full suite replayed
+        self.assertFalse(
+            any("t-two" in c for c in cmds), cmds                # no suite ever existed
         )
 
     def test_closure_idempotent_on_restart(self):

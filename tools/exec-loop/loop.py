@@ -46,6 +46,9 @@ DEFAULT_CONFIG = {
         "author": {"tool": "claude", "model": "claude-opus-4-8", "effort": "xhigh"},
         "implementer_a1": {"tool": "claude", "model": "claude-sonnet-5", "effort": "xhigh"},
         "implementer_a2": {"tool": "claude", "model": "claude-opus-4-8", "effort": "xhigh"},
+        # tier bare = one strong session, no author, no gate (the operator
+        # declared the stakes don't buy machinery) — strong by default.
+        "bare": {"tool": "claude", "model": "claude-opus-4-8", "effort": "xhigh"},
     },
     "protect_paths": ["tools/", "plans/", ".claude/", "docs/research/internal/v2-ledger.jsonl"],
     "author_timeout_s": 1800,
@@ -157,9 +160,19 @@ class Loop:
                     continue  # tolerant read; ledger.py check is the strict path
         return records
 
+    # ---------- risk tiers ----------
+
+    def task_tier(self, task):
+        """full | gate-only | bare — task override, else plan risk_tier, else
+        full. The tier is the operator's declared blast-radius/budget context
+        (set in the interview, validated by preflight); lowering the guard is
+        always an explicit recorded choice, never a default."""
+        return task.get("tier") or self.plan.get("risk_tier") or "full"
+
     # ---------- workers ----------
 
-    def launch(self, task_id, role, attempt, worker, isolation, cwd, instructions, timeout_s):
+    def launch(self, task_id, role, attempt, worker, isolation, cwd, instructions, timeout_s,
+               tier="full"):
         self._bundle_seq = getattr(self, "_bundle_seq", 0) + 1
         stem = os.path.join(
             self.workdir, "bundles",
@@ -189,7 +202,8 @@ class Loop:
                 indent=2,
             )
         self.record(
-            "run", f"{task_id}/spawn/{role}-a{attempt}", {"worker": worker, "bundle": bundle}
+            "run", f"{task_id}/spawn/{role}-a{attempt}",
+            {"worker": worker, "bundle": bundle, "tier": tier},
         )
         proc = run([sys.executable, self.config["launcher"], bundle], timeout=timeout_s + 120)
         result_path = os.path.join(bundle, "result.json")
@@ -365,7 +379,7 @@ class Loop:
             lines.append(f"- merge conflicts: {report['merge']['conflicts']}")
         return "\n".join(lines)
 
-    def attempt_implementation(self, task, ws, attempt, feedback):
+    def attempt_implementation(self, task, ws, attempt, feedback, tier="full"):
         branch = f"task/{task['id']}-a{attempt}"
         worktree = os.path.join(self.workdir, f"wt-{task['id']}-a{attempt}")
         # Idempotent redo (decision 7): a crashed prior run may have left the
@@ -378,20 +392,23 @@ class Loop:
         if rc != 0:
             raise Blocker("worktree-failed", {"stderr": err})
         try:
-            worker_key = f"implementer_a{min(attempt, 2)}"
+            worker_key = "bare" if tier == "bare" else f"implementer_a{min(attempt, 2)}"
             result = self.launch(
                 task_id=task["id"],
                 role="implementer",
                 attempt=attempt,
                 worker=self.config["workers"][worker_key],
                 isolation={
-                    "deny_read": [os.path.realpath(ws)],
+                    # the deny wall exists to protect a held-out suite; only
+                    # tier full has one
+                    "deny_read": [os.path.realpath(ws)] if ws else [],
                     "sandbox": True,
                     "network": True,
                 },
                 cwd=worktree,
                 instructions=self.implementer_instructions(task, attempt, feedback),
                 timeout_s=self.config["implementer_timeout_s"],
+                tier=tier,
             )
             if not result.get("ok"):
                 return {"outcome": "failed", "feedback": f"worker session failed: {json.dumps({k: result.get(k) for k in ('exit', 'timed_out', 'refused_reason')})}"}
@@ -418,7 +435,30 @@ class Loop:
                      "note": "machinery-touching diff — operator hand-review, never auto-merged"},
                 )
 
-            heldout_cmds = self.heldout_check_commands(ws)
+            if tier == "bare":
+                # Tier bare (operator-declared): one strong session, commit,
+                # land — no suite, no gate. The protected-paths interlock
+                # above still applies at every tier; the ff-only rule still
+                # guarantees exactly the committed tree lands or nothing does.
+                rc, tip, err = git(self.repo, "rev-parse", branch)
+                if rc != 0:
+                    raise Blocker("merge-not-fast-forward", {"stderr": err})
+                rc, _, err = git(self.repo, "merge", "--ff-only", tip)
+                if rc != 0:
+                    raise Blocker(
+                        "merge-not-fast-forward",
+                        {"stderr": err, "source_sha": tip,
+                         "note": "main moved since the worktree was cut; nothing landed"},
+                    )
+                rc, sha, _ = git(self.repo, "rev-parse", "main")
+                self.record(
+                    "outcome", f"{task['id']}/merged",
+                    {"sha": sha, "attempt": attempt, "tier": tier,
+                     "impl_usage": result.get("usage"), "churn": churn},
+                )
+                return {"outcome": "merged", "sha": sha}
+
+            heldout_cmds = self.heldout_check_commands(ws) if tier == "full" else []
             report_path = os.path.join(self.workdir, f"gate-{task['id']}-a{attempt}.json")
             gate_argv = [
                 sys.executable, GATE, "run",
@@ -433,7 +473,7 @@ class Loop:
             self.record(
                 "run", f"{task['id']}/gate-a{attempt}",
                 {"ok": report["ok"], "report": report_path,
-                 "worker": self.config["workers"][worker_key],
+                 "worker": self.config["workers"][worker_key], "tier": tier,
                  "impl_usage": result.get("usage"), "churn": churn},
             )
             if gate.returncode == 0:
@@ -457,7 +497,10 @@ class Loop:
                                  "rewritten; nothing was landed — operator adjudication"},
                     )
                 rc, sha, _ = git(self.repo, "rev-parse", "main")
-                self.record("outcome", f"{task['id']}/merged", {"sha": sha, "attempt": attempt})
+                self.record(
+                    "outcome", f"{task['id']}/merged",
+                    {"sha": sha, "attempt": attempt, "tier": tier},
+                )
                 return {"outcome": "merged", "sha": sha}
             return {"outcome": "failed", "feedback": self.redacted_feedback(report, heldout_cmds)}
         finally:
@@ -466,16 +509,25 @@ class Loop:
             shutil.rmtree(worktree, ignore_errors=True)
 
     def task_cycle(self, task, starting_attempt=1):
-        ws = self.ensure_suite(task)
+        tier = self.task_tier(task)
+        if tier == "gate-only" and not task.get("checks"):
+            raise Blocker(
+                "gate-only-task-has-no-checks",
+                {"task": task["id"],
+                 "note": "a gate with nothing to run is a rubber stamp — add "
+                         "checks or drop the task to tier bare (operator decision)"},
+            )
+        ws = self.ensure_suite(task) if tier == "full" else None
         feedback = None
-        for attempt in range(starting_attempt, self.config["max_attempts"] + 1):
-            result = self.attempt_implementation(task, ws, attempt, feedback)
+        max_attempts = 1 if tier == "bare" else self.config["max_attempts"]
+        for attempt in range(starting_attempt, max_attempts + 1):
+            result = self.attempt_implementation(task, ws, attempt, feedback, tier=tier)
             if result["outcome"] == "merged":
                 return result
             feedback = result["feedback"]
         raise Blocker(
-            "attempts-exhausted",
-            {"task": task["id"], "attempts": self.config["max_attempts"],
+            "bare-task-failed" if tier == "bare" else "attempts-exhausted",
+            {"task": task["id"], "attempts": max_attempts, "tier": tier,
              "last_feedback": feedback},
         )
 
@@ -543,6 +595,8 @@ class Loop:
         checks = []
         for task in self.plan["tasks"]:
             checks += list(task.get("checks", []))
+            if self.task_tier(task) != "full":
+                continue  # only tier full has a sealed suite to replay
             try:
                 checks += self.heldout_check_commands(self.workspace(task["id"]))
             except OSError as exc:
@@ -552,6 +606,15 @@ class Loop:
                      "note": "a sealed suite this plan merged under is gone — "
                              "closure cannot re-verify it; operator adjudication"},
                 )
+        if not checks:
+            # An all-bare composition has nothing mechanical to re-run. The
+            # tier was the operator's explicit recorded choice; closure
+            # records that honestly rather than inventing a verdict.
+            data = {"ok": True, "sha": main_sha, "plan_sha256": plan_hash,
+                    "checks": 0,
+                    "note": "no mechanical checks at this tier composition"}
+            self.record("outcome", "closure", data)
+            return 0
         report_path = os.path.join(self.workdir, f"closure-{main_sha[:12]}.json")
         gate_argv = [
             sys.executable, GATE, "run",

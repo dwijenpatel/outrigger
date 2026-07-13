@@ -168,6 +168,31 @@ as a sign the linear model is too simple for a second pass.
      officially unanswered" note — cross-reference the internal measurement (the *official*
      question stays open; we now have our own answer).
 
+## Run 2 — pre-registered sizing (2026-07-12, before execution)
+
+Run 1 (artifact:
+[cache-weight-experiment-2026-07-12](../../docs/research/internal/cache-weight-experiment-2026-07-12/RESULTS.md))
+settled direction (full weight excluded) but not magnitude: the meter is integer-quantized and
+both arms landed inside ~1 point. Run 2 is the same design, sized from run 1's measured
+constants (2.211 tok/word; ~22.2k fresh overhead per turn; 1 meter point ≈ 207–621k weighted
+tokens):
+
+- **Parameters: `N=28`, `F=2500`, model pinned `claude-opus-4-8`, both arms.** Arm B expected
+  fresh ≈ 2.88M tokens (9.3× run 1) → **ΔB ≈ 4.6–13.9 points**; final-turn context 177.7k
+  (22k margin under the 200k limit — the binding constraint that rules out larger F at this N).
+  Estimated cost ≈ $17; ≈ 10–20 min per arm (the runner prints `wrote …turn-N.json` per turn).
+- **Solve with ACTUAL token counts** (run 1's lesson: overhead matters; the idealized 5F/15F
+  form is retired): with `fresh = input + cache_creation` and `reads = cache_read` from
+  `summarize`, under cache-write window-weight v=1,
+  `w = (ΔA/ΔB · fresh_B − fresh_A) / reads_A`.
+  Sensitivity: writes are ~6% of arm A's mix, so the untested v ∈ [1, 1.25] shifts w by ≤0.02.
+  Quantization propagates to roughly **±0.06–0.16 on w** depending on where ΔB lands.
+- **Build rule:** record `claude --version` at run time; if it differs from the last verified
+  build, run the one-turn `dry-run` in the *prior* window first (schema decay is
+  vendor-build).
+- Three readings as in run 1 (baseline / between arms / final), Haiku for the reading
+  sessions, total account silence during the arms.
+
 ## Files
 
 - [run_cache_weight_experiment.sh](run_cache_weight_experiment.sh) — the runner (`gen-filler` and

@@ -58,7 +58,8 @@ class CodexPFixture(unittest.TestCase):
         self.bin_dir = os.path.join(root, "bin")
         self.stub_dir = os.path.join(root, "stub-io")
         self.workdir = os.path.join(root, "work")
-        for d in (self.bin_dir, self.stub_dir, self.workdir):
+        self.codex_home = os.path.join(root, "codex-home")
+        for d in (self.bin_dir, self.stub_dir, self.workdir, self.codex_home):
             os.mkdir(d)
         stub_path = os.path.join(self.bin_dir, "codex")
         with open(stub_path, "w") as fh:
@@ -95,9 +96,17 @@ class CodexPFixture(unittest.TestCase):
         env = dict(os.environ)
         env["PATH"] = self.bin_dir + os.pathsep + env.get("PATH", "")
         env["CODEX_STUB_DIR"] = self.stub_dir
+        env["CODEX_HOME"] = self.codex_home
         env.update(env_extra or {})
         argv = [sys.executable, CODEX_P] + (["--dry-run"] if dry_run else []) + [bundle]
         return subprocess.run(argv, capture_output=True, text=True, env=env)
+
+    def profile_leftovers(self):
+        return [n for n in os.listdir(self.codex_home) if n.endswith(".config.toml")]
+
+    def bundle_profile(self, bundle):
+        with open(os.path.join(bundle, "generated-profile.toml")) as fh:
+            return fh.read()
 
     def result(self, bundle):
         with open(os.path.join(bundle, "result.json")) as fh:
@@ -143,12 +152,20 @@ class CodexPTests(CodexPFixture):
         self.assertEqual(argv[argv.index("--model") + 1], "gpt-5.2-codex")
         self.assertEqual(argv[argv.index("--cd") + 1], self.workdir)
         self.assertEqual(argv[-1], "-")
-        # the wall is a generated permission profile, never the old sandbox
-        # mechanism (docs: the two are mutually exclusive)
+        # the wall is a generated permission-profile FILE (never the old
+        # sandbox mechanism, never quoted keys on -c — smoke attempt 1):
+        # --profile names it, the flat -c activates it
         self.assertNotIn("--sandbox", argv)
-        self.assertIn('permissions.exec_loop_wall.extends=":workspace"', argv)
-        self.assertIn("permissions.exec_loop_wall.network.enabled=true", argv)
+        self.assertTrue(argv[argv.index("--profile") + 1].startswith("codex-p-"))
         self.assertIn('default_permissions="exec_loop_wall"', argv)
+        self.assertFalse([a for a in argv if a.startswith("permissions.")],
+                         "profile definition must travel in the file, not -c")
+        profile = self.bundle_profile(bundle)
+        self.assertIn("[permissions.exec_loop_wall]", profile)
+        self.assertIn('extends = ":workspace"', profile)
+        self.assertIn("enabled = true", profile)
+        # per-spawn file removed from CODEX_HOME after the run
+        self.assertEqual(self.profile_leftovers(), [])
 
     def test_effort_flag_and_network_false(self):
         bundle = self.make_bundle({
@@ -157,22 +174,28 @@ class CodexPTests(CodexPFixture):
         })
         proc = self.run_launcher(bundle)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        argv = self.stub_argv()
-        self.assertIn('model_reasoning_effort="high"', argv)
-        self.assertIn("permissions.exec_loop_wall.network.enabled=false", argv)
-        self.assertNotIn("permissions.exec_loop_wall.network.enabled=true", argv)
+        self.assertIn('model_reasoning_effort="high"', self.stub_argv())
+        self.assertIn("enabled = false", self.bundle_profile(bundle))
 
     def test_deny_read_becomes_profile_carve_outs(self):
         bundle = self.make_bundle({
             "isolation": {"deny_read": ["/somewhere/sealed/", "/live/repo"]}})
         proc = self.run_launcher(bundle)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        argv = self.stub_argv()
-        self.assertIn('permissions.exec_loop_wall.filesystem."/somewhere/sealed"="deny"', argv)
-        self.assertIn('permissions.exec_loop_wall.filesystem."/live/repo"="deny"', argv)
-        # deny entries only exist alongside the workspace base + activation
-        self.assertIn('permissions.exec_loop_wall.extends=":workspace"', argv)
-        self.assertIn('default_permissions="exec_loop_wall"', argv)
+        profile = self.bundle_profile(bundle)
+        self.assertIn("[permissions.exec_loop_wall.filesystem]", profile)
+        self.assertIn('"/somewhere/sealed" = "deny"', profile)
+        self.assertIn('"/live/repo" = "deny"', profile)
+        self.assertIn('extends = ":workspace"', profile)
+        self.assertEqual(self.profile_leftovers(), [])
+
+    def test_missing_codex_home_is_refused(self):
+        bundle = self.make_bundle()
+        proc = self.run_launcher(
+            bundle, env_extra={"CODEX_HOME": os.path.join(self.tmp.name, "nope")})
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("CODEX_HOME", self.result(bundle)["refused_reason"])
+        self.assertFalse(self.stub_invoked())
 
     def test_quote_bearing_deny_path_is_refused(self):
         bundle = self.make_bundle({"isolation": {"deny_read": ['/tmp/a"b']}})
@@ -241,8 +264,11 @@ class CodexPTests(CodexPFixture):
         plan = json.loads(proc.stdout)
         self.assertTrue(plan["dry_run"])
         self.assertIn('default_permissions="exec_loop_wall"', plan["argv"])
+        self.assertIn('extends = ":workspace"', plan["generated_profile"]["content"])
         self.assertFalse(self.stub_invoked(), "--dry-run must not execute the binary")
         self.assertFalse(os.path.exists(os.path.join(bundle, "result.json")))
+        self.assertEqual(self.profile_leftovers(), [],
+                         "--dry-run must not write into CODEX_HOME")
 
 
 class ParseEventsUnitTests(unittest.TestCase):

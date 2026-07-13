@@ -8,18 +8,22 @@ mechanisms (`--sandbox workspace-write`, workspace network config), builds the
 result.json and transcript.txt.
 
 Isolation mechanism (verified against learn.chatgpt.com/docs/permissions,
-2026-07-13): a generated Codex PERMISSION PROFILE, passed as `-c` config
-overrides. The profile `extends = ":workspace"` (unmentioned paths are
-denied by default, so the preset supplies normal workspace behavior — cwd
-writable, unattended commands) and each isolation.deny_read path becomes a
-`"<path>" = "deny"` carve-out (denies reads AND writes under it); network
-intent maps to `permissions.<name>.network.enabled`. Profiles are documented
-as MUTUALLY EXCLUSIVE with the older `--sandbox`/`sandbox_*` mechanism, so
-this launcher never passes `--sandbox`. `--ignore-user-config` +
-`--ignore-rules` keep ambient personal config from weakening the wall (auth
-is unaffected per `codex exec --help`); `--strict-config` turns unknown
-config keys — e.g. `permissions` on a build too old to speak it — into a
-loud startup failure instead of a silent fallback.
+2026-07-13): a generated Codex PERMISSION PROFILE, written per spawn as
+$CODEX_HOME/<uniq>.config.toml and loaded via `--profile <uniq>` (smoke
+attempt 1 proved `-c` cannot carry quoted path keys; activation stays on the
+flat `-c default_permissions=...` so a failed file load aborts loudly as an
+unknown profile, never an unwalled run). The profile `extends = ":workspace"`
+(unmentioned paths are denied by default, so the preset supplies normal
+workspace behavior — cwd writable, unattended commands) and each
+isolation.deny_read path becomes a `"<path>" = "deny"` carve-out (denies
+reads AND writes under it); network intent maps to
+`permissions.<name>.network.enabled`. Profiles are documented as MUTUALLY
+EXCLUSIVE with the older `--sandbox`/`sandbox_*` mechanism, so this launcher
+never passes `--sandbox`. `--ignore-user-config` + `--ignore-rules` keep
+ambient personal config from weakening the wall (auth is unaffected per
+`codex exec --help`); `--strict-config` turns unknown config keys — e.g.
+`permissions` on a build too old to speak it — into a loud startup failure
+instead of a silent fallback.
 
 Fail-closed: any part of the intent this launcher cannot express -> refuse
 (nonzero exit, refused_reason in result.json), never launch unwalled.
@@ -140,35 +144,54 @@ def binary_provenance(resolve_version):
 PROFILE = "exec_loop_wall"
 
 
-def build_profile_overrides(isolation):
-    """The generated permission profile, as `-c` config overrides.
+def build_profile_toml(isolation):
+    """The generated permission profile, as a TOML config-profile FILE.
 
-    Shape (docs/permissions, verified 2026-07-13): a profile named by
-    `default_permissions`; `extends = ":workspace"` supplies the normal
-    workspace behavior (unmentioned paths are DENIED by default, so a bare
-    profile would break the worker — the preset is load-bearing); each
-    deny_read path is a `"<path>" = "deny"` filesystem carve-out (denies
-    reads and writes beneath it); network policy is per-profile. Profiles do
-    not compose with the older sandbox settings — never add `--sandbox` or
-    `sandbox_*` keys alongside these.
+    Shape (docs/permissions, verified 2026-07-13): `extends = ":workspace"`
+    supplies the normal workspace behavior (unmentioned paths are DENIED by
+    default, so a bare profile would break the worker — the preset is
+    load-bearing); each deny_read path is a `"<path>" = "deny"` filesystem
+    carve-out (denies reads and writes beneath it); network policy is
+    per-profile. Profiles do not compose with the older sandbox settings —
+    never add `--sandbox` or `sandbox_*` keys alongside these.
+
+    Why a FILE and not `-c` overrides: smoke attempt 1 (2026-07-13, 0.142.5)
+    proved the `-c` dotted-path parser does not honor quoted key segments —
+    it split an absolute path key at a dot inside the path and aborted at
+    config parse ($0, 0.07s; the pre-registered fallback trigger). Quoted
+    keys are ordinary TOML in a real file. The file is delivered via
+    `--profile <name>` ($CODEX_HOME/<name>.config.toml); ACTIVATION stays on
+    the command line (`-c default_permissions=...`, a flat key the parser
+    handles) so that if the profile file somehow fails to load, codex names
+    an undefined profile and aborts loudly instead of running unwalled.
     """
-    overrides = [f'permissions.{PROFILE}.extends=":workspace"']
-    for path in isolation.get("deny_read", []):
-        overrides.append(
-            f'permissions.{PROFILE}.filesystem."{path.rstrip("/")}"="deny"'
-        )
-    enabled = "true" if isolation.get("network", True) else "false"
-    overrides.append(f"permissions.{PROFILE}.network.enabled={enabled}")
-    overrides.append(f'default_permissions="{PROFILE}"')
-    return overrides
+    lines = [
+        "# generated per-spawn by codex_p.py — removed after the run",
+        f"[permissions.{PROFILE}]",
+        'extends = ":workspace"',
+    ]
+    deny = [p.rstrip("/") for p in isolation.get("deny_read", [])]
+    if deny:
+        lines.append(f"[permissions.{PROFILE}.filesystem]")
+        lines += [f'"{path}" = "deny"' for path in deny]
+    lines.append(f"[permissions.{PROFILE}.network]")
+    lines.append("enabled = " + ("true" if isolation.get("network", True) else "false"))
+    return "\n".join(lines) + "\n"
 
 
-def build_argv(worker, isolation, cwd, last_message_path):
+def codex_home():
+    return os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex")
+
+
+def build_argv(worker, cwd, last_message_path, profile_name):
     """Translate params into `codex exec` argv. The prompt travels via stdin
     (explicit `-`), never argv — instructions.md can be long.
 
     Flag facts (codex-cli 0.142.5 --help + docs/permissions, vendor-build):
-    - the generated permission profile (build_profile_overrides) is the wall;
+    - `--profile <name>` loads the generated $CODEX_HOME/<name>.config.toml
+      (the wall's definition — build_profile_toml); the flat
+      `-c default_permissions=...` activates it and makes a failed file load
+      a loud unknown-profile abort, never an unwalled run;
     - `--ignore-user-config` / `--ignore-rules`: ambient personal config and
       execpolicy rules cannot weaken the wall (a user-config `sandbox_mode`
       would otherwise conflict with profiles); auth still uses CODEX_HOME;
@@ -193,13 +216,13 @@ def build_argv(worker, isolation, cwd, last_message_path):
         "--skip-git-repo-check",
         "--ephemeral",
         "--output-last-message", last_message_path,
+        "--profile", profile_name,
+        "-c", f'default_permissions="{PROFILE}"',
     ]
     if worker.get("effort"):
         # Effort names are vendor-interpreted (model_reasoning_effort);
         # a wrong value fails loudly at launch — same doctrine as claude_p.
         argv += ["-c", f'model_reasoning_effort="{worker["effort"]}"']
-    for override in build_profile_overrides(isolation):
-        argv += ["-c", override]
     argv.append("-")  # prompt from stdin
     return argv
 
@@ -290,9 +313,12 @@ def main(argv=None):
         return refuse(bundle, reason)
 
     last_message_path = os.path.join(bundle, "last-message.txt")
-    argv_out = build_argv(
-        params["worker"], params.get("isolation", {}), params["cwd"], last_message_path
-    )
+    profile_toml = build_profile_toml(params.get("isolation", {}))
+    profile_name = f"codex-p-{os.getpid()}-{int(time.time())}"
+    argv_out = build_argv(params["worker"], params["cwd"], last_message_path, profile_name)
+    # Audit copy: the wall's exact definition travels with the bundle.
+    with open(os.path.join(bundle, "generated-profile.toml"), "w", encoding="utf-8") as fh:
+        fh.write(profile_toml)
 
     if dry_run:
         print(
@@ -302,6 +328,10 @@ def main(argv=None):
                     "argv": argv_out,
                     "binary": binary_provenance(resolve_version=False),
                     "cwd": params["cwd"],
+                    "generated_profile": {
+                        "would_write": f"$CODEX_HOME/{profile_name}.config.toml",
+                        "content": profile_toml,
+                    },
                     "prompt_from": instructions,
                     "timeout_s": params["timeout_s"],
                 },
@@ -314,28 +344,46 @@ def main(argv=None):
     with open(instructions, encoding="utf-8") as fh:
         prompt = fh.read()
 
+    # The profile file must live in $CODEX_HOME — the only place --profile
+    # reads from. Uniquely named per spawn, removed in the finally below; a
+    # hard crash can orphan one (harmless, identifiable by the codex-p- prefix).
+    home = codex_home()
+    if not os.path.isdir(home):
+        return refuse(
+            bundle, f"CODEX_HOME not found at {home} (codex is not configured here)"
+        )
+    profile_path = os.path.join(home, f"{profile_name}.config.toml")
+
     binary = binary_provenance(resolve_version=True)
     started = utcnow()
     t0 = time.monotonic()
-    proc = subprocess.Popen(
-        argv_out,
-        cwd=params["cwd"],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True,
-    )
-    timed_out = False
+    with open(profile_path, "w", encoding="utf-8") as fh:
+        fh.write(profile_toml)
     try:
-        out, errout = proc.communicate(input=prompt, timeout=params["timeout_s"])
-    except subprocess.TimeoutExpired:
-        timed_out = True
+        proc = subprocess.Popen(
+            argv_out,
+            cwd=params["cwd"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            start_new_session=True,
+        )
+        timed_out = False
         try:
-            os.killpg(proc.pid, signal.SIGKILL)
-        except (ProcessLookupError, PermissionError):
+            out, errout = proc.communicate(input=prompt, timeout=params["timeout_s"])
+        except subprocess.TimeoutExpired:
+            timed_out = True
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
+            out, errout = proc.communicate()
+    finally:
+        try:
+            os.remove(profile_path)
+        except OSError:
             pass
-        out, errout = proc.communicate()
 
     # Raw JSONL events are the debugging/smoke record; keep them verbatim.
     with open(os.path.join(bundle, "events.jsonl"), "w", encoding="utf-8") as fh:

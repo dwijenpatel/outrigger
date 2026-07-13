@@ -52,8 +52,17 @@ verify, in order of load-bearing-ness:
 
 Record the outcome here (dated, build-pinned) and as a ledger note, like the claude runs
 below. Until then codex_p's vendor translation is doc-grounded only.
-**Status 2026-07-13:** `--rehearse` executed by the operator (argv verified against
-codex-cli 0.142.5, nothing spent); **the real run has not happened yet.**
+
+**Attempt 1, 2026-07-13 (0.142.5): probe 3 answered, $0.** The spawn aborted at config
+parse in 0.07 s, before any API call: the `-c` dotted-path parser does **not** honor quoted
+key segments — it split the filesystem key at a dot inside the absolute path (error names
+the mangled key `"/…/codex-smoke` cut mid-path). Embedded good news: codex parsed
+`permissions.<name>.filesystem` far enough to validate the path format, so the profiles
+feature exists on this build. The pre-registered fallback is now implemented: the profile
+DEFINITION travels as a per-spawn `$CODEX_HOME/<uniq>.config.toml` loaded via
+`--profile <uniq>` (quoted keys are ordinary TOML in a file), while ACTIVATION stays on the
+flat `-c default_permissions=…` so a failed file load aborts as an unknown profile rather
+than running unwalled. Probes 1–2 and 4–6 remain open — **re-run required.**
 
 ## Claude run 5 — EXECUTED 2026-07-13, build 2.1.207: hardening holds; one residual found
 

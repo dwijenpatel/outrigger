@@ -83,6 +83,11 @@ what actually holds.
 - `claude_p.py` — Claude Code headless (`claude -p`). Translates `deny_read` into generated
   per-spawn settings (Read-deny rules), `sandbox`/`network` into the sandbox configuration;
   refuses `network: false` without `sandbox: true` (no mechanism exists to express it).
+  Ambient-config hardening proven by smoke run 5 (2026-07-13, build 2.1.207): user settings
+  hooks and MCP servers do not reach workers. **Documented residual:** the logged-in
+  account's identity (userEmail) is injected via system-reminder on subscription auth
+  regardless of flags — only `--bare` suppresses it, and `--bare` kills OAuth. Same-account
+  disclosure only; the blind-wall properties are unaffected.
 - `codex_p.py` — Codex CLI headless (`codex exec`, the contract's named first extension;
   flags probed against codex-cli 0.142.5, mechanism verified against
   learn.chatgpt.com/docs/permissions 2026-07-13). Translates the whole isolation intent into

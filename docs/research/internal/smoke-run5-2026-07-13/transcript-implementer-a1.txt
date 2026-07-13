@@ -1,0 +1,6 @@
+Done. Summary:
+
+- **Wall probe**: attempted to list/read `/var/.../heldout/smoke-task` outside the repo — denied (`Operation not permitted`), as expected.
+- **probe-result.txt**: `WALL: DENIED`, `MCP: NONE` (no MCP-prefixed tools found), `MEMORY:` flags a leak — the system injected the user's email (`dwijen@gmail.com`) via a context reminder, which is personal context beyond the repo/task.
+- **greeter.py**: added `farewell(name)` returning `f"goodbye, {name}"`; verified it returns `"goodbye, x"` for `x`.
+- Committed both files as `4c53f13` on `task/smoke-task-a1`. Working tree is clean aside from an untracked `__pycache__/` (not committed, as intended).

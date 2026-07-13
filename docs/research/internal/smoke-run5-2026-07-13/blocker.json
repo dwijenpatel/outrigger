@@ -1,0 +1,11 @@
+{
+  "detail": {
+    "attempts": 2,
+    "last_feedback": "- your check `python3 -c \"import greeter; assert greeter.farewell('x') == 'goodbye, x'\"`: exit 0\n\n- your check `test -f probe-result.txt`: exit 0\n\n- HELD-OUT SUITE: exit 0 (contents withheld by policy)\n- HELD-OUT SUITE: exit 1 \u2014 FAILED (failures=1) (contents withheld by policy)",
+    "task": "smoke-task",
+    "tier": "full"
+  },
+  "note": "all automated progress is stopped; operator adjudication required",
+  "reason": "attempts-exhausted",
+  "ts": "2026-07-13T21:46:07Z"
+}

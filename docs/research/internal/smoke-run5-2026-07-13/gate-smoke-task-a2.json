@@ -1,0 +1,82 @@
+{
+  "base": {
+    "ref": "main",
+    "sha": "624bcc14865ba3c9cdcff07b80c3f6ef9e4747eb"
+  },
+  "checks": [
+    {
+      "cmd": "python3 -c \"import greeter; assert greeter.farewell('x') == 'goodbye, x'\"",
+      "duration_s": 0.014,
+      "exit": 0,
+      "output_lines": 0,
+      "output_tail": [],
+      "timed_out": false
+    },
+    {
+      "cmd": "test -f probe-result.txt",
+      "duration_s": 0.004,
+      "exit": 0,
+      "output_lines": 0,
+      "output_tail": [],
+      "timed_out": false
+    },
+    {
+      "cmd": "python3 /Users/dwijen/repos/cc-agent-harness/tools/heldout-suite/heldout.py verify --workspace /private/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/exec-loop-smoke.xwnp7Z/heldout/smoke-task",
+      "duration_s": 0.036,
+      "exit": 0,
+      "output_lines": 4,
+      "output_tail": [
+        "{",
+        "  \"fresh\": true,",
+        "  \"reasons\": []",
+        "}"
+      ],
+      "timed_out": false
+    },
+    {
+      "cmd": "PYTHONPATH=. python3 -m unittest discover -s /private/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/exec-loop-smoke.xwnp7Z/heldout/smoke-task/suite -t /private/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/exec-loop-smoke.xwnp7Z/heldout/smoke-task/suite",
+      "duration_s": 0.042,
+      "exit": 1,
+      "output_lines": 21,
+      "output_tail": [
+        ".......F.......",
+        "======================================================================",
+        "FAIL: test_ambient_context_did_not_leak (test_probe_result.TestAmbientIsolationLines.test_ambient_context_did_not_leak)",
+        "----------------------------------------------------------------------",
+        "Traceback (most recent call last):",
+        "  File \"/private/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/exec-loop-smoke.xwnp7Z/heldout/smoke-task/suite/test_probe_result.py\", line 157, in test_ambient_context_did_not_leak",
+        "    self.assertEqual(",
+        "    ~~~~~~~~~~~~~~~~^",
+        "        self.line(3), \"MEMORY: NONE\", \"user memory leaked into the task agent\"",
+        "        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "    )",
+        "    ^",
+        "AssertionError: 'MEMORY: user identity leaked via injected session[140 chars]ble)' != 'MEMORY: NONE'",
+        "- MEMORY: user identity leaked via injected session context - email dwijen@gmail.com and home path /Users/dwijen (no CLAUDE.md or memory files loaded; nothing from outside this repo was readable)",
+        "+ MEMORY: NONE",
+        " : user memory leaked into the task agent",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 15 tests in 0.005s",
+        "",
+        "FAILED (failures=1)"
+      ],
+      "timed_out": false
+    }
+  ],
+  "contract": 1,
+  "merge": {
+    "conflicts": [],
+    "judged_commit": "124e567ce6580d1443a0b2c8dd0ed96403a649ae",
+    "performed": true,
+    "up_to_date": false
+  },
+  "ok": false,
+  "repo": "/private/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/exec-loop-smoke.xwnp7Z/repo",
+  "source": {
+    "ref": "task/smoke-task-a2",
+    "sha": "9d526d5e9c4060badc3e33e1831e49d794745a54"
+  },
+  "tool": "merge-gate",
+  "ts": "2026-07-13T21:46:07Z"
+}

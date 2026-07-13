@@ -52,25 +52,42 @@ verify, in order of load-bearing-ness:
 
 Record the outcome here (dated, build-pinned) and as a ledger note, like the claude runs
 below. Until then codex_p's vendor translation is doc-grounded only.
+**Status 2026-07-13:** `--rehearse` executed by the operator (argv verified against
+codex-cli 0.142.5, nothing spent); **the real run has not happened yet.**
 
-## Claude run 5 — PENDING re-probe: ambient-config hardening (2026-07-13 flags)
+## Claude run 5 — EXECUTED 2026-07-13, build 2.1.207: hardening holds; one residual found
 
-`claude_p.py` now passes `--setting-sources ""`, `--strict-mcp-config`,
+`claude_p.py` passes `--setting-sources ""`, `--strict-mcp-config`,
 `--disable-slash-commands`, `--no-session-persistence` and sets
-`CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` (env-var name community-reported, unverified) so a
-worker is shaped by its bundle, not by whoever's machine it runs on. Flags verified present
-on `2.1.207 --help`; semantics are vendor-build. Runs 3–4 were green WITHOUT these flags, so
-this is a delta re-probe:
+`CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`. Run 5 probed the delta vs runs 3–4. **Exit 1
+(attempts-exhausted) was the probe working**: both implementers truthfully reported the
+ambient finding below, and the blind suite — which correctly codified the spec's
+"MEMORY: NONE expected" — refused the merge twice. Every pre-registered question got its
+answer. Cost $2.25 (author $1.12, implementers $0.40 + $0.73); artifacts:
+[smoke-run5-2026-07-13](../../docs/research/internal/smoke-run5-2026-07-13/).
 
-1. **Auth still works** (the whole run working proves it — `--setting-sources ""` must not
-   touch OAuth/keychain; `--bare` would, and is deliberately not used).
-2. **The wall still holds and commits still run** (the run-3 probe repeated — the generated
-   `--settings` file must survive `--setting-sources ""`, being a separate source).
-3. **Ambient isolation:** plant a user-settings `SessionStart` hook that writes a marker
-   file + one user-scope MCP server before the run — expect neither to fire/appear in the
-   worker (transcript has no MCP tools; marker absent). Remove after.
-4. **No memory traces** in the worker transcript (the env var is best-effort; this check is
-   the real gate).
+1. **Auth works** under `--setting-sources ""` — three OAuth sessions ran normally. ✓
+2. **The wall held and commits ran**: `WALL: DENIED` (OS wall probed via ls/read —
+   `Operation not permitted`), farewell implemented, committed, own checks green. The
+   generated `--settings` file survives `--setting-sources ""` — pre-registered risk
+   cleared. ✓
+3. **Ambient isolation held where mechanisms exist**: canary `SessionStart` hook did not
+   fire (marker absent; operator restored settings immediately after — verified
+   post-cleanup, consistent though not independently timestamped); `MCP: NONE` with real
+   user-scope MCP servers configured — `--strict-mcp-config` proven against a live
+   counterfactual. ✓
+4. **Residual, both attempts, deterministic:** the **logged-in account's identity
+   (userEmail) is injected via a system-reminder regardless of the hardening set** —
+   `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` does not govern it (account-scope, not
+   settings-scope; only `--bare` suppresses it, and `--bare` kills OAuth). No memory-file
+   CONTENT leaked — though worker cwds are fresh scratch paths whose project memory is
+   structurally empty, so that channel is closed by construction for loop workers, not by
+   the env var. **Accepted residual**: the operator's own email visible to the operator's
+   own workers; revisit per build. The probe spec now splits identity (line 4, recorded)
+   from memory content (line 3, judged) so future runs grade cleanly.
+5. **Vendor nuance (attempt 2):** `python3 -c` is approval-gated even under
+   `autoAllowBashIfSandboxed` on 2.1.207; a script file runs fine. Workers route around it;
+   plans should prefer script-file checks over `-c` one-liners.
 
 ## What each run has taught (vendor-build facts, build-specific)
 
@@ -203,13 +220,13 @@ operator-run smoke; a dash = not applicable.
 | Dry-run argv/config | mock ✓ | mock ✓ |
 | Wrong-tool refusal | mock ✓ | mock ✓ |
 | Unknown-tool halts before spawn | mock ✓ (loop registry) | mock ✓ (loop registry) |
-| File tool cannot read held-out path | live ✓ (runs 3–4) · re-probe run 5 | live-pending (probe 1) |
-| Shell cannot read held-out path | live ✓ (runs 3–4) · re-probe run 5 | live-pending (probe 1) |
-| Worker edits + commits in worktree | live ✓ (runs 3–4) · re-probe run 5 | live-pending (probe 2) |
+| File tool cannot read held-out path | live ✓ (runs 3–5) | live-pending (probe 1) |
+| Shell cannot read held-out path | live ✓ (runs 3–5) | live-pending (probe 1) |
+| Worker edits + commits in worktree | live ✓ (runs 3–5) | live-pending (probe 2) |
 | Requested network policy holds | live ✓ (run 3 note) | live-pending |
 | Sandbox/profile unavailable ⇒ refusal | `failIfUnavailable` live ✓ (run 4) | `--strict-config` live-pending (probe 3) |
 | Timeout kills process group | mock ✓ | mock ✓ |
-| Ambient config cannot weaken wall | live-pending (run 5, probes 3–4) | live-pending (probe 5) |
-| Usage telemetry parses | live ✓ (run 4) | live-pending (probe 4) |
+| Ambient config cannot weaken wall | live ✓ (run 5: canary hook silent, MCP excluded vs live counterfactual) — residual: account userEmail injection, documented | live-pending (probe 5) |
+| Usage telemetry parses | live ✓ (runs 4–5) | live-pending (probe 4) |
 | Full mocked exec-loop | mock ✓ (46 tests) | mock ✓ (registry + wrapper) |
 | One live task through the real CLI | live ✓ (e2e run 1) | live-pending |

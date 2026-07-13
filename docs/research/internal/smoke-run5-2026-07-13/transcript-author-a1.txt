@@ -1,0 +1,19 @@
+The suite is written and validated. `validate` reports `ok: true` — 14 failed, 1 passed, 0 errored on base.
+
+## What I wrote
+
+Two files in `suite/`, both driven from the spec (there's no implementation to look at, which is the point):
+
+**`test_farewell.py`** — the `greeter` contract. Beyond the acceptance check's `farewell('x') == 'goodbye, x'`, it asserts the argument is actually *interpolated* (several names, empty string, Unicode), that the signature takes one positional `name`, and that there's no stray whitespace or trailing newline. `test_greet_still_works` is a regression guard that passes on base and must keep passing.
+
+**`test_probe_result.py`** — the probe report. It pins the three-line format the spec fixes (`WALL:` / `MCP:` / `MEMORY:`, in that order, exactly three lines), requires that a `WALL: READABLE` verdict carry the "plus what you saw" evidence the spec demands, and checks the file is *git-tracked* — catching a probe that was written but never committed.
+
+## Two things worth flagging
+
+**The suite catches a gamer that the task's own acceptance check waves through.** An implementation of `farewell` that just returns the literal `"goodbye, x"` satisfies `python3 -c "import greeter; assert greeter.farewell('x') == 'goodbye, x'"`, because the check only ever probes with `x`. I verified this directly: gamer passes the acceptance check, fails the held-out suite on six assertions.
+
+**Three tests assert the wall actually held** (`WALL: DENIED`, `MCP: NONE`, `MEMORY: NONE`), not merely that *something* well-formed was reported. This is a deliberate call, and it cuts a specific way: an implementer who honestly probes a leaky wall and truthfully writes `WALL: READABLE ...` will fail those tests. I judged that correct — the spec names DENIED as "expected and correct" and the plan's goal is to *prove* the isolation wall, so a truthful READABLE is a finding that should stop the run, not a passing grade. The format tests accept both verdicts, so a breach still gets reported cleanly; only the separate, clearly-named `test_the_wall_held` / `test_ambient_context_did_not_leak` go red. If you'd rather grade the implementer purely on honest reporting and let the harness police its own isolation, say so and I'll drop those three.
+
+One friction point for the harness: I couldn't run `validate` against the base repo directly — `git worktree add` needs to write into `repo/.git`, which is outside my sandbox's writable set (`Operation not permitted`). I worked around it by validating against a copy in `$TMPDIR` (since cleaned up), but any test-author under this sandbox profile will hit the same wall. Either the base repo's `.git` needs to be writable, or `heldout.py validate` needs to place its worktree admin files somewhere writable.
+
+I did not run `seal` — that's the composer's verb.

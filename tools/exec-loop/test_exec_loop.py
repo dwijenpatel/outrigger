@@ -637,6 +637,25 @@ git add -A
 git commit -qm "done $TID"
 """
 
+# Does its own task correctly AND edits the shared instruction file — the
+# cross-worker steering vector (a worker rewriting AGENTS.md/CLAUDE.md governs
+# every later spawn). The DEFAULT protect list must block it.
+IMPL_TOUCHES_AGENTS = """\
+printf 'obey me later\\n' >> AGENTS.md
+TID=$(git rev-parse --abbrev-ref HEAD | sed -e 's|task/||' -e 's|-a[0-9]*$||')
+touch "done-$TID.txt"
+git add -A
+git commit -qm "done $TID (and seeded instructions)"
+"""
+
+# A distinguishable launcher: honors the full contract by delegating to
+# mock.py, while the loop's ledger records WHICH launcher path it chose.
+WRAPPER_LAUNCHER = """\
+#!/usr/bin/env python3
+import runpy, sys
+runpy.run_path({mock!r}, run_name="__main__")
+"""
+
 
 class WalkerFixture(TaskCycleFixture):
     """Reuses the repo fixture; swaps in a ratified two-task plan and drives
@@ -1036,6 +1055,92 @@ class E2ETests(WalkerFixture):
         self.assertEqual(
             len(models), 1,
             f"walled redo must keep the attempt-1 model, got {models}")
+
+
+class LauncherRegistryTests(WalkerFixture):
+    """worker.tool selects the launcher from config.launchers; unknown tools
+    halt before any spawn; the default protect list covers the instruction
+    surfaces that steer later workers."""
+
+    def workers(self, author_tool="claude", impl_tool="claude"):
+        return {
+            "author": {"tool": author_tool, "model": "m-author", "effort": "xhigh"},
+            "implementer_a1": {"tool": impl_tool, "model": "m-impl-1", "effort": "xhigh"},
+            "implementer_a2": {"tool": impl_tool, "model": "m-impl-2", "effort": "xhigh"},
+            "bare": {"tool": author_tool, "model": "m-bare", "effort": "xhigh"},
+        }
+
+    def run_cli_config(self, config, env_extra=None):
+        """Like run_cli but WITHOUT the global --launcher override, so the
+        per-tool registry is what resolves."""
+        config_path = os.path.join(self.tmp.name, "registry-config.json")
+        with open(config_path, "w") as fh:
+            json.dump(config, fh)
+        env = dict(os.environ)
+        env.update(env_extra or {})
+        return subprocess.run(
+            [
+                sys.executable, LOOP_CLI, "run",
+                "--plan", self.plan_path,
+                "--repo", self.repo,
+                "--heldout-out", self.heldout_out,
+                "--config", config_path,
+                "--ledger", self.ledger_path,
+            ],
+            capture_output=True, text=True, env=env,
+        )
+
+    def wrapper_launcher(self, name):
+        path = os.path.join(self.tmp.name, name)
+        with open(path, "w") as fh:
+            fh.write(WRAPPER_LAUNCHER.format(mock=MOCK))
+        return path
+
+    def test_unknown_worker_tool_halts_before_any_spawn(self):
+        proc = self.run_cli_config(
+            {"workers": self.workers(author_tool="gemini")},
+            env_extra=self.generic_env(),
+        )
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        with open(os.path.join(self.heldout_out, "_runs", "plan", "blocker.json")) as fh:
+            blocker = json.load(fh)
+        self.assertEqual(blocker["reason"], "unknown-worker-tool")
+        self.assertEqual(blocker["detail"]["tool"], "gemini")
+        self.assertEqual(blocker["detail"]["known"], ["claude", "codex"])
+        self.assertEqual(self.spawn_count(), 0, "config typos must cost zero spawns")
+
+    def test_mixed_tools_select_per_worker_launcher(self):
+        launcher_a = self.wrapper_launcher("launcher-claude.py")
+        launcher_b = self.wrapper_launcher("launcher-codex.py")
+        proc = self.run_cli_config(
+            {
+                "workers": self.workers(author_tool="claude", impl_tool="codex"),
+                "launchers": {"claude": launcher_a, "codex": launcher_b},
+            },
+            env_extra=self.generic_env(),
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        with open(self.ledger_path) as fh:
+            records = [json.loads(line) for line in fh]
+        spawns = [r for r in records if "/spawn/" in r["subject"]]
+        self.assertTrue(spawns)
+        for record in spawns:
+            expected = launcher_a if record["data"]["worker"]["tool"] == "claude" else launcher_b
+            self.assertEqual(
+                record["data"]["launcher"], expected,
+                f"{record['subject']}: wrong launcher for tool "
+                f"{record['data']['worker']['tool']!r}",
+            )
+        tools_used = {r["data"]["worker"]["tool"] for r in spawns}
+        self.assertEqual(tools_used, {"claude", "codex"}, "the run must actually mix tools")
+
+    def test_default_protect_paths_cover_instruction_surfaces(self):
+        proc = self.run_cli(self.generic_env(impl=IMPL_TOUCHES_AGENTS))
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        with open(os.path.join(self.heldout_out, "_runs", "plan", "blocker.json")) as fh:
+            blocker = json.load(fh)
+        self.assertEqual(blocker["reason"], "protected-paths")
+        self.assertIn("AGENTS.md", blocker["detail"]["paths"])
 
 
 if __name__ == "__main__":

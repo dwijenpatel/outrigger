@@ -41,7 +41,16 @@ LEDGER = os.path.join(TOOLS, "run-ledger", "ledger.py")
 ROLE_MD = os.path.join(TOOLS, "heldout-suite", "ROLE.md")
 
 DEFAULT_CONFIG = {
-    "launcher": os.path.join(HERE, "launchers", "claude_p.py"),
+    # Per-tool launcher registry: each worker's `tool` field selects its
+    # launcher, so mixed-tool plans (e.g. codex author + claude implementer)
+    # are a config edit, never loop surgery. "launcher" (CLI --launcher or
+    # config) is a global override that wins for every tool — the test
+    # substrate and single-tool runs use it.
+    "launcher": None,
+    "launchers": {
+        "claude": os.path.join(HERE, "launchers", "claude_p.py"),
+        "codex": os.path.join(HERE, "launchers", "codex_p.py"),
+    },
     "workers": {
         "author": {"tool": "claude", "model": "claude-opus-4-8", "effort": "xhigh"},
         "implementer_a1": {"tool": "claude", "model": "claude-sonnet-5", "effort": "xhigh"},
@@ -50,7 +59,14 @@ DEFAULT_CONFIG = {
         # declared the stakes don't buy machinery) — strong by default.
         "bare": {"tool": "claude", "model": "claude-opus-4-8", "effort": "xhigh"},
     },
-    "protect_paths": ["tools/", "plans/", ".claude/", "docs/research/internal/v2-ledger.jsonl"],
+    # Machinery + the instruction surfaces that govern later workers (a worker
+    # editing CLAUDE.md/AGENTS.md or .codex/.agents config could steer every
+    # subsequent spawn — that is a machinery change, operator-reviewed).
+    "protect_paths": [
+        "tools/", "plans/", ".claude/", ".agents/", ".codex/",
+        "CLAUDE.md", "AGENTS.md",
+        "docs/research/internal/v2-ledger.jsonl",
+    ],
     "author_timeout_s": 1800,
     "implementer_timeout_s": 3600,
     "max_attempts": 2,
@@ -184,6 +200,24 @@ class Loop:
 
     # ---------- workers ----------
 
+    def launcher_for(self, worker):
+        """Global override first (CLI --launcher / config "launcher" — the
+        test substrate and single-tool runs), else the per-tool registry
+        keyed by worker.tool. No match is a Blocker — never guess a vendor.
+        walk() calls this for every configured worker before the first
+        spawn, so a config typo halts a plan at zero cost."""
+        launcher = self.config.get("launcher") or self.config.get(
+            "launchers", {}).get(worker.get("tool"))
+        if not launcher:
+            raise Blocker(
+                "unknown-worker-tool",
+                {"tool": worker.get("tool"),
+                 "known": sorted(self.config.get("launchers", {})),
+                 "note": "no launcher registered for this tool and no global "
+                         "--launcher override"},
+            )
+        return launcher
+
     def launch(self, task_id, role, attempt, worker, isolation, cwd, instructions, timeout_s,
                tier="full"):
         self._bundle_seq = getattr(self, "_bundle_seq", 0) + 1
@@ -215,11 +249,12 @@ class Loop:
                 fh,
                 indent=2,
             )
+        launcher = self.launcher_for(worker)
         self.record(
             "run", f"{task_id}/spawn/{role}-a{attempt}",
-            {"worker": worker, "bundle": bundle, "tier": tier},
+            {"worker": worker, "bundle": bundle, "tier": tier, "launcher": launcher},
         )
-        proc = run([sys.executable, self.config["launcher"], bundle], timeout=timeout_s + 120)
+        proc = run([sys.executable, launcher, bundle], timeout=timeout_s + 120)
         result_path = os.path.join(bundle, "result.json")
         result = {}
         if os.path.exists(result_path):
@@ -683,6 +718,8 @@ class Loop:
         )
 
     def walk(self):
+        for worker in self.config["workers"].values():
+            self.launcher_for(worker)  # config typos halt here, before any spawn
         preflight = run(
             [sys.executable, PREFLIGHT, "check", self.snapshot_path, "--require-ratified"]
         )

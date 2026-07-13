@@ -33,8 +33,14 @@ Exit codes: **0** plan complete · **1** blocker (`blocker.json` in the run dir;
 progress stopped, operator adjudication required) · **2** usage/config/admission error.
 
 **Config** (JSON overriding `DEFAULT_CONFIG`): `workers` — `(tool, model, effort)` triples for
-`author`, `implementer_a1`, `implementer_a2`; `protect_paths`; `author_timeout_s` /
-`implementer_timeout_s`; `max_attempts` (default 2); `launcher`; `ledger` (default:
+`author`, `implementer_a1`, `implementer_a2`; `launchers` — the per-tool registry
+(`{"claude": …/claude_p.py, "codex": …/codex_p.py}`) selected by each worker's `tool`, so a
+mixed-tool plan is a config edit; `launcher` — a global override that wins for every tool
+(the CLI `--launcher` flag sets it; tests and single-tool runs). An unconfigured tool is an
+`unknown-worker-tool` blocker raised before the first spawn. Also: `protect_paths` (defaults
+include the instruction surfaces — `CLAUDE.md`, `AGENTS.md`, `.claude/`, `.agents/`,
+`.codex/` — since a worker that edits them steers every later spawn); `author_timeout_s` /
+`implementer_timeout_s`; `max_attempts` (default 2); `ledger` (default:
 `<workdir>/ledger.jsonl`, so the artifact is standalone; point it at a repo ledger for real
 runs).
 
@@ -104,8 +110,9 @@ trusted from documentation.**
 No pipelining (named upgrade; inherits staleness-check, depth-1, waste-metric requirements).
 No continue-past-blocker (v1.1, gated on measured adjudication data). No park-at-wall (the
 separate D12 artifact). No notifications (stage 3). No boundary probe (its own artifact). No
-mid-run re-planning (blockers, always). No Codex launcher yet (first post-confidence
-extension).
+mid-run re-planning (blockers, always). Codex launcher: landed 2026-07-13
+(`launchers/codex_p.py`), smoke-pending — no real plan uses it until its operator-run smoke
+passes (SMOKE.md).
 
 ## Composition examples
 

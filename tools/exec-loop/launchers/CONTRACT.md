@@ -83,6 +83,16 @@ what actually holds.
 - `claude_p.py` — Claude Code headless (`claude -p`). Translates `deny_read` into generated
   per-spawn settings (Read-deny rules), `sandbox`/`network` into the sandbox configuration;
   refuses `network: false` without `sandbox: true` (no mechanism exists to express it).
+- `codex_p.py` — Codex CLI headless (`codex exec`, the contract's named first extension;
+  probed against codex-cli 0.142.5). Translates `sandbox` into `--sandbox workspace-write`
+  and `network` into the workspace network config; prompt via stdin; usage parsed
+  best-effort from `--json` events. **Refuses any non-empty `deny_read`** — Codex has no
+  read-deny facility, and launching without the wall the caller asked for is exactly what
+  fail-closed forbids. Consequence: roles whose isolation needs `deny_read` (the loop's
+  implementer, shadow-pilot's workers) cannot run on Codex today; the author role
+  (`deny_read: []`) can. Also refuses `sandbox: false` (without an explicit sandbox flag,
+  codex inherits unknowable user config). **Its smoke probe has not run yet** — see
+  SMOKE.md's codex section before first real use.
 - `mock.py` — the test substrate: executes a scripted scenario (`MOCK_SCRIPT`) in `cwd` as
   the "worker"; honors a `#MOCK_REFUSE <reason>` first-line directive to simulate a
   fail-closed refusal.

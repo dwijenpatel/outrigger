@@ -17,6 +17,28 @@ read-attempt probe below — before any real plan uses it. When the Codex CLI la
 (the named first extension), it gets its own smoke; a green Claude smoke says nothing about it.
 Re-run the smoke after any Claude Code release (vendor-build decay).
 
+## The codex_p smoke — PENDING, operator-run (spends OpenAI quota, not Max-plan)
+
+`codex_p.py` landed 2026-07-13, mock-tested only (`test_codex_p.py`, stub binary; flags
+probed against `codex-cli 0.142.5 --help`). Per the per-launcher rule its first smoke must
+run before any real plan uses it. One author-role bundle (the only loop role codex_p accepts
+today — it refuses `deny_read` fail-closed, which the implementer's isolation needs), plus
+one deliberate escape probe. What it must verify, in order of load-bearing-ness:
+
+1. **The write wall holds:** instructions tell the worker to create a file *outside* its cwd
+   (e.g. in `$HOME`) and report what happened — expect the write BLOCKED by
+   `workspace-write`, in-cwd writes fine, shell commands unattended (no approval hang). This
+   is the codex analogue of claude_p's read-attempt probe.
+2. **The event schema matches the parser:** `result.json.usage` populated with real numbers
+   (not `{"error": ...}`). If it misses, the verbatim `events.jsonl` in the bundle is the
+   fix's spec — adjust `parse_events`, re-run.
+3. **A non-git cwd starts** (`--skip-git-repo-check` honored — the author workspace is not a
+   repository) and `--ephemeral` leaves no session files behind.
+4. **Effort reaches the model** (`-c model_reasoning_effort=...` accepted, session runs).
+
+Record the outcome here (dated, build-pinned) and as a ledger note, like the claude runs
+below. Until then codex_p's vendor translation is doc-grounded only.
+
 ## What each run has taught (vendor-build facts, build-specific)
 
 - **Run 1** (`acceptEdits` + `permissions.deny Read`): the OS wall held through bash, but

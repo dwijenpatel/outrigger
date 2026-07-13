@@ -110,7 +110,8 @@ load for profiles to load (attempt 2), and its `[plugins.*]` entries widen the w
 tool surface; no per-invocation disable exists on 0.142.5 (`codex plugin` is persistent
 add/remove only). The isolation WALLS are unaffected. Follow-up rider for the next paid
 run: `-c 'plugins={}'` (vendor-arbitrated, unverified — do not ship blind). (b) notify
-neutralizer: operator to confirm the turn-end notification stayed silent. (c) user
+neutralizer: **operator-confirmed held** ("no notification on-screen", 2026-07-13) — the
+profile's `notify = []` layered over user config as designed. (c) user
 `sandbox_mode` collision: n/a on this machine (none configured); stays a live question for
 machines that have one. **codex_p may now carry real roles whose isolation it can express;
 the full-loop live task (codex author + implementer through loop.py) is the remaining
@@ -287,7 +288,7 @@ operator-run smoke; a dash = not applicable.
 | Requested network policy holds | live ✓ (run 3 note) | enabled=true ran live; the deny variant unprobed |
 | Sandbox/profile unavailable ⇒ refusal | `failIfUnavailable` live ✓ (run 4) | live ✓ (attempts 1–2: loud config/profile aborts, $0) |
 | Timeout kills process group | mock ✓ | mock ✓ |
-| Ambient config cannot weaken wall | live ✓ (run 5: canary hook silent, MCP excluded vs live counterfactual) — residual: account userEmail injection, documented | wall unweakened with user config loaded, live ✓ — residual: plugin tool-surface leaks (named); notify neutralizer pending operator confirmation |
+| Ambient config cannot weaken wall | live ✓ (run 5: canary hook silent, MCP excluded vs live counterfactual) — residual: account userEmail injection, documented | wall unweakened with user config loaded, live ✓; notify neutralizer operator-confirmed — residual: plugin tool-surface leaks (named) |
 | Usage telemetry parses | live ✓ (runs 4–5) | live ✓ (turn.completed usage, primary parser branch) |
 | Full mocked exec-loop | mock ✓ (46 tests) | mock ✓ (registry + wrapper) |
 | One live task through the real CLI | live ✓ (e2e run 1) | live-pending |

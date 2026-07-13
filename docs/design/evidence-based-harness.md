@@ -543,7 +543,7 @@ size, non-inferiority margin, decision rule — D14); a row here is a question, 
 | T8 | Does a lessons store improve *anything* closed-loop? | With/without-injection paired arm; expect efficiency-not-quality (§2.3 Sandelin); measure *use*, not receipt |
 | T9 | Per-lineup effort/model routing | Re-run the committed benchmark harness on each new lineup (`model-generation` decay) |
 | T10 | Where does human latency actually go? | Instrument ack/decision times — operators' self-estimates are miscalibrated (§7 METR direction) |
-| T11 | What contract-versioning discipline keeps independently-evolving artifacts compatible? | The first real two-artifact integration: instrument seam failures and contract drift (schema versioning vs tolerant readers vs golden files) |
+| T11 | What contract-versioning discipline keeps independently-evolving artifacts compatible? | **Settled minimal 2026-07-12** ([tools/CONTRACTS.md](../../tools/CONTRACTS.md)) — the trigger fired (exec-loop composition + e2e run 1; the tier knob provided the first live additive change): explicit integer major per envelope, one owning producer, reject-unknown-major fail-closed, absence = legacy major-1 where history is append-only, additive-optional-within-major with validation, golden fixtures as the drift alarm. Grows only if a real drift failure escapes it |
 | T12 | What held-out reuse policy is safe past the attempt cap? | Triggered by any change that raises per-suite adaptive queries above the cap (pipelining, shared suites, larger caps): write the policy — holdout size, threshold, noise, query budget — and show the feedback channel sits inside an M1/M2-guaranteed regime *before* the change lands (D2) |
 
 ## 5. Sequencing sketch (a plan, not a commitment)

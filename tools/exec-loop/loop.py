@@ -191,6 +191,7 @@ class Loop:
         with open(os.path.join(bundle, "params.json"), "w", encoding="utf-8") as fh:
             json.dump(
                 {
+                    "contract": 1,  # launcher-bundle major (CONTRACT.md, tools/CONTRACTS.md)
                     "role": role,
                     "attempt": attempt,
                     "worker": worker,

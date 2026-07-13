@@ -200,6 +200,18 @@ class VerifyTests(GateFixture):
         self.assertEqual(proc.returncode, 0, proc.stdout)
         self.assertTrue(json.loads(proc.stdout)["fresh"])
 
+    def test_unknown_report_contract_is_refused(self):
+        """T11 policy: readers reject an unknown envelope major fail-closed."""
+        self.gate_pass()
+        with open(self.report) as fh:
+            report = json.load(fh)
+        report["contract"] = 2
+        with open(self.report, "w") as fh:
+            json.dump(report, fh)
+        proc = gate("verify", "--report", self.report, "--repo", self.repo)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("contract", proc.stderr + proc.stdout)
+
     def test_base_move_goes_stale__the_B4_regression(self):
         self.gate_pass()
         self.write("value.txt", "4\n")

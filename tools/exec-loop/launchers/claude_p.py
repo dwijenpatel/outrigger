@@ -43,6 +43,7 @@ def refuse(bundle, reason):
     write_result(
         bundle,
         {
+            "contract": 1,
             "ok": False,
             "exit": None,
             "started_at": None,
@@ -56,6 +57,10 @@ def refuse(bundle, reason):
 
 def validate(params):
     """Return a refusal reason, or None if this launcher can express the intent."""
+    if params.get("contract", 1) != 1:
+        # Unknown bundle major: refuse fail-closed (T11 policy). Absence is
+        # legacy major-1 — old bundles on disk stay readable.
+        return f"unknown params contract {params.get('contract')!r} (this launcher speaks 1)"
     worker = params.get("worker", {})
     if not isinstance(worker, dict):
         return "params.worker must be an object"
@@ -331,6 +336,7 @@ def main(argv=None):
     write_result(
         bundle,
         {
+            "contract": 1,
             "ok": ok,
             "exit": None if timed_out else proc.returncode,
             "started_at": started,

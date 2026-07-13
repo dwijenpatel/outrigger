@@ -1,0 +1,9 @@
+{
+  "contract": 1,
+  "duration_s": 0.004,
+  "exit": 0,
+  "finished_at": "2026-07-13T06:38:27Z",
+  "ok": true,
+  "started_at": "2026-07-13T06:38:27Z",
+  "timed_out": false
+}

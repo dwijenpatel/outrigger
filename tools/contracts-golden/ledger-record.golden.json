@@ -1,0 +1,10 @@
+{
+  "contract": 1,
+  "data": {
+    "example": true
+  },
+  "kind": "note",
+  "source": "golden",
+  "subject": "contracts/golden",
+  "ts": "2026-07-13T06:38:27Z"
+}

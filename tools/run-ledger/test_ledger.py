@@ -48,6 +48,16 @@ class EnvelopeTests(unittest.TestCase):
         self.assertIn("kind must be a non-empty string", text)
         self.assertIn("data must be a JSON object", text)
 
+    def test_contract_versioning_t11(self):
+        base = {"ts": "2026-07-12T00:00:00Z", "kind": "note", "subject": "x", "data": {}}
+        # absence = legacy major-1: valid forever (append-only history)
+        self.assertEqual(ledger.validate_record(base), [])
+        # the current major, stamped: valid
+        self.assertEqual(ledger.validate_record({**base, "contract": 1}), [])
+        # an unknown major: rejected fail-closed
+        problems = ledger.validate_record({**base, "contract": 2})
+        self.assertIn("unknown envelope contract", "; ".join(problems))
+
 
 class CliTests(unittest.TestCase):
     def setUp(self):

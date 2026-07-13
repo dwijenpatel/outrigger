@@ -1,0 +1,17 @@
+{
+  "attempt": 1,
+  "contract": 1,
+  "cwd": "/example",
+  "isolation": {
+    "deny_read": [],
+    "network": true,
+    "sandbox": true
+  },
+  "role": "implementer",
+  "timeout_s": 60,
+  "worker": {
+    "effort": "xhigh",
+    "model": "claude-sonnet-5",
+    "tool": "claude"
+  }
+}

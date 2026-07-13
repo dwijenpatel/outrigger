@@ -20,6 +20,7 @@ The caller (the loop) prepares it with exactly:
 
 ```json
 {
+  "contract": 1,
   "role": "author",
   "worker": {"tool": "claude", "model": "claude-opus-4-8", "effort": "xhigh"},
   "isolation": {"deny_read": ["/abs/path"], "sandbox": true, "network": true},
@@ -27,6 +28,10 @@ The caller (the loop) prepares it with exactly:
   "timeout_s": 3600
 }
 ```
+
+`contract` is the bundle's major version (T11 policy, [tools/CONTRACTS.md](../../CONTRACTS.md)):
+a launcher refuses an unknown major fail-closed; absence means legacy major-1. `result.json`
+carries the same field back.
 
 `worker.effort` is optional and tool-interpreted. **`isolation` is intent, never mechanism**:
 the launcher translates it into its own tool's enforcement (settings files, sandbox flags,

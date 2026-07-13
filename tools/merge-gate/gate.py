@@ -25,6 +25,10 @@ import tempfile
 import time
 
 TOOL = "merge-gate"
+# Report envelope major version (T11 policy, tools/CONTRACTS.md): this tool is
+# the one producer; readers reject an unknown major fail-closed; additions
+# within a major are optional keys.
+REPORT_CONTRACT = 1
 TAIL_LINES = 100
 
 
@@ -100,6 +104,7 @@ def cmd_run(args):
 
     report = {
         "tool": TOOL,
+        "contract": REPORT_CONTRACT,
         "ts": utcnow(),
         "repo": repo,
         "base": {"ref": args.base, "sha": base_sha},
@@ -202,6 +207,13 @@ def cmd_verify(args):
             raise GateEnvError(f"malformed report: missing {key!r}")
     if report["tool"] != TOOL:
         raise GateEnvError(f"not a {TOOL} report: tool={report['tool']!r}")
+    if report.get("contract") != REPORT_CONTRACT:
+        # Unknown (or pre-versioning) report major: refuse rather than guess.
+        # Stamps are freshness-bound anyway, so legacy reports are stale by now.
+        raise GateEnvError(
+            f"report contract must be {REPORT_CONTRACT} "
+            f"(found {report.get('contract')!r})"
+        )
 
     repo = os.path.abspath(args.repo)
     reasons = []

@@ -1,0 +1,31 @@
+{
+  "base": {
+    "ref": "main",
+    "sha": "9bc201da3004e3d2955ca5992fdaa12cfe1d24a8"
+  },
+  "checks": [
+    {
+      "cmd": "grep -q v=2 f.txt",
+      "duration_s": 0.006,
+      "exit": 0,
+      "output_lines": 0,
+      "output_tail": [],
+      "timed_out": false
+    }
+  ],
+  "contract": 1,
+  "merge": {
+    "conflicts": [],
+    "judged_commit": "2629af412d9975a491e0d634c667b32c4beaeb94",
+    "performed": true,
+    "up_to_date": false
+  },
+  "ok": true,
+  "repo": "/private/example/repo",
+  "source": {
+    "ref": "feat",
+    "sha": "7872cc0c598fe40c24710eb95778d14818332dbc"
+  },
+  "tool": "merge-gate",
+  "ts": "2026-07-13T06:38:27Z"
+}

@@ -104,6 +104,22 @@ class MockLauncherTests(unittest.TestCase):
         self.assertTrue(result["timed_out"])
         self.assertIsNone(result["exit"])
 
+    def test_unknown_params_contract_is_refused(self):
+        """T11 policy: an unknown bundle major is refused fail-closed by every
+        launcher; absence (all other tests in this file) is legacy major-1."""
+        bundle = make_bundle(self.root)
+        with open(os.path.join(bundle, "params.json")) as fh:
+            params = json.load(fh)
+        params["contract"] = 2
+        with open(os.path.join(bundle, "params.json"), "w") as fh:
+            json.dump(params, fh)
+        scenario = self.scenario("echo never\n")
+        proc = run_launcher(MOCK, bundle, env_extra={"MOCK_SCRIPT": scenario})
+        self.assertEqual(proc.returncode, 2)
+        result = read_result(bundle)
+        self.assertFalse(result["ok"])
+        self.assertIn("contract", result["refused_reason"])
+
     def test_refusal_directive_simulates_fail_closed(self):
         scenario = self.scenario("#MOCK_REFUSE cannot express isolation intent\necho never\n")
         bundle = make_bundle(self.root)

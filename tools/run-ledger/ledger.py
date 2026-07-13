@@ -15,8 +15,12 @@ import json
 import os
 import sys
 
-ENVELOPE_KEYS = {"ts", "kind", "subject", "data", "source"}
+ENVELOPE_KEYS = {"ts", "kind", "subject", "data", "source", "contract"}
 REQUIRED_KEYS = ("ts", "kind", "subject", "data")
+# Envelope major version (T11 policy, tools/CONTRACTS.md). New appends stamp
+# it; records WITHOUT it are legacy major-1 — the ledger is append-only
+# history, old records are never rewritten, so absence stays valid forever.
+ENVELOPE_CONTRACT = 1
 
 
 def utcnow() -> str:
@@ -51,6 +55,11 @@ def validate_record(rec):
         problems.append("data must be a JSON object")
     if "source" in rec and (not isinstance(rec["source"], str) or not rec["source"].strip()):
         problems.append("source, when present, must be a non-empty string")
+    if "contract" in rec and rec["contract"] != ENVELOPE_CONTRACT:
+        problems.append(
+            f"unknown envelope contract {rec['contract']!r} "
+            f"(this reader knows {ENVELOPE_CONTRACT}; absence = legacy {ENVELOPE_CONTRACT})"
+        )
     return problems
 
 
@@ -144,6 +153,7 @@ def cmd_append(args):
         "kind": args.kind,
         "subject": args.subject,
         "data": data,
+        "contract": ENVELOPE_CONTRACT,
     }
     if args.source:
         rec["source"] = args.source

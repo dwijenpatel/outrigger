@@ -47,6 +47,22 @@ def main(argv=None):
     except (OSError, json.JSONDecodeError) as exc:
         print(f"error: cannot read params.json: {exc}", file=sys.stderr)
         return 2
+    if params.get("contract", 1) != 1:
+        # T11 policy: unknown bundle major -> refuse fail-closed, like every
+        # real launcher; absence is legacy major-1.
+        write_result(
+            bundle,
+            {
+                "contract": 1,
+                "ok": False,
+                "exit": None,
+                "started_at": None,
+                "finished_at": utcnow(),
+                "refused_reason": f"unknown params contract {params.get('contract')!r} (this launcher speaks 1)",
+            },
+        )
+        print(f"refused: unknown params contract {params.get('contract')!r}", file=sys.stderr)
+        return 2
 
     # Scenario selection: most-specific env var wins, so one test run can
     # script each role and attempt differently.
@@ -72,6 +88,7 @@ def main(argv=None):
         write_result(
             bundle,
             {
+                "contract": 1,
                 "ok": False,
                 "exit": None,
                 "started_at": None,
@@ -113,6 +130,7 @@ def main(argv=None):
     write_result(
         bundle,
         {
+            "contract": 1,
             "ok": ok,
             "exit": None if timed_out else proc.returncode,
             "started_at": started,

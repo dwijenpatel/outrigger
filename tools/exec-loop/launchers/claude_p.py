@@ -333,20 +333,25 @@ def main(argv=None):
     # Fail-closed on a vendor-reported session error (is_error), on top of the
     # exit/timeout checks. is_error is None when unparseable -> exit governs.
     ok = (not timed_out) and proc.returncode == 0 and not is_error
-    write_result(
-        bundle,
-        {
-            "contract": 1,
-            "ok": ok,
-            "exit": None if timed_out else proc.returncode,
-            "started_at": started,
-            "finished_at": utcnow(),
-            "duration_s": round(time.monotonic() - t0, 3),
-            "timed_out": timed_out,
-            "binary": binary,
-            "usage": usage,
-        },
-    )
+    payload = {
+        "contract": 1,
+        "ok": ok,
+        "exit": None if timed_out else proc.returncode,
+        "started_at": started,
+        "finished_at": utcnow(),
+        "duration_s": round(time.monotonic() - t0, 3),
+        "timed_out": timed_out,
+        "binary": binary,
+        "usage": usage,
+    }
+    if not ok:
+        # Surface the vendor's own words so the caller can classify the
+        # failure (environment vs solution — e.g. the usage-window wall).
+        payload["error_summary"] = (
+            (transcript_text or "").strip()[:300]
+            or (errout or "").strip()[-300:]
+        )
+    write_result(bundle, payload)
     return 0 if ok else 1
 
 

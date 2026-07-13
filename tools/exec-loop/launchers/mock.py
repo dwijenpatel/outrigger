@@ -127,18 +127,20 @@ def main(argv=None):
         fh.write(output or "")
 
     ok = (not timed_out) and proc.returncode == 0
-    write_result(
-        bundle,
-        {
-            "contract": 1,
-            "ok": ok,
-            "exit": None if timed_out else proc.returncode,
-            "started_at": started,
-            "finished_at": utcnow(),
-            "duration_s": round(time.monotonic() - t0, 3),
-            "timed_out": timed_out,
-        },
-    )
+    payload = {
+        "contract": 1,
+        "ok": ok,
+        "exit": None if timed_out else proc.returncode,
+        "started_at": started,
+        "finished_at": utcnow(),
+        "duration_s": round(time.monotonic() - t0, 3),
+        "timed_out": timed_out,
+    }
+    if not ok:
+        # Contract parity with real launchers: failure carries the worker's
+        # own words for caller-side classification.
+        payload["error_summary"] = (output or "").strip()[-300:]
+    write_result(bundle, payload)
     return 0 if ok else 1
 
 

@@ -78,6 +78,19 @@ def path_inside(child, parent):
     return child == parent or child.startswith(parent + os.sep)
 
 
+def looks_like_wall(text):
+    """Heuristic: does a worker-session failure look like the USAGE WINDOW
+    closing rather than a solution failure? Patterns are vendor-build strings
+    (re-probe each release) and FAIL OPEN: an unrecognized error keeps the
+    old behavior (retry/escalate), so a pattern miss never strands a run —
+    it only costs the wasted-escalation this classification exists to save."""
+    lowered = (text or "").lower()
+    return any(
+        pattern in lowered
+        for pattern in ("usage limit", "rate limit", "limit reached", "out of extra usage")
+    )
+
+
 def parse_shortstat(text):
     """`git diff --shortstat` -> {files, insertions, deletions} (0 when absent).
 
@@ -310,6 +323,13 @@ class Loop:
                 timeout_s=self.config["author_timeout_s"],
             )
             if not result.get("ok"):
+                if looks_like_wall(result.get("error_summary")):
+                    raise Blocker(
+                        "window-wall",
+                        {"task": task["id"], "role": "author",
+                         "error_summary": (result.get("error_summary") or "")[:200],
+                         "note": "the usage window closed mid-run; resume after the reset"},
+                    )
                 raise Blocker("author-launch-failed", {"result": result})
             seal = run([sys.executable, HELDOUT, "seal", "--workspace", ws, "--repo", self.repo])
             if seal.returncode == 0:
@@ -412,6 +432,18 @@ class Loop:
                 tier=tier,
             )
             if not result.get("ok"):
+                if looks_like_wall(result.get("error_summary")):
+                    # Environment failure, not solution failure (external
+                    # review item 5): never burn an escalation against a
+                    # closed window. No gate verdict is recorded, so a
+                    # restart after the reset redoes this same attempt.
+                    raise Blocker(
+                        "window-wall",
+                        {"task": task["id"], "attempt": attempt,
+                         "error_summary": (result.get("error_summary") or "")[:200],
+                         "note": "the usage window closed mid-run; resume after "
+                                 "the reset — this attempt was not consumed"},
+                    )
                 return {"outcome": "failed", "feedback": f"worker session failed: {json.dumps({k: result.get(k) for k in ('exit', 'timed_out', 'refused_reason')})}"}
             rc, ahead, _ = git(self.repo, "rev-list", "--count", f"main..{branch}")
             if rc != 0 or int(ahead or "0") == 0:

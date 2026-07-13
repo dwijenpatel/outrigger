@@ -837,6 +837,26 @@ class WalkerTests(WalkerFixture):
         # nothing landed: the worker's marker is NOT on main
         self.assertFalse(os.path.exists(os.path.join(self.repo, "done-t-one.txt")))
 
+    def test_window_wall_halts_without_burning_escalation(self):
+        """A worker dying at the usage wall is an ENVIRONMENT failure: halt
+        with a window-wall blocker, never spawn the Opus escalation against a
+        closed window, and consume no attempt (no gate verdict recorded)."""
+        env = self.generic_env()
+        env["MOCK_SCRIPT_IMPLEMENTER"] = self.scenario(
+            "impl-wall.sh", 'echo "Claude usage limit reached. Your limit will reset at 9pm."\nexit 1\n'
+        )
+        proc = self.run_cli(env)
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        with open(os.path.join(self.heldout_out, "_runs", "plan", "blocker.json")) as fh:
+            blocker = json.load(fh)
+        self.assertEqual(blocker["reason"], "window-wall")
+        self.assertIn("usage limit", blocker["detail"]["error_summary"].lower())
+        subjects = self.ledger_subjects()
+        # exactly one implementer spawn: no attempt-2 escalation was launched
+        self.assertEqual(sum(1 for s in subjects if "implementer" in s), 1)
+        # and no gate verdict: a restart after the reset redoes attempt 1
+        self.assertFalse(any("gate" in s for s in subjects))
+
     def test_exhaustion_blocks_halts_all_and_stays_blocked_on_restart(self):
         proc = self.run_cli(self.generic_env(impl=IMPL_NOOP))
         self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)

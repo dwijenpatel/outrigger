@@ -873,6 +873,19 @@ class WalkerTests(WalkerFixture):
         self.assertEqual(self.spawn_count(), before)
 
 
+# Implements t-one honestly; hits the usage-window wall on t-two until the
+# flag file (the "window reset") appears, then implements t-two honestly.
+IMPL_WALL_UNTIL_RESET = """\
+TID=$(git rev-parse --abbrev-ref HEAD | sed -e 's|task/||' -e 's|-a[0-9]*$||')
+if [ "$TID" = "t-two" ] && [ ! -f "$MOCK_FLAG_FILE" ]; then
+  echo "Claude usage limit reached. Your limit will reset at 9pm."
+  exit 1
+fi
+touch "done-$TID.txt"
+git add -A
+git commit -qm "done $TID"
+"""
+
 AUTHOR_INTERRUPTIBLE = """\
 TID=$(basename "$PWD")
 if [ "$TID" = "t-two" ] && [ ! -f "$MOCK_FLAG_FILE" ]; then
@@ -966,6 +979,63 @@ class E2ETests(WalkerFixture):
             t_one_spawns,
             "resume must not re-run the merged task",
         )
+
+    def test_wall_mid_plan_resumes_same_attempt_and_reuses_suite(self):
+        """The window-wall blocker's whole promise, round-tripped: t-one lands,
+        the wall hits t-two's implementer AFTER its suite sealed, the loop
+        halts; on re-run after the "reset" the merged task is skipped, the
+        sealed suite is reused byte-for-byte (never re-authored), and the
+        walled attempt is redone as the SAME attempt at the SAME model — a
+        wall is a pause, never a consumed attempt or a phantom escalation."""
+        flag = os.path.join(self.tmp.name, "reset-flag")
+        env = {
+            "MOCK_SCRIPT_AUTHOR": self.scenario("author-gen.sh", AUTHOR_GENERIC),
+            "MOCK_SCRIPT_IMPLEMENTER": self.scenario(
+                "impl-wall-until-reset.sh", IMPL_WALL_UNTIL_RESET),
+            "MOCK_FLAG_FILE": flag,
+        }
+        first = self.run_cli(env)
+        self.assertEqual(first.returncode, 1, first.stdout + first.stderr)
+        with open(os.path.join(self.heldout_out, "_runs", "plan", "blocker.json")) as fh:
+            self.assertEqual(json.load(fh)["reason"], "window-wall")
+        self.assertTrue(os.path.exists(os.path.join(self.repo, "done-t-one.txt")))
+        self.assertFalse(os.path.exists(os.path.join(self.repo, "done-t-two.txt")))
+        manifest = os.path.join(self.heldout_out, "t-two", "manifest.json")
+        with open(manifest, "rb") as fh:
+            sealed_manifest = fh.read()
+        t_one_spawns = sum(1 for s in self.ledger_subjects() if "t-one/spawn" in s)
+        author_spawns = sum(
+            1 for s in self.ledger_subjects() if "t-two/spawn/author" in s)
+
+        with open(flag, "w") as fh:
+            fh.write("window reset\n")
+        second = self.run_cli(env)
+        self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
+        self.assertTrue(os.path.exists(os.path.join(self.repo, "done-t-two.txt")))
+        subjects = self.ledger_subjects()
+        self.assertEqual(
+            sum(1 for s in subjects if "t-one/spawn" in s), t_one_spawns,
+            "resume must not re-run the merged task")
+        self.assertEqual(
+            sum(1 for s in subjects if "t-two/spawn/author" in s), author_spawns,
+            "resume must reuse the sealed suite, not re-author it")
+        with open(manifest, "rb") as fh:
+            self.assertEqual(fh.read(), sealed_manifest,
+                             "the sealed manifest must survive the resume unchanged")
+        # the walled attempt was not consumed: two a1 spawns, never an a2
+        self.assertEqual(
+            sum(1 for s in subjects if s.endswith("t-two/spawn/implementer-a1")), 2)
+        self.assertFalse(
+            any(s.endswith("t-two/spawn/implementer-a2") for s in subjects))
+        with open(self.ledger_path) as fh:
+            records = [json.loads(line) for line in fh]
+        models = {
+            r["data"]["worker"]["model"] for r in records
+            if r["subject"].endswith("t-two/spawn/implementer-a1")
+        }
+        self.assertEqual(
+            len(models), 1,
+            f"walled redo must keep the attempt-1 model, got {models}")
 
 
 if __name__ == "__main__":

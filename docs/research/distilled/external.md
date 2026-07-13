@@ -227,8 +227,10 @@ Statements Anthropic is bound by. **Mechanism claims are excluded** — see §7 
 weekly windows. The only official *indirect* signal is `/usage` attribution itemizing cache
 **misses** as a limit driver, implying hits are weighted differently — weight unstated. The
 billing rate (~10%) is a statement about *API dollars*, not about *window occupancy*, and
-conflating the two is the single easiest mistake to make here. Settle it with the built,
-unexecuted experiment.
+conflating the two is the single easiest mistake to make here. **Internally answered
+2026-07-12/13** (*internal* §4, two pre-registered runs, committed artifacts): window weight
+**w < 0.1125**, point estimate 0 — the two accountings agree in order of magnitude. The
+*official* question stays open; decay `vendor-policy`.
 
 ## 5. Directly verified `A3`
 

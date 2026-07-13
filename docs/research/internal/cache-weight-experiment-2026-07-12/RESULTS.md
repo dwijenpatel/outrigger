@@ -1,5 +1,9 @@
 # T1 first run — 2026-07-12 (operator-executed per protocol)
 
+> **Superseded on magnitude by [run 2](../cache-weight-experiment-2026-07-13/RESULTS.md)**
+> (2026-07-13, 9.3× larger): w < 0.1125, point estimate 0 — T1 settled. Everything below
+> stands as written; run 2 closed the "magnitude unidentified" gap.
+
 **Protocol:** [cache-read-quota-weight-experiment.md](../../../../tools/budget-governor/cache-read-quota-weight-experiment.md),
 run exactly as pre-registered (rehearsal in the prior window; arms + readings in a fresh
 5-hour window). **Amendments: none.** Build 2.1.207; model pinned `claude-opus-4-8` both arms

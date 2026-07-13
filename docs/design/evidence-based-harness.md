@@ -17,6 +17,11 @@ choice. **Defaults unchanged: full remains the default everywhere.** The evidenc
 standalone 8-task study to **shadow mode**: comparisons embedded in real full-tier work
 (harness arm = the real task; shadow null + arbiter ≈ $3–4 marginal each), accumulating from
 the operator's actual task distribution.
+**Sixth amendment, 2026-07-13 (T1 run 2 — magnitude bounded, T1 settled):** cache-read
+window weight measured **w < 0.1125** (point estimate 0; half and full weight excluded;
+[artifact](../research/internal/cache-weight-experiment-2026-07-13/RESULTS.md)). D12's
+append-only context discipline takes its named promotion trigger: Provisional → **Decided**.
+Window capacity ≈ 36–48M weighted tok/5h. Decay `vendor-policy`.
 **Fourth amendment, 2026-07-12 (metabolizing an independent adversarial review of `docs/`,
 operator-run):** evidence language tightened to the grading method's own bounds — D1/D10
 gaming-ledger claims sample-bounded, D7's M7 citation narrowed (acyclicity is *a* decidable
@@ -385,14 +390,17 @@ read-attempt (the smoke's probe, never assumed from documentation), and any laye
 is `vendor-build` fact, not design fact. The *requirement* is Decided; every mechanism binding
 carries the vendor-build decay class.
 
-### D12. Economics: cache-stable context, halt-at-wall + park-and-resume, measure-don't-predict — **Decided** (halt-at-wall floor), **Provisional** (append-only discipline under R1; wake-on-reset), **TBD** (everything cleverer)
+### D12. Economics: cache-stable context, halt-at-wall + park-and-resume, measure-don't-predict — **Decided** (halt-at-wall floor; append-only context discipline), **Provisional** (wake-on-reset), **TBD** (everything cleverer)
 
 - **Context discipline is append-only / prefix-stable** so cache reuse is structural, not
-  accidental. (Official commitment: cache reads bill ~10% of input rate — a *billing*
-  statement; §4. Whether that discount extends to subscription-*window* occupancy — the thing
-  R1 actually optimizes — is exactly T1's open question, so under R1 this discipline is
-  **Provisional**: kept because its marginal cost is ≈0 and the billing fact bounds the
-  downside, promoted or dropped by T1.)
+  accidental — **Decided 2026-07-13, by its own named trigger**: T1 measured the window-side
+  discount directly (*internal* §4, runs
+  [1](../research/internal/cache-weight-experiment-2026-07-12/RESULTS.md) ·
+  [2](../research/internal/cache-weight-experiment-2026-07-13/RESULTS.md)) — a cache read
+  weighs **< 0.1125** of a fresh input token against the 5-hour window (point estimate 0), so
+  prefix-stable context is ≥ ~9× cheaper than context that busts the cache. The ~10% billing
+  rate (§4, official) and the measured window weight now agree in order of magnitude. Decay
+  `vendor-policy`: re-check on any announced plan/limits change.
 - **The wall is survivable by construction**: credits are strictly opt-in, so an unattended run
   halts rather than spills (§4) — the harness records a resumable checkpoint and *parks*.
   Wake-on-reset appears in none of the surveyed tools (§5 census) — which, per the grading
@@ -403,14 +411,16 @@ carries the vendor-build decay class.
   actually being wasted? — decides whether it earns build effort at all.
 - **Instrument spend; never predict it** (R4; *internal* §4's 3× same-task variance with
   committed artifacts).
-- **TBD — the contested question that decides how aggressive context reuse should be:** how
-  cache reads weigh against *subscription windows* is officially unanswered (§4; the vendor
-  declined to answer, §2.1). **T1's first run (2026-07-12, *internal*) excluded full weight**
-  — cache reads are discounted against the window, direction settled against the
-  community-telemetry "near-full weight" claim — **but the magnitude stayed unidentified**
-  (integer-quantized meter, run sized too small; artifact committed). The append-only
-  discipline's warrant improved from "billing fact + zero marginal cost" to "window-side
-  discount exists, size unknown"; the sizing rerun stays the settling step.
+- **Settled by T1 (runs 1–2) — the question that decided how aggressive context reuse should
+  be:** how cache reads weigh against *subscription windows* is *officially* still unanswered
+  (§4; the vendor declined to answer, §2.1), but is now **internally measured**: run 1
+  (2026-07-12) excluded full weight; run 2 (2026-07-13, 9.3× larger,
+  [artifact](../research/internal/cache-weight-experiment-2026-07-13/RESULTS.md)) bounded it —
+  **w < 0.1125, point estimate 0**; half and full weight excluded outright; window capacity
+  ≈ 36–48M weighted tok/5h. The community-telemetry "near-full weight" claim is contradicted
+  at two run sizes on this build/plan. The official answer's absence is why the decay class is
+  `vendor-policy`: any announced plan/limits change reopens the measurement, not the decision
+  structure.
 - **Substrate decay-awareness:** R1 carries a volatility note — multiple concurrent
   subscriptions, or metered API pricing. If either lands, "the wall" pluralizes or becomes a
   budget rather than a reset clock, and this decision is revisited through R6. Not provisioned
@@ -533,7 +543,7 @@ size, non-inferiority margin, decision rule — D14); a row here is a question, 
 
 | # | Question | What settles it |
 |---|---|---|
-| T1 | Do cache reads meaningfully discount *subscription-window* occupancy? | The built cache-weight experiment (operator-run; quota-costing). **First run 2026-07-12** ([artifact](../research/internal/cache-weight-experiment-2026-07-12/RESULTS.md)): **full weight excluded** — arm A carried ≥ arm B's weighted tokens at w=1 yet moved the meter less; magnitude **unidentified** (the meter is integer-quantized; both arms landed within ~1 point at F=6k×5 — the pre-registered too-small caveat fired, no w forced). Incidentals: caching toggle verified; first window-capacity bound ≈21–62M weighted tok/5h. Settling step: rerun ≥5× larger (≈$8–15) or find a finer usage surface first |
+| T1 | Do cache reads meaningfully discount *subscription-window* occupancy? | **Settled 2026-07-13: yes, by ≥ ~9×** ([run 1](../research/internal/cache-weight-experiment-2026-07-12/RESULTS.md) · [run 2](../research/internal/cache-weight-experiment-2026-07-13/RESULTS.md), both operator-run as pre-registered). Run 1 excluded full weight; run 2 (N=28, F=2500, 9.3× larger) bounded the magnitude: **w < 0.1125** of fresh-input weight (v=1; v=1.25 tightens to 0.096), point estimate pins to **0**; w=0.5 and w=1 excluded outright. Window capacity ≈ **36.2–48.3M weighted tok/5h** (nests inside run 1's 21–62M; linear model retro-predicts run 1 across the scale-up). D12's append-only discipline promoted on this trigger. Decay `vendor-policy` — re-run on any announced plan/limits change. Optional (no decision needs it): distinguish w=0 from w≈0.1 via a finer usage surface or an arm-A-only run at ≥3× reads |
 | T2 | Does blind validation + a held-out vault pay its overhead vs test-secrecy alone, per risk tier? | Paired-arm A/B on a realistic task set (internal evidence is n=2 *existence* — P3v2-5 + smoke run 2, *internal* §5 — never a rate). **Pilot 1 registered 2026-07-12** ([protocol](../research/internal/t2-pilot-1/protocol.md), ledger-anchored): full harness vs the R2 null first, arbiter-suite oracle; **amended same-day, pre-data, to shadow mode** — comparisons embed in real full-tier work and accumulate from the operator's actual distribution; the secrecy-vs-gating decomposition is pilot 2, gated on pilot 1's outcome |
 | T3 | Does a machine-checkable determinacy bar beat human plan-eyeballing? | Gate-on/gate-off arms measuring downstream integration failures (0/10 products have one, §6) |
 | T4 | What licenses trust in a quiet verifier? | Calibration-canary catch rates, minding M4's coupling caveat |

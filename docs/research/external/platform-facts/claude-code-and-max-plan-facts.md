@@ -127,9 +127,12 @@ memory, unscoped rules) → conversation.
   I/O) remains **open, unanswered** (re-verified 2026-07-04 via the issues API — no maintainer
   comment). One new *indirect* official signal: the `/usage` plan-limits attribution
   (v2.1.174+, costs docs) itemizes **cache misses** as a limit driver — implying cache *hits*
-  are weighted differently, weight still unstated `[official, indirect]`. → The conservative
-  branch in design §10.2 stands; settle it with the §12 controlled measurement — now the
-  single highest-value experiment.
+  are weighted differently, weight still unstated `[official, indirect]`. → **Measured
+  internally 2026-07-12/13** (two pre-registered controlled runs, committed artifacts —
+  [distilled *internal* §4](../../distilled/internal.md)): window weight **w < 0.1125** of
+  fresh input, point estimate 0, on build 2.1.207/Max — the community near-full-weight lean
+  is contradicted at two run sizes. The *official* question remains unanswered; this bullet
+  stays `[contested]` on the official side only.
 
 ## 5. Usage credits (the escape valve)
 

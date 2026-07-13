@@ -193,6 +193,19 @@ tokens):
 - Three readings as in run 1 (baseline / between arms / final), Haiku for the reading
   sessions, total account silence during the arms.
 
+## Run 2 — result (2026-07-13, executed as pre-registered; T1 settled)
+
+Artifact: [cache-weight-experiment-2026-07-13](../../docs/research/internal/cache-weight-experiment-2026-07-13/RESULTS.md).
+One deviation, covered by the Controls section's own contingency: baseline was **3**, not a
+fresh window — analysis on deltas. Readings 3 → 3 → 10; token totals as sized (arm B
+2,898,461 fresh; arm A 2,720,679 reads + 177,087 fresh). Solve: **w < 0.1125** (v=1; v=1.25
+*tightens* it to 0.096), point estimate pins to **0**; w = 0.5 and w = 1 excluded outright.
+Window capacity ≈ **36.2–48.3M weighted tokens / 5h** (nests inside run 1's 21–62M; the
+linear model retro-predicts run 1's deltas correctly across the 9.3× scale-up). Both runs on
+build 2.1.207, `claude-opus-4-8`, $17.63 combined for run 2. The question this document was
+written to answer is answered: **cache reads are discounted against the window by ≥ ~9×.**
+Re-run trigger: `vendor-policy` decay — any announced plan/limits change.
+
 ## Files
 
 - [run_cache_weight_experiment.sh](run_cache_weight_experiment.sh) — the runner (`gen-filler` and

@@ -188,7 +188,22 @@ amendments. Model pinned `claude-opus-4-8`, build 2.1.207.
 
 Supersession note: the community-telemetry lean "cache reads at near-full window weight"
 (external §4 / platform-facts) is **contradicted on this build/plan** — direction now settled
-internal-side; only the size of the discount remains open (T1 rerun, ≥5× larger).
+internal-side; the size of the discount was closed by run 2 (next section): **w < 0.1125**.
+
+### The cache-weight probe, run 2 (T1, 2026-07-13) — magnitude bounded, T1 settled
+
+**Artifact:** [cache-weight-experiment-2026-07-13](../internal/cache-weight-experiment-2026-07-13/RESULTS.md)
+— 56 verbatim turn JSONs (N=28 per arm, F=2,500 words), the readings log, and the analysis;
+executed by the operator to the pre-registered run-2 sizing, 9.3× run 1, same build
+(2.1.207) and pinned model (`claude-opus-4-8`). One deviation — baseline 3, not a fresh
+window — covered by the protocol's pre-registered delta-not-absolute contingency.
+
+| Claim | Strength |
+|---|---|
+| **Cache-read window weight w < 0.1125** (writes at v=1; v=1.25 *tightens* it to 0.096); point estimate pins to **0**. Arm A moved the meter < 1 pt on 2.72M reads; arm B moved it 6–8 pts on 2.90M fresh. w=0.5 predicts 3.2–4.2 pts and w=1 predicts 6–8 pts — both excluded; w≈0.1 (billing rate) sits at the boundary, not excludable. | A3 (the artifact carries it); `vendor-policy` decay |
+| Window capacity **≈ 36.2–48.3M weighted tokens / 5h** (Max) — 1 meter point = 362–483k weighted tokens. Nests inside run 1's 21–62M; the linear model retro-predicts run 1's deltas across the 9.3× scale-up (0.64–0.86 pts predicted vs 0→1 observed). | A3; `vendor-policy`; n=2 windows |
+| Billing and window accounting **separately measured, mutually consistent**: arm A cost 21.7% of arm B's dollars while causing < 14% of its window movement. | A3 |
+| Load-bearing residual: the bound assumes **attested account silence** in arm B's 105 s bracket (outside spend there would *loosen* the true bound). Disclosed; seven_d coherence and the 01:54-local timing mitigate. | Caveat, kept with the claim |
 
 ### The tokenizer study (`tool-surface` §4.3) — **Tier B, not Tier A**
 

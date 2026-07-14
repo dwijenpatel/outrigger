@@ -1,0 +1,127 @@
+{
+  "contract": 1,
+  "tool": "test-overlap",
+  "generated_at": "2026-07-14T23:50:55+00:00",
+  "repo": "/Users/dwijen/repos/eaitl",
+  "repo_head": "c6468329cb18a4b98112eb9c1d85bdcab2990751",
+  "source_pkg": "eaitl",
+  "suites": {
+    "self": {
+      "path": "tests",
+      "kind": "internal"
+    },
+    "held": {
+      "path": "/Users/dwijen/repos/outrigger/docs/research/internal/t2-pilot-1/pilot-eaitl-preview/heldout/eaitl-preview-engine/suite",
+      "kind": "external"
+    }
+  },
+  "pristine": {
+    "self": 0,
+    "held": 0,
+    "ok": true
+  },
+  "line_reach": {
+    "tests_run_self": 35,
+    "tests_run_held": 126,
+    "lines_self": 242,
+    "lines_held": 246,
+    "lines_both": 239,
+    "lines_only_self": [
+      "parser.py:17",
+      "parser.py:28",
+      "parser.py:38"
+    ],
+    "lines_only_held": [
+      "engine.py:10",
+      "engine.py:11",
+      "engine.py:54",
+      "engine.py:55",
+      "engine.py:56",
+      "ops.py:55",
+      "ops.py:58"
+    ]
+  },
+  "mutation": {
+    "mutate_files": [
+      "ops.py",
+      "engine.py",
+      "resolve.py",
+      "parser.py"
+    ],
+    "generated": 157,
+    "invalid": 0,
+    "valid": 157,
+    "caught_by_both": 99,
+    "caught_only_by_self": 0,
+    "caught_only_by_held": 13,
+    "caught_by_neither": 45,
+    "mutation_score_self": 0.6306,
+    "mutation_score_held": 0.7134,
+    "examples": {
+      "only_self": [],
+      "only_held": [
+        "ops.py:56 Eq->NotEq",
+        "ops.py:113 Gt->GtE",
+        "ops.py:121 Lt->LtE",
+        "ops.py:129 GtE->LtE",
+        "ops.py:137 LtE->GtE",
+        "ops.py:121 0->1",
+        "ops.py:121 1->0",
+        "ops.py:129 0->1",
+        "ops.py:129 1->0",
+        "ops.py:137 0->1",
+        "ops.py:137 1->0",
+        "engine.py:56 False->True",
+        "parser.py:52 Eq->NotEq"
+      ],
+      "neither": [
+        "ops.py:20 Or->And",
+        "ops.py:26 Or->And",
+        "ops.py:82 0->1",
+        "ops.py:32 1->0",
+        "ops.py:32 1->2",
+        "ops.py:41 2->0",
+        "ops.py:41 3->4",
+        "ops.py:49 2->0",
+        "ops.py:49 2->3",
+        "ops.py:64 2->0",
+        "ops.py:64 2->3",
+        "ops.py:69 2->0",
+        "ops.py:69 2->3",
+        "ops.py:74 2->0",
+        "ops.py:74 2->3",
+        "ops.py:79 2->0",
+        "ops.py:79 2->3",
+        "ops.py:88 1->0",
+        "ops.py:88 1->2",
+        "ops.py:101 2->0",
+        "ops.py:101 2->3",
+        "ops.py:106 2->0",
+        "ops.py:106 2->3",
+        "ops.py:111 2->0",
+        "ops.py:111 2->3",
+        "ops.py:119 2->0",
+        "ops.py:119 2->3",
+        "ops.py:127 2->0",
+        "ops.py:127 2->3",
+        "ops.py:135 2->0",
+        "ops.py:135 2->3",
+        "ops.py:143 1->0",
+        "ops.py:143 1->2",
+        "ops.py:115 0->1",
+        "ops.py:115 1->2",
+        "ops.py:115 1->0",
+        "ops.py:123 0->1",
+        "ops.py:123 1->2",
+        "ops.py:123 1->0",
+        "ops.py:131 0->1",
+        "ops.py:131 1->2",
+        "ops.py:131 1->0",
+        "ops.py:139 0->1",
+        "ops.py:139 1->2",
+        "ops.py:139 1->0"
+      ]
+    }
+  },
+  "ok": true
+}

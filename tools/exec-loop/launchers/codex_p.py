@@ -36,6 +36,17 @@ failure instead of a silent fallback.
 Fail-closed: any part of the intent this launcher cannot express -> refuse
 (nonzero exit, refused_reason in result.json), never launch unwalled.
 
+Probe hatch: `--probe-extra-config KEY=VALUE` (repeatable, default none) appends
+extra `-c` overrides to the codex invocation so an operator-run smoke can test a
+vendor-arbitrated rider (e.g. `plugins={}`, the ambient-plugin-surface
+neutralizer) in the real launcher path before it is ever baked into the default
+argv. It is refused when KEY is wall-critical (PROTECTED_CONFIG_KEYS), and the
+overrides are emitted BEFORE the wall's own activation keys, so no probe can
+shadow or weaken the wall regardless of `-c` precedence; `--strict-config` still
+turns an unknown or malformed key into a loud pre-API abort. The values used are
+recorded in result.json (`probe_extra_config`) for audit. Nothing sets it by
+default — it is scaffolding for verification, not a shipped behavior.
+
 Vendor-mechanism honesty: permission profiles are officially BETA ("may
 change" — fast decay class), the `-c` dotted-path parser's handling of
 quoted path segments is undocumented (a parse failure aborts the spawn
@@ -56,6 +67,11 @@ import time
 
 KNOWN_ISOLATION_KEYS = {"deny_read", "sandbox", "network"}
 KNOWN_WORKER_KEYS = {"tool", "model", "effort"}
+
+# Config keys a --probe-extra-config override may never touch: these activate
+# the isolation wall. The probe hatch exists to test vendor-arbitrated riders
+# (e.g. plugins={}) in the real launcher path, never to weaken the wall.
+PROTECTED_CONFIG_KEYS = {"default_permissions"}
 
 
 def utcnow():
@@ -132,6 +148,22 @@ def validate(params):
     return None
 
 
+def validate_extra_config(extras):
+    """Probe-only `-c` overrides from --probe-extra-config. Each must be
+    KEY=VALUE and KEY (or its dotted root) must not be wall-critical. Returns an
+    error string, or None. The hatch tests riders (e.g. plugins={}) in the real
+    launcher path; it must never be able to disable the wall."""
+    for item in extras:
+        if "=" not in item:
+            return f"--probe-extra-config must be KEY=VALUE, got {item!r}"
+        key = item.split("=", 1)[0].strip()
+        if not key:
+            return f"--probe-extra-config has an empty key: {item!r}"
+        if key.split(".", 1)[0] in PROTECTED_CONFIG_KEYS:
+            return f"--probe-extra-config may not override wall key {key!r}"
+    return None
+
+
 def binary_provenance(resolve_version):
     """Which `codex` will actually run, and (on real runs) its version.
     Same rationale as claude_p: vendor builds are the fastest-decaying
@@ -197,9 +229,14 @@ def codex_home():
     return os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex")
 
 
-def build_argv(worker, cwd, last_message_path, profile_name):
+def build_argv(worker, cwd, last_message_path, profile_name, extra_config=()):
     """Translate params into `codex exec` argv. The prompt travels via stdin
     (explicit `-`), never argv — instructions.md can be long.
+
+    extra_config: probe-only `-c` overrides (--probe-extra-config, default none),
+    already validated non-wall-critical. Emitted BEFORE the wall's own
+    activation keys so a duplicate key cannot shadow the wall under any `-c`
+    precedence.
 
     Flag facts (codex-cli 0.142.5 --help + docs/permissions, vendor-build):
     - `--profile <name>` loads the generated $CODEX_HOME/<name>.config.toml
@@ -237,8 +274,13 @@ def build_argv(worker, cwd, last_message_path, profile_name):
         "--ephemeral",
         "--output-last-message", last_message_path,
         "--profile", profile_name,
-        "-c", f'default_permissions="{PROFILE}"',
     ]
+    # Probe-only overrides first, then the wall's activation key last on -c, so
+    # the wall wins any (already-refused) key collision. validate_extra_config
+    # has guaranteed none of these touch a PROTECTED_CONFIG_KEYS root.
+    for override in extra_config:
+        argv += ["-c", override]
+    argv += ["-c", f'default_permissions="{PROFILE}"']
     if worker.get("effort"):
         # Effort names are vendor-interpreted (model_reasoning_effort);
         # a wrong value fails loudly at launch — same doctrine as claude_p.
@@ -313,8 +355,24 @@ def main(argv=None):
     dry_run = "--dry-run" in args
     if dry_run:
         args.remove("--dry-run")
+    extra_config = []
+    while "--probe-extra-config" in args:
+        i = args.index("--probe-extra-config")
+        if i + 1 >= len(args):
+            print("usage: --probe-extra-config needs a KEY=VALUE argument",
+                  file=sys.stderr)
+            return 2
+        extra_config.append(args[i + 1])
+        del args[i:i + 2]
     if len(args) != 1:
-        print("usage: codex_p.py [--dry-run] <bundle-dir>", file=sys.stderr)
+        print("usage: codex_p.py [--dry-run] "
+              "[--probe-extra-config KEY=VALUE ...] <bundle-dir>", file=sys.stderr)
+        return 2
+    reason = validate_extra_config(extra_config)
+    if reason:
+        # Operator CLI misuse, not a bundle-intent problem — fail before
+        # touching the bundle; no result.json (nothing about the bundle is wrong).
+        print(f"error: {reason}", file=sys.stderr)
         return 2
     bundle = os.path.abspath(args[0])
 
@@ -335,30 +393,28 @@ def main(argv=None):
     last_message_path = os.path.join(bundle, "last-message.txt")
     profile_toml = build_profile_toml(params.get("isolation", {}))
     profile_name = f"codex-p-{os.getpid()}-{int(time.time())}"
-    argv_out = build_argv(params["worker"], params["cwd"], last_message_path, profile_name)
+    argv_out = build_argv(params["worker"], params["cwd"], last_message_path,
+                          profile_name, extra_config)
     # Audit copy: the wall's exact definition travels with the bundle.
     with open(os.path.join(bundle, "generated-profile.toml"), "w", encoding="utf-8") as fh:
         fh.write(profile_toml)
 
     if dry_run:
-        print(
-            json.dumps(
-                {
-                    "dry_run": True,
-                    "argv": argv_out,
-                    "binary": binary_provenance(resolve_version=False),
-                    "cwd": params["cwd"],
-                    "generated_profile": {
-                        "would_write": f"$CODEX_HOME/{profile_name}.config.toml",
-                        "content": profile_toml,
-                    },
-                    "prompt_from": instructions,
-                    "timeout_s": params["timeout_s"],
-                },
-                indent=2,
-                sort_keys=True,
-            )
-        )
+        plan = {
+            "dry_run": True,
+            "argv": argv_out,
+            "binary": binary_provenance(resolve_version=False),
+            "cwd": params["cwd"],
+            "generated_profile": {
+                "would_write": f"$CODEX_HOME/{profile_name}.config.toml",
+                "content": profile_toml,
+            },
+            "prompt_from": instructions,
+            "timeout_s": params["timeout_s"],
+        }
+        if extra_config:
+            plan["probe_extra_config"] = extra_config
+        print(json.dumps(plan, indent=2, sort_keys=True))
         return 0
 
     with open(instructions, encoding="utf-8") as fh:
@@ -433,6 +489,8 @@ def main(argv=None):
         "binary": binary,
         "usage": usage,
     }
+    if extra_config:
+        payload["probe_extra_config"] = extra_config
     if not ok:
         # Surface the vendor's own words so the caller can classify the
         # failure (environment vs solution — e.g. a usage-window wall).

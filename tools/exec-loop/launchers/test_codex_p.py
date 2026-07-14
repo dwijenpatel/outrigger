@@ -92,13 +92,16 @@ class CodexPFixture(unittest.TestCase):
                 fh.write(instructions)
         return bundle
 
-    def run_launcher(self, bundle, env_extra=None, dry_run=False):
+    def run_launcher(self, bundle, env_extra=None, dry_run=False, extra_argv=None):
         env = dict(os.environ)
         env["PATH"] = self.bin_dir + os.pathsep + env.get("PATH", "")
         env["CODEX_STUB_DIR"] = self.stub_dir
         env["CODEX_HOME"] = self.codex_home
         env.update(env_extra or {})
-        argv = [sys.executable, CODEX_P] + (["--dry-run"] if dry_run else []) + [bundle]
+        argv = ([sys.executable, CODEX_P]
+                + (["--dry-run"] if dry_run else [])
+                + list(extra_argv or [])
+                + [bundle])
         return subprocess.run(argv, capture_output=True, text=True, env=env)
 
     def profile_leftovers(self):
@@ -276,6 +279,38 @@ class CodexPTests(CodexPFixture):
         self.assertFalse(os.path.exists(os.path.join(bundle, "result.json")))
         self.assertEqual(self.profile_leftovers(), [],
                          "--dry-run must not write into CODEX_HOME")
+
+    def test_probe_extra_config_appends_c_override_before_the_wall(self):
+        # The rider hatch: an operator-run smoke can inject a vendor-arbitrated
+        # -c override (e.g. plugins={}) to test it in the real launcher path.
+        bundle = self.make_bundle()
+        proc = self.run_launcher(
+            bundle, extra_argv=["--probe-extra-config", "plugins={}"])
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        argv = self.stub_argv()
+        self.assertIn("plugins={}", argv)
+        self.assertEqual(argv[argv.index("plugins={}") - 1], "-c")
+        # it can never shadow the wall: it precedes the activation key on -c
+        self.assertLess(argv.index("plugins={}"),
+                        argv.index('default_permissions="exec_loop_wall"'))
+        # and it is recorded for audit
+        self.assertEqual(self.result(bundle)["probe_extra_config"], ["plugins={}"])
+
+    def test_probe_extra_config_may_not_override_the_wall(self):
+        bundle = self.make_bundle()
+        proc = self.run_launcher(
+            bundle, extra_argv=["--probe-extra-config", 'default_permissions="off"'])
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("wall key", proc.stderr)
+        self.assertFalse(self.stub_invoked(), "must refuse before launching")
+
+    def test_probe_extra_config_requires_key_value(self):
+        bundle = self.make_bundle()
+        proc = self.run_launcher(
+            bundle, extra_argv=["--probe-extra-config", "plugins"])
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("KEY=VALUE", proc.stderr)
+        self.assertFalse(self.stub_invoked())
 
 
 class ParseEventsUnitTests(unittest.TestCase):

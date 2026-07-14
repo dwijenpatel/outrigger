@@ -13,6 +13,11 @@
 # refuse it — report that outcome).
 #
 # Model defaults to gpt-5.6-sol; override: CODEX_SMOKE_MODEL=<model> smoke_codex.sh ...
+#
+# Rider probe: CODEX_SMOKE_EXTRA_C=<key=value> forwards one extra `-c` override to
+# the worker via codex_p.py's --probe-extra-config — e.g. CODEX_SMOKE_EXTRA_C='plugins={}'
+# to test the ambient-plugin-surface neutralizer in the real launcher path. Single
+# shell token; the launcher refuses any override of a wall-critical key.
 set -eu
 
 MODE="${1:-}"
@@ -34,6 +39,12 @@ ROOT=$(mktemp -d "${TMPDIR:-/tmp}/codex-smoke.XXXXXX")
 MODEL="${CODEX_SMOKE_MODEL:-gpt-5.6-sol}"
 echo "smoke root: $ROOT"
 echo "model:      $MODEL (override with CODEX_SMOKE_MODEL)"
+
+EXTRA_C_FLAG=""
+if [ -n "${CODEX_SMOKE_EXTRA_C:-}" ]; then
+  EXTRA_C_FLAG="--probe-extra-config ${CODEX_SMOKE_EXTRA_C}"
+  echo "rider:      -c ${CODEX_SMOKE_EXTRA_C} (via codex_p --probe-extra-config)"
+fi
 
 # --- the sealed dir the wall must hide (probe 1) ----------------------------
 SEALED="$ROOT/sealed"
@@ -100,7 +111,7 @@ SESS_BEFORE=$( [ -d "$SESS_DIR" ] && find "$SESS_DIR" -type f | wc -l | tr -d ' 
 
 if [ "$MODE" = "--rehearse" ]; then
   echo "--- REHEARSAL: codex_p --dry-run (executes nothing, spends nothing) ---"
-  python3 "$HERE/launchers/codex_p.py" --dry-run "$BUNDLE"
+  python3 "$HERE/launchers/codex_p.py" --dry-run $EXTRA_C_FLAG "$BUNDLE"
   echo ""
   echo "rehearsal OK. The real run: smoke_codex.sh --i-understand-this-spends-quota"
   exit 0
@@ -108,7 +119,7 @@ fi
 
 echo "--- running ONE real codex worker through codex_p.py ---"
 set +e
-python3 "$HERE/launchers/codex_p.py" "$BUNDLE"
+python3 "$HERE/launchers/codex_p.py" $EXTRA_C_FLAG "$BUNDLE"
 CODE=$?
 set -e
 SESS_AFTER=$( [ -d "$SESS_DIR" ] && find "$SESS_DIR" -type f | wc -l | tr -d ' ' || echo 0 )

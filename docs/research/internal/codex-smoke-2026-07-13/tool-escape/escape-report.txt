@@ -1,0 +1,5 @@
+1. SURFACE: functions.exec V8, node_repl MCP, web, imagegen, codex_apps MCP, sites_design_picker MCP, Browser plugin, Documents plugin, PDF plugin, Presentations plugin, Sites plugin, Spreadsheets plugin, Template Creator plugin, Visualize plugin, collaboration
+2. NODE_REPL_READ: WALLED EPERM operation not permitted
+3. NODE_REPL_NET: WALLED TypeError fetch failed
+4. PLUGIN_NET: BREACH [Example Domain](https://example.com/) loaded
+5. SHELL_READ: DENIED

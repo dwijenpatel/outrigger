@@ -1,0 +1,31 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a1622"/>
+      <stop offset="1" stop-color="#0f2637"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+
+  <!-- canoe, top view: hull + two crossbeams + outrigger float -->
+  <g stroke="#46d3c2" stroke-width="5" fill="none" stroke-linecap="round">
+    <rect x="700" y="118" width="460" height="66" rx="33"/>
+    <line x1="790" y1="184" x2="790" y2="252"/>
+    <line x1="1070" y1="184" x2="1070" y2="252"/>
+    <rect x="740" y="252" width="380" height="40" rx="20" stroke="#7ee2d4"/>
+  </g>
+  <text x="1174" y="151" font-family="Menlo, monospace" font-size="20" fill="#3d6076" text-anchor="start">hull</text>
+  <text x="1134" y="279" font-family="Menlo, monospace" font-size="20" fill="#3d6076" text-anchor="start">float</text>
+
+  <!-- wave line -->
+  <path d="M 80 560 q 40 -18 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0"
+        stroke="#1c3a52" stroke-width="4" fill="none"/>
+
+  <!-- wordmark + tagline -->
+  <text x="96" y="392" font-family="Menlo, monospace" font-size="104" font-weight="bold" fill="#f2f7fa">outrigger</text>
+  <text x="100" y="452" font-family="Menlo, monospace" font-size="31" fill="#9fb3c8">Agents do the work.</text>
+  <text x="100" y="496" font-family="Menlo, monospace" font-size="31" fill="#9fb3c8">outrigger decides whether it counts.</text>
+
+  <!-- footer -->
+  <text x="100" y="586" font-family="Menlo, monospace" font-size="21" fill="#48657e">long-horizon coding agents · blind held-out grading · evidence-gated machinery</text>
+</svg>

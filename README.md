@@ -1,9 +1,15 @@
-# cc-agent-harness
+# outrigger
 
-Research and design for a coding-agent harness on Claude Code, built **evidence-first**: a
+The stabilizing structure for long-horizon coding agents, built **evidence-first**: a
 primary-sourced research corpus covering the 14 subtopics of harness design, a graded
-"highly-reliable subset" distillation, and a from-scratch design plan in which **every decision
-cites the Tier-A evidence that licenses it** — and says TBD where none exists.
+"highly-reliable subset" distillation, and a from-scratch design in which **every decision
+cites the Tier-A evidence that licenses it** — and says TBD where none exists. Workers are
+a replaceable substrate behind a tool-neutral launcher contract (Claude Code and Codex CLI
+both live-proven); outrigger is the outer system that specifies, contains, verifies, and
+decides whether their work counts.
+
+**Renamed 2026-07-13**: `cc-agent-harness` → `outrigger` (no longer Claude-Code-only;
+historical documents and artifacts keep the old name where they are records).
 
 This repo was **reincarnated on 2026-07-11**: the v1 harness (design, implementation plan, ~27
 Python modules, 8 enforcement hooks, worker roles, skills) was retired after its own post-mortem
@@ -39,7 +45,7 @@ git tag **`v1-attic`**.
 | [.claude/skills/spec-interview/](.claude/skills/spec-interview/README.md) | **v2 artifact #3b** — the clarification interview as a standalone skill emitting the plan.json contract; `/spec-interview` |
 | [tools/heldout-suite/](tools/heldout-suite/README.md) | **v2 artifact #4** — the graded tests' lifecycle (D2/D11): materialize outside the repo, fails-on-base validation, tamper-evident seal + verify, deny-fragment; [ROLE.md](tools/heldout-suite/ROLE.md) is the authoring contract |
 | [tools/exec-loop/](tools/exec-loop/README.md) | **v2 artifact #5** — the first composition (D3/D4/D5): walks a ratified plan unattended through author→seal→implement→gate→merge with a tool-neutral [launcher contract](tools/exec-loop/launchers/CONTRACT.md); vendor contract proven only by the operator-run [smoke](tools/exec-loop/SMOKE.md) |
-| [tools/budget-governor/](tools/budget-governor/README.md) | Preserved measurement instruments: the spawn-portability probe and the **unexecuted cache-weight experiment (T1** — quota-costing, operator-run only**)** |
+| [tools/budget-governor/](tools/budget-governor/README.md) | Measurement instruments: the spawn-portability probe and the cache-weight experiment (**T1 — settled 2026-07-13**, runs 1–2: cache reads weigh < 0.1125 of fresh input against the 5-hour window; quota-costing, operator-run only) |
 | `tests/` | The corpus link/reference guard (`python3 -m unittest tests.test_reference -q`) |
 
 ## Working in this repo

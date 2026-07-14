@@ -98,7 +98,7 @@ Reading: the ecosystem's best defenses are *tamper-evidence* (ruflo, planning-wi
 
 ## What the operator's project adds
 
-Mapping cc-agent-harness assets onto verified gaps:
+Mapping outrigger (then cc-agent-harness) assets onto verified gaps:
 
 1. **BLIND adversarial validation (asset #1) → the empty fifth rung.** Unique against all 11 repos. Three deployment shapes, in ascending ambition: (a) tamper-tripwire PRs that borrow the harness's threat model but not its architecture (no-mistakes modified-test guard; ECC test-integrity hook; karpathy prose clause); (b) artifact-verified completion (planning-with-files AcceptanceCheck — maintainer-designed, unimplemented); (c) the full vault + clean-checkout gate — standalone only, integrated via no-mistakes `commands.test`, a superpowers-marketplace plugin, and a skills.sh pack.
 2. **Spec-elicitation interview (asset #2) → the spec-source problem.** Blind validation needs a determinate spec to author held-out tests from. gstack has design docs, superpowers has specs, no-mistakes only has after-the-fact `--intent` recovery, most others have nothing. The plan-build interview is the upstream half of the same product: no determinate spec, no blind tests worth authoring. This coupling is the standalone tool's moat — none of the tripwire PRs replicate it.

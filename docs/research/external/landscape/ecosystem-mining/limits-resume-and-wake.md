@@ -100,7 +100,7 @@ Everything above is help-text-supported or already prototyped in this repo; the 
 
 ## 7. What the operator's project adds
 
-Mapping cc-agent-harness assets onto the measured gaps:
+Mapping outrigger (then cc-agent-harness) assets onto the measured gaps:
 
 - **Asset #4 (rate-window awareness, statusline `rate_limits` feed):** the only party in this survey that both reads the official reset feed and knows its failure modes (staleness, per-window absence, Pro/Max-only). Fills the literal hole in career-ops (`--wait-for-reset`, PR-sized: parse the timestamp `batch-runner.sh` already greps), ruflo (window segment replacing the hidden cost segment — they documented the need in their own CHANGELOG), gstack (`gstack-detach` window gate), and everything-claude-code (`/loop-start` safety checks).
 - **Asset #5 (cache economics):** corrects caveman's inverted assumption (its stats code refuses to claim limit relief because it believes cache reads dominate limit accounting — the measured finding says reads are discounted and misses+output are the spend), and supplies the §5 argument that makes a wake tool *cheap* rather than merely automatic. No repo in the survey has any prompt-cache awareness in its cost logic (everything-claude-code's `cost-tracker.js` ignores cache token classes entirely; ruflo uses a flat $/token heuristic).

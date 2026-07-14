@@ -99,7 +99,7 @@ Cost interactions the ecosystem misses entirely (zero of 11 repos have prompt-ca
 
 ## 5. What the operator's project adds
 
-Mapping cc-agent-harness assets onto the verified gaps:
+Mapping outrigger (then cc-agent-harness) assets onto the verified gaps:
 
 | Gap (verified across 11 repos) | Harness asset |
 |---|---|

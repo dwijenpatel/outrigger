@@ -3,7 +3,7 @@
 **Produced:** 2026-07-06
 
 **Purpose:** Mine the popular Claude Code agent-tooling ecosystem for (a) mechanisms worth
-importing into cc-agent-harness and (b) PR-sized contribution opportunities where the
+importing into outrigger (then named cc-agent-harness) and (b) PR-sized contribution opportunities where the
 harness's assets fill verified gaps. **Method:** 11 popular repos cloned locally
 (gstack, mattpocock/skills, no-mistakes, everythingclaudecode, andrej-karpathy-skills,
 caveman, planning-with-files, alirezarezvani/claude-skills, superpowers, career-ops,

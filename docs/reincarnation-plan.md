@@ -1,5 +1,8 @@
 # Reincarnation plan — continuity record for the from-scratch effort
 
+*(Repo renamed `cc-agent-harness` → `outrigger` on 2026-07-13; every path and name below is
+as-executed at the time and deliberately unrewritten — this document is a record.)*
+
 **Status: EXECUTED 2026-07-11** (ratified in discussion 2026-07-10). Execution ran every step
 in the §3 order, as the commit chain `c67768e` (salvage) → `89ef70c` (attic + machinery
 deletion) → this commit (CLAUDE.md rewrite + close-out), with the pre-cleanup state anchored at

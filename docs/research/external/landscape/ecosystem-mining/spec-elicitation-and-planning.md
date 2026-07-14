@@ -1,13 +1,13 @@
 # Spec elicitation & planning depth — pushing past /grill-me
 
 - **Date:** 2026-07-06
-- **Method:** 11 cloned popular repos mined by parallel analysts; file paths cite the clones at `/Users/dwijen/repos/<name>`. Local project references cite `/Users/dwijen/repos/cc-agent-harness`.
+- **Method:** 11 cloned popular repos mined by parallel analysts; file paths cite the clones at `/Users/dwijen/repos/<name>`. Local project references cite `/Users/dwijen/repos/cc-agent-harness` (the repo as named at mining time; renamed `outrigger` 2026-07-13 — cited v1 paths exist at git tag `v1-attic`).
 - **Question under test (operator's hypothesis, quoted):** *"thorough, detailed, granular technical design specs have a big impact on overall wall-clock time, and will significantly improve efficiency by avoiding failures/retries due to spec ambiguity. Could we push the envelope on the /grill-me skill (and similar skills focused on clarifying details and decisions in planning)?"*
 
 ## Headline findings
 
 1. Five of eleven repos ship a real interrogation loop; the rest are one-shot plan-confirm, plan *files* without elicitation, or nothing. The pattern converged independently at least three times (Pocock, gstack, superpowers) — strong revealed-preference evidence that sophisticated operators want relentless questioning.
-2. **Nobody in the sample has a machine-checkable determinacy exit bar.** Every interview ends on a conversational judgment ("user confirms shared understanding", "agent believes it understands", "enough details collected"). cc-agent-harness's `python3 -m harness.planning ready` gate is unique in this sample.
+2. **Nobody in the sample has a machine-checkable determinacy exit bar.** Every interview ends on a conversational judgment ("user confirms shared understanding", "agent believes it understands", "enough details collected"). outrigger's (v1, then cc-agent-harness) `python3 -m harness.planning ready` gate is unique in this sample.
 3. **Nobody has spec-to-test traceability.** The closest artifacts are review-time spec-compliance checks; no repo maps interview answers → tests, because no repo has held-out tests at all.
 4. **The wall-clock claim is measured nowhere in these 11 repos.** One author-run, confounded speed claim (superpowers), one measured *counter*-datapoint (planning-with-files: the planning skill costs +68% tokens), and a lot of "try it and see." The best evidence for the hypothesis is actually in-house: pilot-3's 8h25m mid-firing stall from a foreseeable ambiguity park.
 
@@ -53,7 +53,7 @@
 | career-ops `interview` | 1 q/turn | digs for measurables | "enough new details" | profile files | n/a |
 | ecc `plan.md` | single shot | "if needed" | user confirmation | plan text | no |
 | planning-with-files | — (no elicitation) | — | — | attested plan files | yes (completion gate, not determinacy) |
-| cc-agent-harness `plan-build` | 1 q/turn, recommended answer | dependency-ordered tree, explore-don't-ask, delegated-decision conversion | **determinacy bar: spec-only test-author could write held-out tests with no guessing; two clean sweeps** | PLAN.md + tasks.json + per-task specs + floors + conventions | **yes: preflight + content-bound ratify stamp + `planning ready` exit-0** |
+| outrigger-v1 `plan-build` | 1 q/turn, recommended answer | dependency-ordered tree, explore-don't-ask, delegated-decision conversion | **determinacy bar: spec-only test-author could write held-out tests with no guessing; two clean sweeps** | PLAN.md + tasks.json + per-task specs + floors + conventions | **yes: preflight + content-bound ratify stamp + `planning ready` exit-0** |
 
 Three depth observations:
 
@@ -102,7 +102,7 @@ Also worth stealing, smaller: recommended-answer-first with dual-scale effort la
 
 ## 5. What the operator's project adds
 
-Mapping cc-agent-harness assets onto the sample's verified gaps:
+Mapping outrigger (then cc-agent-harness) assets onto the sample's verified gaps:
 
 - **The only machine-checkable planning gate.** `planning preflight` → content-bound `ratify` → `ready` exit-0 refusing the build-loop (`.claude/skills/plan-build/SKILL.md`, `harness/planning`). Confirmed absent in all 11 repos — three analysts independently noted "nothing like `python3 -m harness.planning ready`."
 - **A determinacy bar with a consumer.** Every other interview's output is read by the same agent (or a persona reviewer). plan-build's bar is defined by an *adversarial downstream consumer* — the spec-only held-out test-author. That makes determinacy falsifiable: validator confusion = spec defect. No sampled repo has this feedback path because none separates the test-author's context.

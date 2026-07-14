@@ -205,7 +205,7 @@ viral prompt packs carry zero memory machinery — memory is not what sells inst
 |---|---|---|---|---|
 | **Claude Code auto-memory** | one fact per file | always-loaded MEMORY.md index | none built-in (capture-only) | index head only; topic files on demand |
 | **CLAUDE.md convention** | monolithic prose | always-loaded, every turn | manual | none — pays full context cost always (why caveman-compress exists) |
-| **cc-agent-harness lessons corpus (design)** | orchestrator-owned file | curated injection per spawn | orchestrator-only writes; workers read-only | never resident in the prefix |
+| **outrigger (v1) lessons corpus (design)** | orchestrator-owned file | curated injection per spawn | orchestrator-only writes; workers read-only | never resident in the prefix |
 | gstack | 4 JSONL/digest stores | search + preamble + per-task injection | negative filter + trust tiers + quarantine | carve/lazy sections |
 | everythingclaudecode | observations→instinct YAML | SessionStart injection + /evolve | recurrence≥2 projects @ ≥0.8 confidence | scope table |
 | claude-skills self-improving | MEMORY.md → CLAUDE.md → rules/ | path-scoped auto-load | recurrence 2–3× promotion | `paths:` globs = zero idle cost |
@@ -280,7 +280,7 @@ both convergent with the harness's orchestrator-owns-the-file rule.
 
 ## 5. What the operator's project adds
 
-Mapping cc-agent-harness assets onto the observed gaps:
+Mapping outrigger (then cc-agent-harness) assets onto the observed gaps:
 
 - **Lessons-corpus design (orchestrator-owned, workers read-only, curated per-spawn injection,
   never prefix-resident)** already combines elements 1 and 3 above — a combination no surveyed

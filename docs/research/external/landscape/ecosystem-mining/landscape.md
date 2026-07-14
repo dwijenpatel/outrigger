@@ -156,7 +156,7 @@
 
 ## What the operator's project adds
 
-Mapping cc-agent-harness assets onto the verified gaps:
+Mapping outrigger (then cc-agent-harness) assets onto the verified gaps:
 
 - **Asset 1 — BLIND validation (vault-external held-out tests, clean-checkout merge gate):** unique against all 11. Deployment surfaces already scoped by the evidence: extend no-mistakes' tripwire to modified tests (S); implement planning-with-files' documented-but-missing AcceptanceCheck (M); a test-integrity hook for ECC (M); a blind-review specialist for gstack (L); standalone skill pack / superpowers-marketplace plugin as the distribution play, positioned as the adversarial complement to /tdd with the reward-hacking evidence as the pitch.
 - **Asset 2 — determinacy-driven planning interview + ratified plan gate:** the interview alone is *not* differentiated (crowded category). The differentiated slice is the machine-checkable readiness gate (`python3 -m harness.planning ready` refusing the build) and determinacy stop-criteria — contributable as small upgrades to grill-me (claude-skills), career-ops onboarding, and planning-with-files' deferred brainstorm gate, borrowing loop-me's one-line determinacy test and zero-hallucination-coder's UNKNOWN rule as ecosystem-native framing.

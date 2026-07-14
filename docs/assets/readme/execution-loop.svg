@@ -11,59 +11,69 @@
   <text x="135" y="83" font-size="18" fill="#f2f7fa" text-anchor="middle" font-weight="bold">ratified spec</text>
 
   <!-- blind test-author -->
-  <rect x="310" y="36" width="250" height="82" rx="10" fill="#132a3e" stroke="#46d3c2" stroke-width="2"/>
-  <text x="435" y="68" font-size="18" fill="#f2f7fa" text-anchor="middle" font-weight="bold">blind test-author</text>
-  <text x="435" y="92" font-size="14" fill="#9fb3c8" text-anchor="middle">fresh worker &#183; sees spec only</text>
+  <rect x="300" y="36" width="250" height="82" rx="10" fill="#132a3e" stroke="#46d3c2" stroke-width="2"/>
+  <text x="425" y="68" font-size="18" fill="#f2f7fa" text-anchor="middle" font-weight="bold">blind test-author</text>
+  <text x="425" y="92" font-size="14" fill="#9fb3c8" text-anchor="middle">fresh worker &#183; sees spec only</text>
+
+  <!-- OS-enforced deny zone around the suite -->
+  <rect x="628" y="18" width="312" height="126" rx="14" fill="#e0b458" fill-opacity="0.06" stroke="#e0b458" stroke-width="2.5" stroke-dasharray="9 6"/>
 
   <!-- sealed suite -->
-  <rect x="650" y="30" width="270" height="94" rx="10" fill="#10314a" stroke="#7ee2d4" stroke-width="3"/>
-  <text x="785" y="60" font-size="18" fill="#f2f7fa" text-anchor="middle" font-weight="bold">sealed held-out suite</text>
-  <text x="785" y="84" font-size="14" fill="#9fb3c8" text-anchor="middle">proven to fail on the base code</text>
-  <text x="785" y="104" font-size="14" fill="#9fb3c8" text-anchor="middle">tamper-evident manifest</text>
+  <rect x="650" y="34" width="270" height="94" rx="10" fill="#10314a" stroke="#7ee2d4" stroke-width="3"/>
+  <text x="785" y="64" font-size="18" fill="#f2f7fa" text-anchor="middle" font-weight="bold">sealed held-out suite</text>
+  <text x="785" y="88" font-size="14" fill="#9fb3c8" text-anchor="middle">proven to fail on the base code</text>
+  <text x="785" y="108" font-size="14" fill="#9fb3c8" text-anchor="middle">tamper-evident manifest</text>
 
   <!-- top arrows -->
-  <line x1="230" y1="77" x2="302" y2="77" stroke="#46d3c2" stroke-width="2.5" marker-end="url(#arr)"/>
-  <line x1="560" y1="77" x2="642" y2="77" stroke="#46d3c2" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="230" y1="77" x2="292" y2="77" stroke="#46d3c2" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="550" y1="77" x2="642" y2="77" stroke="#46d3c2" stroke-width="2.5" marker-end="url(#arr)"/>
+
+  <!-- deny zone label -->
+  <text x="330" y="158" font-size="16" fill="#e0b458" font-weight="bold">OS-enforced deny zone</text>
+  <text x="330" y="180" font-size="14" fill="#c9a04e">the implementer cannot read inside:</text>
+  <text x="330" y="200" font-size="14" fill="#c9a04e">denied by sandbox, not by politeness</text>
 
   <!-- spec down to implementer -->
-  <path d="M 135 106 L 135 240" stroke="#46d3c2" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
-
-  <!-- THE WALL -->
-  <g stroke="#e0b458" stroke-width="5">
-    <line x1="600" y1="160" x2="600" y2="392"/>
-    <line x1="614" y1="160" x2="614" y2="392"/>
-  </g>
-  <text x="632" y="238" font-size="16" fill="#e0b458" font-weight="bold">OS-enforced wall</text>
-  <text x="632" y="262" font-size="14" fill="#c9a04e">the implementer cannot read</text>
-  <text x="632" y="282" font-size="14" fill="#c9a04e">the suite: denied by sandbox,</text>
-  <text x="632" y="302" font-size="14" fill="#c9a04e">not by politeness</text>
+  <path d="M 135 106 L 135 252" stroke="#46d3c2" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
 
   <!-- implementer -->
-  <rect x="40" y="248" width="300" height="96" rx="10" fill="#132a3e" stroke="#46d3c2" stroke-width="2"/>
-  <text x="190" y="280" font-size="18" fill="#f2f7fa" text-anchor="middle" font-weight="bold">implementer</text>
-  <text x="190" y="304" font-size="14" fill="#9fb3c8" text-anchor="middle">commits in a walled worktree</text>
-  <text x="190" y="324" font-size="14" fill="#9fb3c8" text-anchor="middle">own tests, own judgment</text>
+  <rect x="40" y="260" width="300" height="96" rx="10" fill="#132a3e" stroke="#46d3c2" stroke-width="2"/>
+  <text x="190" y="292" font-size="18" fill="#f2f7fa" text-anchor="middle" font-weight="bold">implementer</text>
+  <text x="190" y="316" font-size="14" fill="#9fb3c8" text-anchor="middle">commits in a walled worktree</text>
+  <text x="190" y="336" font-size="14" fill="#9fb3c8" text-anchor="middle">own tests, own judgment</text>
 
-  <!-- suite down to gate (legitimate: the gate holds the suite) -->
-  <path d="M 785 124 L 785 420 L 745 420" stroke="#7ee2d4" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
+  <!-- the blocked read attempt -->
+  <path d="M 340 282 C 480 272, 580 235, 638 165" stroke="#e0b458" stroke-width="2.5" fill="none" stroke-dasharray="8 5"/>
+  <g transform="translate(647,156)">
+    <circle r="13" fill="#0d1f2f" stroke="#e0b458" stroke-width="2.5"/>
+    <line x1="-6" y1="-6" x2="6" y2="6" stroke="#e0b458" stroke-width="2.5"/>
+    <line x1="-6" y1="6" x2="6" y2="-6" stroke="#e0b458" stroke-width="2.5"/>
+  </g>
+  <text x="470" y="290" font-size="13" fill="#c9a04e">read attempt: denied</text>
+
+  <!-- suite down to gate (only the gate carries the suite) -->
+  <path d="M 785 144 L 785 424 L 745 424" stroke="#7ee2d4" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
+  <text x="800" y="300" font-size="13" fill="#5b7893">only the gate</text>
+  <text x="800" y="318" font-size="13" fill="#5b7893">carries the suite</text>
 
   <!-- implementer down to gate -->
-  <path d="M 190 344 L 190 444 L 232 444" stroke="#46d3c2" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
+  <path d="M 190 356 L 190 448 L 232 448" stroke="#46d3c2" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
 
   <!-- merge-gate -->
-  <rect x="240" y="396" width="500" height="96" rx="10" fill="#10314a" stroke="#46d3c2" stroke-width="3"/>
-  <text x="490" y="428" font-size="18" fill="#f2f7fa" text-anchor="middle" font-weight="bold">merge-gate: judges the MERGED tree</text>
-  <text x="490" y="452" font-size="14" fill="#9fb3c8" text-anchor="middle">task checks + the sealed suite, in a clean worktree</text>
-  <text x="490" y="472" font-size="14" fill="#9fb3c8" text-anchor="middle">the implementer only learns test-failure counts</text>
+  <rect x="240" y="400" width="500" height="96" rx="10" fill="#10314a" stroke="#46d3c2" stroke-width="3"/>
+  <text x="490" y="432" font-size="18" fill="#f2f7fa" text-anchor="middle" font-weight="bold">merge-gate: judges the MERGED tree</text>
+  <text x="490" y="456" font-size="14" fill="#9fb3c8" text-anchor="middle">task checks + the sealed suite, in a clean worktree</text>
+  <text x="490" y="476" font-size="14" fill="#9fb3c8" text-anchor="middle">the implementer only learns test-failure counts</text>
 
   <!-- landing -->
-  <line x1="490" y1="492" x2="490" y2="524" stroke="#46d3c2" stroke-width="2.5" marker-end="url(#arr)"/>
-  <rect x="240" y="528" width="500" height="52" rx="10" fill="#132a3e" stroke="#9fb3c8" stroke-width="2"/>
-  <text x="490" y="560" font-size="16" fill="#f2f7fa" text-anchor="middle">fast-forward landing, pinned to the judged commit</text>
+  <line x1="490" y1="496" x2="490" y2="526" stroke="#46d3c2" stroke-width="2.5" marker-end="url(#arr)"/>
+  <rect x="240" y="530" width="500" height="52" rx="10" fill="#132a3e" stroke="#9fb3c8" stroke-width="2"/>
+  <text x="490" y="562" font-size="16" fill="#f2f7fa" text-anchor="middle">fast-forward landing, pinned to the judged commit</text>
 
   <!-- closure -->
-  <line x1="490" y1="580" x2="490" y2="612" stroke="#46d3c2" stroke-width="2.5" marker-end="url(#arr)"/>
-  <rect x="140" y="616" width="700" height="64" rx="10" fill="#10314a" stroke="#7ee2d4" stroke-width="3"/>
-  <text x="490" y="642" font-size="16" fill="#f2f7fa" text-anchor="middle" font-weight="bold">whole-build closure: every check + every sealed suite, re-run on final main</text>
-  <text x="490" y="666" font-size="14" fill="#9fb3c8" text-anchor="middle">completion is GRANTED and stamped, never self-declared</text>
+  <line x1="490" y1="582" x2="490" y2="608" stroke="#46d3c2" stroke-width="2.5" marker-end="url(#arr)"/>
+  <rect x="220" y="612" width="540" height="76" rx="10" fill="#10314a" stroke="#7ee2d4" stroke-width="3"/>
+  <text x="490" y="638" font-size="18" fill="#f2f7fa" text-anchor="middle" font-weight="bold">whole-build closure</text>
+  <text x="490" y="660" font-size="14" fill="#9fb3c8" text-anchor="middle">every check + every sealed suite, re-run on final main</text>
+  <text x="490" y="678" font-size="14" fill="#9fb3c8" text-anchor="middle">completion is GRANTED and stamped, never self-declared</text>
 </svg>

@@ -1,7 +1,9 @@
 # outrigger
 
-**Long-horizon coding agents, stabilized.** Agents do the work. outrigger decides whether
-it counts.
+**Long-horizon coding agents, stabilized.** outrigger is the machinery that lets coding
+agents go the distance: specs interrogated before any code is written, verification the
+worker cannot touch, and completion that is granted on evidence rather than declared on
+confidence.
 
 Early sea-adventurers crossed thousands of miles of open water in small canoes. They did
 not build bigger hulls. They lashed a stabilizing float alongside, and the pairing could

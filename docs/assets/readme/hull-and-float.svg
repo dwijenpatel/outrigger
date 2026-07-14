@@ -1,0 +1,28 @@
+<svg width="960" height="330" viewBox="0 0 960 330" xmlns="http://www.w3.org/2000/svg" font-family="Menlo, Consolas, monospace">
+  <rect width="960" height="330" rx="16" fill="#0d1f2f"/>
+
+  <!-- hull -->
+  <rect x="150" y="42" width="480" height="70" rx="35" fill="#132a3e" stroke="#46d3c2" stroke-width="3"/>
+  <text x="390" y="72" font-size="21" fill="#f2f7fa" text-anchor="middle" font-weight="bold">your coding agent</text>
+  <text x="390" y="96" font-size="15" fill="#9fb3c8" text-anchor="middle">the hull: does the work</text>
+  <text x="672" y="83" font-size="15" fill="#5b7893">any vendor; replaceable</text>
+
+  <!-- lashings -->
+  <g stroke="#46d3c2" stroke-width="3">
+    <line x1="255" y1="112" x2="255" y2="190"/>
+    <line x1="390" y1="112" x2="390" y2="190"/>
+    <line x1="525" y1="112" x2="525" y2="190"/>
+  </g>
+  <text x="560" y="146" font-size="15" fill="#5b7893">lashings: schema'd file contracts</text>
+  <text x="560" y="166" font-size="15" fill="#5b7893">+ exit codes, never shared memory</text>
+
+  <!-- float -->
+  <rect x="150" y="190" width="480" height="88" rx="30" fill="#132a3e" stroke="#7ee2d4" stroke-width="3"/>
+  <text x="390" y="224" font-size="21" fill="#f2f7fa" text-anchor="middle" font-weight="bold">outrigger</text>
+  <text x="390" y="250" font-size="14" fill="#9fb3c8" text-anchor="middle">the float: spec &#183; walls &#183; blind grading &#183; evidence ledger</text>
+
+  <text x="662" y="238" font-size="15" fill="#5b7893">keeps it upright when</text>
+  <text x="662" y="258" font-size="15" fill="#5b7893">no one is watching</text>
+
+  <path d="M 40 306 q 30 -12 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0" stroke="#1c3a52" stroke-width="3" fill="none"/>
+</svg>

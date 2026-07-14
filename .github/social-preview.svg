@@ -18,7 +18,7 @@
   <text x="1134" y="279" font-family="Menlo, monospace" font-size="20" fill="#3d6076" text-anchor="start">float</text>
 
   <!-- wave line -->
-  <path d="M 80 560 q 40 -18 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0"
+  <path d="M 80 536 q 40 -18 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0"
         stroke="#1c3a52" stroke-width="4" fill="none"/>
 
   <!-- wordmark + tagline -->

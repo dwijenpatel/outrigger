@@ -1,0 +1,52 @@
+<svg width="960" height="430" viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg" font-family="Menlo, Consolas, monospace">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#46d3c2"/>
+    </marker>
+  </defs>
+  <rect width="960" height="430" rx="16" fill="#0d1f2f"/>
+
+  <!-- research corpus -->
+  <rect x="40" y="48" width="200" height="92" rx="10" fill="#132a3e" stroke="#9fb3c8" stroke-width="2"/>
+  <text x="140" y="80" font-size="17" fill="#f2f7fa" text-anchor="middle" font-weight="bold">research corpus</text>
+  <text x="140" y="104" font-size="13" fill="#9fb3c8" text-anchor="middle">papers &#183; primary sources</text>
+  <text x="140" y="122" font-size="13" fill="#9fb3c8" text-anchor="middle">our own pilot records</text>
+
+  <!-- graded distillation -->
+  <rect x="310" y="48" width="220" height="92" rx="10" fill="#132a3e" stroke="#46d3c2" stroke-width="2"/>
+  <text x="420" y="80" font-size="17" fill="#f2f7fa" text-anchor="middle" font-weight="bold">graded evidence</text>
+  <text x="420" y="104" font-size="13" fill="#9fb3c8" text-anchor="middle">every claim scored on</text>
+  <text x="420" y="122" font-size="13" fill="#9fb3c8" text-anchor="middle">warrant &#215; incentive &#215; decay</text>
+
+  <!-- design decision -->
+  <rect x="600" y="48" width="200" height="92" rx="10" fill="#132a3e" stroke="#46d3c2" stroke-width="2"/>
+  <text x="700" y="80" font-size="17" fill="#f2f7fa" text-anchor="middle" font-weight="bold">design decision</text>
+  <text x="700" y="104" font-size="13" fill="#9fb3c8" text-anchor="middle">Decided &#183; Provisional</text>
+  <text x="700" y="122" font-size="13" fill="#9fb3c8" text-anchor="middle">&#183; TBD (named experiment)</text>
+
+  <!-- arrows top row -->
+  <line x1="240" y1="94" x2="302" y2="94" stroke="#46d3c2" stroke-width="2.5" marker-end="url(#arr2)"/>
+  <line x1="530" y1="94" x2="592" y2="94" stroke="#46d3c2" stroke-width="2.5" marker-end="url(#arr2)"/>
+
+  <!-- decision -> artifact -->
+  <path d="M 700 140 L 700 196" stroke="#46d3c2" stroke-width="2.5" fill="none" marker-end="url(#arr2)"/>
+  <rect x="600" y="200" width="200" height="56" rx="10" fill="#132a3e" stroke="#9fb3c8" stroke-width="2"/>
+  <text x="700" y="226" font-size="17" fill="#f2f7fa" text-anchor="middle" font-weight="bold">artifact</text>
+  <text x="700" y="246" font-size="13" fill="#9fb3c8" text-anchor="middle">a standalone tool</text>
+
+  <!-- artifact -> measurement -->
+  <path d="M 700 256 L 700 300 L 632 300" stroke="#46d3c2" stroke-width="2.5" fill="none" marker-end="url(#arr2)"/>
+
+  <!-- measurement -->
+  <rect x="260" y="272" width="370" height="76" rx="10" fill="#10314a" stroke="#7ee2d4" stroke-width="3"/>
+  <text x="445" y="300" font-size="17" fill="#f2f7fa" text-anchor="middle" font-weight="bold">measurement</text>
+  <text x="445" y="322" font-size="13" fill="#9fb3c8" text-anchor="middle">null arms &#183; pre-registered predictions</text>
+  <text x="445" y="340" font-size="13" fill="#9fb3c8" text-anchor="middle">append-only ledger</text>
+
+  <!-- measurement back to decision (the loop) -->
+  <path d="M 252 310 L 140 310 L 140 180 L 560 180 L 640 154" stroke="#e0b458" stroke-width="2.5" fill="none" marker-end="url(#arr2)"/>
+  <text x="170" y="212" font-size="15" fill="#e0b458" font-weight="bold">dial up &#183; dial down &#183; DELETE</text>
+  <text x="170" y="234" font-size="13" fill="#c9a04e">no ritual survives without evidence</text>
+
+  <text x="480" y="404" font-size="14" fill="#5b7893" text-anchor="middle">the same rigor the design demands of the world, applied to itself</text>
+</svg>

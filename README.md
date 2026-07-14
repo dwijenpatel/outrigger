@@ -3,7 +3,7 @@
 **Long-horizon coding agents, stabilized.** Agents do the work. outrigger decides whether
 it counts.
 
-Polynesian navigators crossed thousands of miles of open ocean in small canoes. They did
+Early sea-adventurers crossed thousands of miles of open water in small canoes. They did
 not build bigger hulls. They lashed a stabilizing float alongside, and the pairing could
 survive seas that would flip either piece alone. The hull does the work; the outrigger
 keeps it upright, far from shore, where nobody can reach you.
@@ -14,17 +14,7 @@ walls, the blind examiner, and the evidence discipline that together make hours 
 unattended work land as verified, to-spec, merge-worthy commits instead of confident
 wreckage.
 
-```
-      ┌──────────────────────────────────┐
-      │   your coding agent    ~ hull ~  │   does the work
-      └───────┬──────────┬──────────┬────┘   (any vendor; replaceable)
-              │          │          │        ← lashings: schema'd file
-      ┌───────┴──────────┴──────────┴────┐     contracts + exit codes,
-      │   outrigger            ~ float ~ │     never shared memory
-      │   spec · walls · blind grading   │
-      │   · evidence ledger              │   keeps it upright when
-      └──────────────────────────────────┘   no one is watching
-```
+![The hull and the float](docs/assets/readme/hull-and-float.svg)
 
 ## The problem
 
@@ -60,9 +50,9 @@ pointing at the same five levers:
    politeness.
 3. **Externally granted completion.** The agent never declares itself done. An independent
    mechanism does, against the whole build.
-4. **Surviving the economics.** Subscription windows close mid-run, and context reuse is
-   roughly 9x cheaper than fresh tokens (we measured it). A long-horizon harness must
-   halt, park, and resume. Never overspend, never lose the run.
+4. **Token efficiency.** Subscription windows close mid-run, and context reuse is roughly
+   9x cheaper than fresh tokens (we measured it). A long-horizon harness must halt, park,
+   and resume. Never overspend, never lose the run.
 5. **Subtracting machinery.** Every mechanism measured. Anything that does not pay for
    itself gets dialed down or deleted, on evidence.
 
@@ -70,25 +60,7 @@ outrigger is those five levers, built as composable tools.
 
 ## How it works
 
-```
- ratified spec ─────► blind TEST-AUTHOR ────► sealed held-out suite ✦
-      │                (fresh worker,          (proven to fail on base,
-      │                 sees spec only)         tamper-evident manifest)
-      │                                              ║
-      │               ═══ OS-enforced wall ══════════╣
-      │               implementer CANNOT read ═══════╣
-      ▼                                              ║
-  IMPLEMENTER ──► commits in a walled worktree       ║
-  (own tests,     │                                  ║
-   own judgment)  ▼                                  ▼
-              MERGE-GATE: judges the MERGED tree; task checks + sealed suite
-                  │  feedback is counts-only; at most 2 attempts, then a human
-                  ▼
-              fast-forward landing, pinned to the judged SHA
-                  ▼
-              WHOLE-BUILD CLOSURE: every check + every sealed suite,
-              re-run against final main. Completion GRANTED and stamped.
-```
+![The execution loop](docs/assets/readme/execution-loop.svg)
 
 **The interrogation.** Work enters through a pedantic, one-question-at-a-time spec
 interview that converts a goal into a machine-checkable plan: decisions recorded with
@@ -122,18 +94,7 @@ and deletion criteria: a check that catches no errors gets removed, on the recor
 dialable per plan (full, gate-only, or bare), and every reduction is stamped in the ledger,
 so lowering the guard is always a visible, recorded choice.
 
-```
- research corpus ──► graded distillation ──► design decision ──► artifact
- (papers, primary    (warrant × incentive     Decided /           (standalone
-  sources, our own     × decay)               Provisional / TBD    tool)
-  pilot records)                                                     │
-        ┌────────────────────────────────────────────────────────────┘
-        ▼
-  measurement · null arms · pre-registered predictions ──► append-only ledger
-        │
-        ▼
-  dial up · dial down · DELETE. No ritual survives without evidence.
-```
+![The evidence loop](docs/assets/readme/evidence-loop.svg)
 
 ## Receipts
 

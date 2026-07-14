@@ -1,0 +1,8 @@
+# generated per-spawn by codex_p.py — removed after the run
+notify = []
+[permissions.exec_loop_wall]
+extends = ":workspace"
+[permissions.exec_loop_wall.filesystem]
+"/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T//codex-smoke.MzKuk1/sealed" = "deny"
+[permissions.exec_loop_wall.network]
+enabled = false

@@ -1,0 +1,2 @@
+WALL: DENIED
+TOOLS: web browsing, image generation, MCP resources, plugins, and collaboration agents

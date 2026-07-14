@@ -128,6 +128,42 @@ unaffected), one more named item for the `-c 'plugins={}'`-style rider. Artifact
 [resmoke-0.144.3](../../docs/research/internal/codex-smoke-2026-07-13/resmoke-0.144.3/).
 **codex_p is certified on the operator's daily build + model.**
 
+**Network-deny + plugins rider, 2026-07-13 (0.144.3, gpt-5.6-sol @ high): the network face
+is GREEN; the plugins rider is INERT.** Free pre-clearance first (build/catalog/both
+rehearsals clean; the rider argv confirmed to sit *before* the wall's activation key), then
+one paid worker via `smoke_codex.sh network-deny` carrying `CODEX_SMOKE_EXTRA_C='plugins={}'`.
+Verdicts, verbatim: `FILE_TOOL_READ: DENIED` / `SHELL_READ: DENIED` / `OUTSIDE_WRITE: BLOCKED`
+/ `INSIDE_WRITE: OK` / **`NETWORK: BLOCKED`** — the profile's `[permissions.<name>.network]
+enabled = false` actually severs an outbound `curl`, closing the "requested network policy
+holds" row every prior codex run left open. Usage parsed live (100,562 in / 87,296 cached /
+1,354 out); `--ephemeral` held (11→11 session files); no orphaned per-spawn profiles.
+**Rider result — resolves residual (a)'s open rider:** `-c 'plugins={}'` is a **no-op** on
+this build: it is *accepted* (no `--strict-config` abort, the session ran to completion) yet
+the worker still enumerates all eight plugins. `plugins={}` does NOT neutralize the ambient
+plugin surface — **do not ship it**; the residual stands. (The isolation WALLS are unaffected
+either way — surface breadth, never a breach.) The rider was tested through the real launcher
+via a new probe-only `--probe-extra-config KEY=VALUE` flag on `codex_p.py` (default-off,
+wall-critical keys refused, `-c` overrides emitted before the wall's activation key so no probe
+can weaken it, value recorded in `result.json.probe_extra_config`); `smoke_codex.sh` forwards
+`CODEX_SMOKE_EXTRA_C` through it. The `node_repl` MCP surface the re-smoke flagged was not
+among the worker's self-reported tools this run (self-report probe; absence here is not proof
+of absence). Artifacts:
+[network-deny-rider](../../docs/research/internal/codex-smoke-2026-07-13/network-deny-rider/).
+
+**Full-loop live task, 2026-07-13 (0.144.3, gpt-5.6-sol; author a1 high → implementer a1
+high): GREEN — the last matrix row is closed.** `smoke_codex_loop.sh` ran a real codex author
++ implementer through `loop.py`: the registry resolved `tool=codex` → `codex_p.py`, the author
+generated the blind held-out suite, the implementer built in a walled worktree where the probe
+read of the suite dir returned **`WALL: DENIED`** (plan decision 4, now proven through the
+whole loop, not just a single-worker bundle), the merge-gate passed, and the change ff-landed
+(`b9625f1 Add farewell function and record wall probe`) with closure granted — loop exit 0,
+`ok:true`. Single clean pass: no a2 escalation, no bare fallback. Usage parsed live for both
+workers (author 95,363 in / 84,480 cached / 2,417 out; implementer 137,300 in / 118,528 cached
+/ 2,319 out); the recorded ambient `TOOLS:` line was truthful and unjudged, as specified. Artifacts:
+[full-loop](../../docs/research/internal/codex-smoke-2026-07-13/full-loop/).
+**codex_p is now certified end-to-end on the operator's daily build + model: single-worker
+walls (reads, writes, network) AND the full commit cycle.**
+
 ## Claude run 5 — EXECUTED 2026-07-13, build 2.1.207: hardening holds; one residual found
 
 `claude_p.py` passes `--setting-sources ""`, `--strict-mcp-config`,

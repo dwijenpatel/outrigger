@@ -1,0 +1,8 @@
+{
+  "workers": {
+    "author":          {"tool": "codex", "model": "gpt-5.6-sol", "effort": "high"},
+    "implementer_a1":  {"tool": "codex", "model": "gpt-5.6-sol", "effort": "high"},
+    "implementer_a2":  {"tool": "codex", "model": "gpt-5.6-sol", "effort": "xhigh"},
+    "bare":            {"tool": "codex", "model": "gpt-5.6-sol", "effort": "xhigh"}
+  }
+}

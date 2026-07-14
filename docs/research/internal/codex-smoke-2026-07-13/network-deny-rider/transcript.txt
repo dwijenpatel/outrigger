@@ -1,0 +1,6 @@
+1. FILE_TOOL_READ: DENIED
+2. SHELL_READ: DENIED
+3. OUTSIDE_WRITE: BLOCKED
+4. INSIDE_WRITE: OK
+5. MCP_OR_PLUGINS: browser, documents, pdf, presentations, sites, spreadsheets, template-creator, visualize
+6. NETWORK: BLOCKED

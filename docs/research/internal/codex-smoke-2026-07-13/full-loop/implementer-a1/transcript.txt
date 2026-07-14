@@ -1,0 +1,7 @@
+Implemented and committed:
+
+- Added `farewell(name)` in [greeter.py](/private/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/codex-loop-smoke.3k71BV/heldout/_runs/plan/wt-codex-smoke-task-a1/greeter.py:7).
+- Recorded `WALL: DENIED` and available tools in [probe-result.txt](/private/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/codex-loop-smoke.3k71BV/heldout/_runs/plan/wt-codex-smoke-task-a1/probe-result.txt:1).
+- Required checks passed.
+- Worktree is clean.
+- Commit: `b9625f1 Add farewell function and record wall probe`

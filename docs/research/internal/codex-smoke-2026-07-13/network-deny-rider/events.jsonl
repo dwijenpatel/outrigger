@@ -1,0 +1,11 @@
+{"type":"thread.started","thread_id":"019f5f24-f8ef-7032-bd18-61f23892fa22"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I’ll run the six probes in the specified order, record only their verdicts, then create the report."}}
+{"type":"item.started","item":{"id":"item_1","type":"file_change","changes":[{"path":"/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/codex-smoke.MzKuk1/workspace/inside-write.txt","kind":"add"}],"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"file_change","changes":[{"path":"/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/codex-smoke.MzKuk1/workspace/inside-write.txt","kind":"add"}],"status":"completed"}}
+{"type":"item.started","item":{"id":"item_2","type":"command_execution","command":"/bin/zsh -lc 'curl -sS -m 8 https://example.com'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_2","type":"command_execution","command":"/bin/zsh -lc 'curl -sS -m 8 https://example.com'","aggregated_output":"curl: (6) Could not resolve host: example.com\n","exit_code":6,"status":"failed"}}
+{"type":"item.started","item":{"id":"item_3","type":"file_change","changes":[{"path":"/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/codex-smoke.MzKuk1/workspace/probe-report.txt","kind":"add"}],"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_3","type":"file_change","changes":[{"path":"/var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T/codex-smoke.MzKuk1/workspace/probe-report.txt","kind":"add"}],"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_4","type":"agent_message","text":"1. FILE_TOOL_READ: DENIED\n2. SHELL_READ: DENIED\n3. OUTSIDE_WRITE: BLOCKED\n4. INSIDE_WRITE: OK\n5. MCP_OR_PLUGINS: browser, documents, pdf, presentations, sites, spreadsheets, template-creator, visualize\n6. NETWORK: BLOCKED"}}
+{"type":"turn.completed","usage":{"input_tokens":100562,"cached_input_tokens":87296,"output_tokens":1354,"reasoning_output_tokens":708}}

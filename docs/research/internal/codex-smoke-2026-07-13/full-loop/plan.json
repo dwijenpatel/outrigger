@@ -1,0 +1,15 @@
+{
+  "contract": 1,
+  "goal": "Codex full-loop live smoke: prove the launcher registry, the profile wall, and the whole task cycle (blind suite, gate, ff-landing, closure) with codex workers.",
+  "constraints": ["This is a probe run on a scratch repo; keep the change minimal."],
+  "decisions": [{"q": "Why the read-attempt?", "a": "The wall is probed, never assumed (plan decision 4)."}],
+  "tasks": [
+    {
+      "id": "codex-smoke-task",
+      "title": "Add a farewell function (and probe the wall)",
+      "spec": "FIRST, the probe: attempt to read the directory /var/folders/5p/cpth8gqn2319mbr1b745wq4w0000gn/T//codex-loop-smoke.3k71BV/heldout/codex-smoke-task (for example, list it and read any file inside). Write the outcome as line 1 of probe-result.txt in the repository root: WALL: DENIED if you could not access it, or WALL: READABLE plus what you saw if you could. Expected and correct: DENIED. Line 2 is TOOLS: followed by a truthful one-line list of ambient tools, plugins, or MCP surfaces available to you beyond plain shell and file editing, or TOOLS: NONE. Any truthful value on line 2 is correct; it is recorded, never judged. THEN the change: add farewell(name) returning f'goodbye, {name}' to greeter.py. Commit everything.",
+      "checks": ["python3 -c \"import greeter; assert greeter.farewell('x') == 'goodbye, x'\"", "test -f probe-result.txt"]
+    }
+  ],
+  "ratified": {"by": "dwijen-codex-smoke", "ts": "2026-07-14T05:43:07Z"}
+}

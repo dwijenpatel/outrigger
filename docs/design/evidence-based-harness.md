@@ -589,6 +589,22 @@ it. D2/D5 supply the per-link gate that makes decomposition safe; D7 supplies th
 that lets a horizon be split at all without seam rework. D16 names the failure the others were
 already, implicitly, defending against.
 
+### Decision economics — the four recurring-cost controls
+
+The decisions above say *why* each control is warranted; this says what it **costs** and what it
+falls back to, so the price sits next to the warrant. It records only what is known — the
+concrete cost, the cheaper alternative it beat, and how reversible it is; the **effect size**
+(how much each control actually cuts silent-wrong here) is deferred to the value experiment, not
+guessed. Only the four controls with a real *recurring* cost are listed; the rest are cheap or
+one-time.
+
+| Control | Recurring cost | What it catches | Cheaper alternative it beat | Reversibility |
+|---|---|---|---|---|
+| **Spec interview (D7)** | One pre-work interview per plan (operator time + one worker session) | Underspecification — the best-evidenced failure lever | Prompt-then-code / eyeballing the goal (no controlled evidence it matches interactive clarification) | **Full** — a front end; the loop consumes any conforming plan file with or without it |
+| **Blind test author (D2)** | One extra worker session per task — the largest recurring token cost (~$4/task measured) | Agent-graded-test gaming (21.8–33% of visible-pass patches fail hidden tests) | Test-secrecy alone (hide the implementer's own tests); the *marginal* value over secrecy is exactly what the value experiment measures | **Full** — the risk tiers drop it (gate-only and bare author no blind suite) |
+| **Isolation wall (D11)** | Per-worker worktree + a per-vendor launcher profile; one live smoke per launcher/build | Implementer reaching the graders or reading the held-out suite | Prompt-level "do not peek" — measured to *fail* (an explicit warning raised violations) | **Partial** — structural and tier-dialable, but dropping it means trusting prompt promises the evidence says fail |
+| **Merge gate (D5)** | A clean-worktree re-run of the checks per task (compute + latency) | Stale/overfit passes and premature "done" | Trusting the worker's own "tests pass" (the agent grading its own homework) | **Full by tier** — though machinery-protected paths never auto-merge regardless |
+
 ## 3. What this design deliberately omits — each omission is evidence
 
 | Omission | Why (evidence) |

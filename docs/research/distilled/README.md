@@ -53,9 +53,11 @@ The three rows above are all mechanism claims. Not one is a commitment claim.
 This is the part the existing tags do not capture, and it is the sharpest tool available.
 
 Evidence law has long held that a statement is more credible when it damages the speaker's own
-interest — nobody confesses to a crime they did not commit. The same logic applies with unusual
-force here, because **the agent-harness field is saturated with parties who benchmark their own
-products.**
+interest. The intuition is not ironclad — people can be pressured into false confessions, and an
+admission can be strategically incomplete (a small flaw conceded to look transparent while a
+larger one stays hidden) — but the incentive still runs the right way, which is why this warrant
+buys *existence* only (below). The same logic applies with unusual force here, because **the
+agent-harness field is saturated with parties who benchmark their own products.**
 
 Compare two claims from the same repository (Zenith):
 

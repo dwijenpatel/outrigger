@@ -57,7 +57,9 @@ It lives in [`tools/budget-governor/cache-read-quota-weight-experiment.md`](../.
 
 ## 2. Admissions against interest `A2` — the strongest empirical evidence available
 
-Nobody fabricates their own failure. Each entry below cost its author something.
+Fabricating your own failure runs against every incentive. A forced or strategically-partial
+admission is possible, so this warrant buys *existence* only — never a rate — but within that
+bound it is the strongest empirical signal here. Each entry below cost its author something.
 
 ### 2.1 Vendors, against themselves
 

@@ -49,7 +49,15 @@ passes into [distilled/](distilled/README.md) via four independent Opus 4.8 extr
 adding ~30 Tier-A entries (two new mathematics rows, the human-factors cluster under a new
 `human-factors` decay class, the equal-budget orchestration class-claims, the memory-benchmark
 record, nine new absence rows) and the B-1..B-4 concurrency source-audit to
-[distilled/internal.md](distilled/internal.md) as open defects.
+[distilled/internal.md](distilled/internal.md) as open defects. A **failure-attribution pass
+(2026-07-14)** ran an 88-agent Opus 4.8 deep-research workflow — six search angles → 20
+identity-checked primary sources → 74 extracted claims → 20 bucket-balanced claims through
+three-lens adversarial verification (source-fidelity, methodology/regime-fit,
+independent-replication; ≥2/3 refutes kill; 0 killed, 5 single-lens number corrections) —
+adjudicating the root causes and effect sizes of long-horizon coding-agent failure against the
+top-level README's claims, adding the fifteenth subtopic folder
+([external/failure-modes/](external/failure-modes/README.md)) with a committed machine-readable
+verification record.
 
 ## Layout
 
@@ -58,7 +66,7 @@ determines how much weight a claim can carry:
 
 | Directory | What's in it | How to weigh it |
 |---|---|---|
-| **[external/](external/)** | Vendor documentation, peer-reviewed and preprint literature, other people's systems and repos — **organized into 14 harness-design subtopic folders**, each with its own scoped README, holdings, and open questions. | We did not run these experiments. Strongest when independently replicated or when a source concedes something against its own interest; weakest when a party benchmarks its own product. |
+| **[external/](external/)** | Vendor documentation, peer-reviewed and preprint literature, other people's systems and repos — **organized into 15 harness-design subtopic folders**, each with its own scoped README, holdings, and open questions. | We did not run these experiments. Strongest when independently replicated or when a source concedes something against its own interest; weakest when a party benchmarks its own product. |
 | **[internal/](internal/)** | Our own pilot firings, our own zero-quota benchmarks, our own committed telemetry. | We ran these — exactly reproducible, and exactly as biased as we are. Our recorded **defects** are strong evidence; our recorded **wins** are not. |
 | **[distilled/](distilled/README.md)** | The highly-reliable subset of both, and the grading method that decides what qualifies. | **Start here.** Everything in it is Tier A; everything else in the corpus is context. |
 
@@ -71,7 +79,7 @@ happened to research first. Each folder's README states its scope, holdings, rel
 and open questions. Empty-handed folders are deliberate: they mark subproblems the corpus has
 not yet covered, and they are the queue for the next research passes.
 
-Coverage: **● rich · ◐ moderate · ○ thin (no dedicated document)** — as of 2026-07-10.
+Coverage: **● rich · ◐ moderate · ○ thin (no dedicated document)** — as of 2026-07-14.
 
 | Subtopic | Holdings | Coverage |
 |---|---|---|
@@ -89,12 +97,15 @@ Coverage: **● rich · ◐ moderate · ○ thin (no dedicated document)** — a
 | [planning/](external/planning/README.md) — spec elicitation, determinacy, decomposition quality, plan evaluation, re-planning, brownfield | planning-and-decomposition-evidence; spec-determinacy-and-practice | ● |
 | [orchestration/](external/orchestration/README.md) — topologies, parallel implementation, handoffs, concurrency correctness | multi-agent-orchestration-evidence; concurrency-and-merge-correctness | ● |
 | [human-in-the-loop/](external/human-in-the-loop/README.md) — ratification UX, adjudication latency, approval fatigue, escalation policy, safe autonomy reduction | oversight-and-vigilance-evidence; ratification-and-escalation-design | ● |
+| [failure-modes/](external/failure-modes/README.md) — root-cause attribution & effect sizes for long-horizon failure; the README-claims audit; per-claim verification record | root-causes-and-effect-sizes | ◐ |
 
-**The sweep is complete.** As of 2026-07-10 all 14 external subtopics carry a dedicated document
-(five ● were long-standing; memory-and-context, planning, orchestration, and human-in-the-loop
-went thin→rich across 2026-07-10; isolation, routing, unattended-operation, tool-surface, and
-evaluation remain ◐ moderate). The corpus is now a mapped design space rather than a record of
-what was researched first; the remaining ◐ folders are the natural depth targets, and each rich
+**The sweep is complete.** As of 2026-07-10 all 14 original external subtopics carry a dedicated
+document (five ● were long-standing; memory-and-context, planning, orchestration, and
+human-in-the-loop went thin→rich across 2026-07-10; isolation, routing, unattended-operation,
+tool-surface, and evaluation remain ◐ moderate). A fifteenth subtopic,
+[failure-modes/](external/failure-modes/README.md), entered 2026-07-14 via the
+failure-attribution pass. The corpus is now a mapped design space rather than a record of what
+was researched first; the remaining ◐ folders are the natural depth targets, and each rich
 folder's README carries its own measured open questions.
 
 ### Internal — evidence we generated ourselves
@@ -255,6 +266,23 @@ Corrections produced by the fact-check passes, kept so future readers don't re-i
   size, D12 append-only-under-R1 and wake-on-reset — all → Provisional with named triggers;
   (7) the P3v2-5 thesis is **n=2 existence** (smoke run 2 fired it live on an isolation
   regression), neither instance with a complete preserved failure-side chain, still not a rate.
+
+- **From the 2026-07-14 failure-attribution pass** (details in
+  [external/failure-modes/root-causes-and-effect-sizes.md](external/failure-modes/root-causes-and-effect-sizes.md)
+  §6), five widely-quotable numbers to not re-import: (1) **Ambig-SWE (2502.13069)**
+  per-condition digits "17.0%/21.4%" appear nowhere in the paper — Full/Hidden values live
+  only in the Fig.-3 bar chart; quote the band (~40%→~20%) or SWE-Bench Pro's replicated
+  drops; (2) OpenAI's SWE-bench-Verified doubling (16%→33.2%) supports "the original
+  benchmark understated resolve rate ~2×," **not** "half of apparent failures were
+  artifacts" (only ~20% of the original failure mass reclassifies, and Verified skews
+  easier); (3) **METR 2503.14499**: the success-vs-log-length aggregate fit is exponential
+  **R²≈0.83** (not 0.80) — distinct from the R²≈0.98 exponential *horizon-vs-calendar-date*
+  trend (and the pass's own draft briefly glossed the fit "logistic," wrong against the
+  verbatim source — caught before import); (4) **self-conditioning (2509.09677) Fig. 5**
+  has no 20% induced-error point (grid 0/.25/.5/.75/1.0), and ~90%-at-0% is Gemma-27B, not
+  Qwen3-32B; (5) **MAST (2503.13657)** inter-agent misalignment is version-unstable across
+  restatements (31.3/32.3/36.9/38.4; v2-text read 36.94%) — cite the ranking
+  (second-largest), never a point value.
 
 **Absence-of-feature findings** (strong, but inherently harder to prove than a positive): Kiro
 closure gate; Spec Kit automated final gate; LangGraph built-in critic; any published

@@ -20,45 +20,62 @@ wreckage.
 
 ## The problem
 
-Coding agents are brilliant for twenty minutes and untrustworthy for eight hours. Three
-failure modes dominate long runs, and none of them is fixed by a better model:
+Coding agents are brilliant for twenty minutes and untrustworthy for eight hours. A handful
+of failure modes dominate long runs, and none of them is fixed by a better model — the
+evidence says a *bigger* model does not close the largest of them:
 
-1. **Ambiguity compounds.** A spec that is 95% clear produces work that is 0% right when
-   the missing 5% was the point. Every unstated convention and unasked question is a fork
-   the agent takes at full speed, hours before anyone notices.
-2. **The agent grades its own homework.** When the implementer writes, or can even read,
-   its own acceptance tests, "all tests pass" is the agent's opinion of itself. Long runs
-   give optimization pressure time to find the grader. This is reward hacking, and it is
-   the default outcome, not the edge case.
-3. **The human is the weakest wall.** Tired operators rubber-stamp, treat silence as
-   approval, and relax the rules mid-run just this once. A harness that relies on
-   sustained human vigilance is designed to fail at hour six.
+1. **Errors compound over length.** The biggest effect, and the best-replicated: stretch a
+   task from a single change to hours of multi-file work and the strongest models fall from
+   roughly 70% to roughly 25% resolved. And it is not only scope — a model degrades from its
+   *own* accumulating mistakes in context, measurably, even when the plan is fully specified
+   and only execution is tested, and scaling the model up does not fix it. Long runs rot from
+   the inside, and one uncaught wrong turn poisons every step built on it.
+2. **The agent grades its own homework.** When the implementer writes, or can even read, its
+   own acceptance tests, "all tests pass" is the agent's opinion of itself. Once the grader is
+   in reach, gaming it is the default: reward-hacking jumps more than fortyfold the moment the
+   scoring function is visible, and hiding the test cases is not enough — a long run finds the
+   scoring process and games that instead. In the high-visibility regime this is the rule, not
+   the edge case.
+3. **Ambiguity gets baked in early.** Every unstated convention and unasked question is a fork
+   the agent takes at full speed, hours before anyone notices. Hiding just the last stretch of
+   a spec is enough to roughly halve how often a run lands right — and asking about it up front
+   recovers most of that. The missing 5% is cheapest to kill at hour zero.
+4. **The human is a fallible wall.** Tired operators rubber-stamp, treat silence as approval,
+   and relax the rules mid-run just this once. And the miscalibration is measured and
+   sign-flipped: developers believe an agent sped them up even in controlled trials where it
+   measurably slowed them down. A harness that leans on sustained human vigilance is leaning on
+   the shakiest instrument in the loop.
 
-And a fourth, quieter one: **harnesses accrete ritual.** Checks nobody measured, guardrails
-nobody costed, ceremony that feels rigorous and proves nothing. Meta-work, work about work,
-has to earn its keep. The cure is not more machinery. It is machinery that pays for itself
-under measurement.
+And a quieter one: **harnesses accrete ritual.** Checks nobody measured, guardrails nobody
+costed, ceremony that feels rigorous and proves nothing. Meta-work, work about work, has to
+earn its keep. The cure is not more machinery. It is machinery that pays for itself under
+measurement.
 
 ## The levers that actually move the needle
 
 If you want an agent to run longer and be more trustworthy at the end, the evidence keeps
-pointing at the same five levers:
+pointing at the same six levers:
 
-1. **Spec quality before any code.** Ambiguity is the compounding error source, and it is
-   cheapest to kill at hour zero.
-2. **Verification the worker cannot touch.** Not more tests: tests the implementer cannot
-   read, influence, or overfit. Reward hacking is what a long run does to any grader left
-   within reach. The fix is distance, enforced by the operating system rather than by
-   politeness.
-3. **Externally granted completion.** The agent never declares itself done. An independent
+1. **Spec quality before any code.** Underspecification roughly halves how often a run lands
+   right, and interactive clarification recovers most of it — cheapest to kill at hour zero.
+2. **Short, fresh, verified links — never one long haul.** Errors compound with length, and a
+   model degrades from its own accumulating context, so the horizon is broken into short
+   tasks, each run in a fresh worker context and gated before the next builds on it. This is
+   the direct counter to the largest failure mode, and a bigger model does not substitute for
+   it.
+3. **Verification the worker cannot touch.** Not more tests: tests the implementer cannot
+   read, influence, or overfit — and the *grader process* out of reach, not just the
+   assertions, because a long run that can reach the scorer will game the scorer. The fix is
+   distance, enforced by the operating system rather than by politeness.
+4. **Externally granted completion.** The agent never declares itself done. An independent
    mechanism does, against the whole build.
-4. **Token efficiency.** Subscription windows close mid-run, and context reuse is roughly
+5. **Token efficiency.** Subscription windows close mid-run, and context reuse is roughly
    9x cheaper than fresh tokens (we measured it). A long-horizon harness must halt, park,
    and resume. Never overspend, never lose the run.
-5. **Subtracting machinery.** Every mechanism measured. Anything that does not pay for
+6. **Subtracting machinery.** Every mechanism measured. Anything that does not pay for
    itself gets dialed down or deleted, on evidence.
 
-outrigger is those five levers, built as composable tools.
+outrigger is those six levers, built as composable tools.
 
 ## How it works
 

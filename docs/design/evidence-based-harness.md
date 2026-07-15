@@ -22,6 +22,17 @@ window weight measured **w < 0.1125** (point estimate 0; half and full weight ex
 [artifact](../research/internal/cache-weight-experiment-2026-07-13/RESULTS.md)). D12's
 append-only context discipline takes its named promotion trigger: Provisional → **Decided**.
 Window capacity ≈ 36–48M weighted tok/5h. Decay `vendor-policy`.
+**Seventh amendment, 2026-07-14 (failure-attribution pass — error-compounding named):** an
+88-agent Opus 4.8 deep-research pass on the root causes and effect sizes of long-horizon
+failure ([failure-modes](../research/external/failure-modes/README.md); 20 primary sources
+through three adversarial lenses, 0 killed / 5 number corrections) lands **+D16** — *bound the
+horizon into short, fresh-context, gated links*, the countermeasure to **error-compounding**,
+the largest and best-replicated long-horizon failure and not previously a named decision. Two
+new Tier-A §3.1 rows (task-length collapse; scale-invariant self-conditioning) carry its
+warrant; the *size* of the decomposition win stays TBD, gated on the long-horizon value
+experiment. The pass also audited the top-level README and corrected three overclaims there
+(the "0% right" catastrophic-nonlinearity phrasing; an unevidenced "hour six" oversight-decay
+claim; and attributing compounding to ambiguity rather than to length and self-conditioning).
 **Fourth amendment, 2026-07-12 (metabolizing an independent adversarial review of `docs/`,
 operator-run):** evidence language tightened to the grading method's own bounds — D1/D10
 gaming-ledger claims sample-bounded, D7's M7 citation narrowed (acyclicity is *a* decidable
@@ -170,11 +181,14 @@ its marginal value over test-secrecy alone is unmeasured — promotion trigger i
 it: the loop cannot end a task, a phase, or the build on its own assertion. Every completion
 carries the verifier artifact that granted it.
 
-**Evidence.** Premature completion is *the* dominant long-horizon failure — agents "satisfice
-rather than optimize, often submitting before the time limit," with poor ability to notice
-progress, replicated across METR RE-Bench, independent research-agent post-mortems, and Zenith's
-convergent design (§3.1); Zenith's committed code demonstrates the mechanism is buildable — only
-the terminal reviewer's verdict seals `done` (§5).
+**Evidence.** Premature completion — declaring `done` too early — is a dominant long-horizon
+failure *behavior*: agents "satisfice rather than optimize, often submitting before the time
+limit," with poor ability to notice progress, replicated across METR RE-Bench, independent
+research-agent post-mortems, and Zenith's convergent design (§3.1). It is the *completion-side*
+sibling of error-compounding, which the 2026-07-14 attribution pass ranks the largest
+long-horizon failure *shape* (**D16**, the accumulation side) — both are defeated only by an
+external verdict, never a self-declared one. Zenith's committed code demonstrates the mechanism
+is buildable — only the terminal reviewer's verdict seals `done` (§5).
 
 ### D4. Single-writer topology; parallelism only where the evidence licenses it — **Decided** (the default), **Provisional** (the harm magnitude of concurrent writes)
 
@@ -512,6 +526,47 @@ their file contracts compatible (schema versioning, tolerant readers, golden fil
 deliberately undecided; settle it at the first real two-artifact integration (**T11**).
 
 ---
+
+### D16. Bound the horizon into short, fresh-context, gated links — the countermeasure to error-compounding — **Decided** (the shape), **TBD** (the size of the win)
+
+The long horizon is never run as one continuous session. It is decomposed into short tasks,
+each implemented in a **fresh worker context**, and each **verified by the gate before the next
+task builds on it**. A defect that escapes one link is caught at that link or it corrupts every
+link downstream; the architecture's job is to make "caught at that link" the default.
+
+**Evidence (2026-07-14 failure-attribution pass,
+[failure-modes](../research/external/failure-modes/README.md) — 20 primary sources, three
+adversarial lenses, 0 killed).** Error-compounding is the **largest, best-replicated, most
+on-regime** failure of long-horizon coding, and it is two mechanisms, each countered here:
+
+- **Scope / length collapse.** Single-issue → multi-file, multi-hour work drops the best model
+  from ~70% to ~25% resolved, reproduced by two independent teams on different data (SWE-EVO
+  n=48; SWE-Bench Pro n=1,865); METR's ~170-task suite fits success against log task-length
+  exponentially (R²≈0.83), near-ceiling on short tasks → ~0–10% on multi-hour ones. Shortening
+  each task is the direct counter.
+- **Self-conditioning.** A model degrades from its **own prior errors accumulating in context**
+  — measured even when the plan is fully specified and only execution is tested — and it **does
+  not go away as the model scales** (~32B→~1T, replicated ×3). Fresh context per link severs
+  this channel; a bigger implementer does not.
+
+Both are `llm-class` and enter as Tier-A rows in
+[distilled/external.md](../research/distilled/external.md) §3.1.
+
+**Decided in shape, TBD in size.** The runtime already spawns a fresh worker per task and gates
+each link (D2/D3/D5) — the failure-attribution pass supplies the strongest *warrant* that
+architecture was missing, not a new mechanism. But the *magnitude* of the decomposition win —
+how much a short-fresh-gated chain beats the same effort run long, at equal budget — is measured
+by **no external source** (failure-modes open questions) and is this project's central unproven
+bet. The in-house instrument is the long-horizon value experiment
+([chain-design](../research/internal/longhorizon-value/chain-design.md)), now recording
+**compounding depth** as an explicit outcome. Import the mechanism (error-compounding is real
+and structural); do not yet import a magnitude for the cure.
+
+**Relation to the other decisions.** D3 (premature completion) is the *completion-side* failure
+— declaring done too early; D16 is the *accumulation-side* failure — being wrong and building on
+it. D2/D5 supply the per-link gate that makes decomposition safe; D7 supplies the determinacy
+that lets a horizon be split at all without seam rework. D16 names the failure the others were
+already, implicitly, defending against.
 
 ## 3. What this design deliberately omits — each omission is evidence
 

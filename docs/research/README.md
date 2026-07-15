@@ -94,7 +94,7 @@ Coverage: **● rich · ◐ moderate · ○ thin (no dedicated document)** — a
 | [tool-surface/](external/tool-surface/README.md) — interface ergonomics, MCP-vs-CLI, deferred loading, serialization formats | tool-surface-and-format-economics | ◐ |
 | [evaluation/](external/evaluation/README.md) — measuring the machinery itself: paired-arm methodology, variance-aware gates | harness-evaluation-prior-art | ◐ |
 | [memory-and-context/](external/memory-and-context/README.md) — persistent memory, lessons, context engineering, staleness, memory security | memory-architectures-and-benchmarks; memory-for-coding-harnesses | ● |
-| [planning/](external/planning/README.md) — spec elicitation, determinacy, decomposition quality, plan evaluation, re-planning, brownfield | planning-and-decomposition-evidence; spec-determinacy-and-practice | ● |
+| [planning/](external/planning/README.md) — spec elicitation, determinacy, decomposition quality, plan evaluation, re-planning, brownfield | planning-and-decomposition-evidence; spec-determinacy-and-practice; elicitation-protocol-evidence | ● |
 | [orchestration/](external/orchestration/README.md) — topologies, parallel implementation, handoffs, concurrency correctness | multi-agent-orchestration-evidence; concurrency-and-merge-correctness | ● |
 | [human-in-the-loop/](external/human-in-the-loop/README.md) — ratification UX, adjudication latency, approval fatigue, escalation policy, safe autonomy reduction | oversight-and-vigilance-evidence; ratification-and-escalation-design | ● |
 | [failure-modes/](external/failure-modes/README.md) — root-cause attribution & effect sizes for long-horizon failure; the README-claims audit; per-claim verification record | root-causes-and-effect-sizes | ◐ |
@@ -111,7 +111,8 @@ folder's README carries its own measured open questions.
 ### Internal — evidence we generated ourselves
 
 Our own runs. Reproducible, and motivated: we want this design to work. Weigh the **defects**
-heavily (nobody fabricates their own bugs) and the **wins** lightly.
+heavily (an admission against interest — existence-strength, per the grading method) and the
+**wins** lightly.
 
 - [pilot-1-observations.md](internal/pilot-1-observations.md) — live triage ledger of the first real
   firing's failures and friction (started 2026-07-04); the empirical feed for the

@@ -85,9 +85,12 @@ outrigger is those six levers, built as composable tools.
 
 ![The execution loop](docs/assets/readme/execution-loop.svg)
 
-**The interrogation.** Work enters through a pedantic, one-question-at-a-time spec
-interview that converts a goal into a machine-checkable plan: decisions recorded with
-rationale, constraints pinned, and a determinacy bar. Could a stranger write acceptance
+**The interview.** Work enters through a spec interview in which the machine acts as the tech
+lead and the operator as the product manager: it asks only the product questions — scope and
+non-goals, use-cases, success, appetite, irreversible actions — derives the engineering
+decisions from convention and principle, and presents the derived record on a short approval
+ledger before anything proceeds. The result is a machine-checkable plan: decisions recorded
+with rationale, constraints pinned, and a determinacy bar. Could a stranger write acceptance
 tests from this spec alone, without guessing? Ratification is explicit and recorded — a human
 stamp of who approved and when, on the exact plan they read; the interview voids it the moment
 the plan changes, so there is no silence-as-approval. The execution loop then pins the plan by

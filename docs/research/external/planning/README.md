@@ -27,6 +27,14 @@ The remaining thinness is specific and named: **brownfield/repo-scale planning**
   generate→eyeball→execute; none has a determinacy gate), the **brownfield gap** (planning ≈
   localization; Agentless/CodePlan), re-planning discipline (repair over replan; TaskListPatch),
   and the consolidated design mapping + hardening backlog.
+- [elicitation-protocol-evidence.md](elicitation-protocol-evidence.md) — **who answers which
+  questions, and how few** (2026-07-15 four-branch pass): RE empirics (structure beats skill;
+  omission is the defect class and expert question-skipping its documented cause; the 10–100×
+  late-fix multiplier is refuted folklore; playback catches 68%), practice at scale (PM/TL
+  boundary, one-way/two-way doors, appetite, alternatives-considered/ADR), BDD formats (red
+  question cards, example-per-rule, premortem graded honestly), and LLM-era clarification
+  (few/early/consolidated/calibrated asks win; approve-before-effect over veto; rubber-stamp
+  engineering). Grounds the compressed spec-interview protocol (design D7, Provisional).
 
 ## Related material elsewhere
 
@@ -54,3 +62,8 @@ highest-leverage:
   two-clean-sweep bar as a *gate*, which no prior art does.
 - **A brownfield pilot** — the corpus is greenfield-only; localization-first planning over a real
   existing repo is entirely unstudied here.
+- **Interrogate vs derive-and-approve** — no source anywhere compares question-sequence
+  elicitation against draft-plus-approval-ledger on spec quality
+  ([elicitation-protocol-evidence.md](elicitation-protocol-evidence.md) §6); the spec cascade's
+  metrics (operator turns, escapes, author-failures, ledger challenge rate) are the first
+  instrument pointed at it.

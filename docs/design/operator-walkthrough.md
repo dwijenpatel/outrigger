@@ -8,13 +8,20 @@ item. This document decides nothing; if it disagrees with the design plan, the d
 
 ## The evening: you hand it the job
 
-You don't hand the harness a spec. You hand it a sentence, and it **interviews you** — one
-question at a time, and it doesn't stop until the job is actually pinned down. *"When a reset
-token is used, does it expire immediately or after the whole window? What happens to other
-active sessions? Is the email provider already wired, or is that in scope?"* The grilling feels
-pedantic, but it is the single best-evidenced step in the whole design: under-specified jobs
-fail hard, and talking it out beforehand recovers almost all of the loss (D7). The interview is
-deliberately relentless, and it's **Decided**.
+You don't hand the harness a spec. You hand it a sentence, and it **interviews you** — but as
+a tech lead interviews a product manager, not as a questionnaire. It asks the few questions
+only you can answer: *"Is expiring other active sessions in scope? How much is this worth —
+a day or a week? Sending email is externally visible — which provider, and may it send in
+tests?"* The engineering decisions — error shapes, API conventions, test approach — it derives
+from your repo's conventions and general engineering principles, writes down with rationale,
+and hands you as a short approval list before anything proceeds (the genuinely contestable
+calls on top, each with the alternative it rejected and what changing it would cost). That
+clarification happens *before* code is the single best-evidenced step in the whole design:
+under-specified jobs fail hard, and asking beforehand recovers almost all of the loss (D7) —
+that part is **Decided**. That the machine derives-and-you-approve rather than interrogating
+you question-by-question is the newer, cheaper protocol — **Provisional**, measured by the
+running count of operator turns, post-ratification spec amendments, and whether the blind
+test-author ever fails to write tests from a derived spec.
 
 When the interview's done, the harness shows you a **plan and asks you to ratify it** — and
 this is the one interaction designed to feel slightly awkward on purpose. It does *not* say

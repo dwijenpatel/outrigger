@@ -35,6 +35,21 @@ stays TBD — the value experiment tests only the *gating* half; the decompose-v
 instrument is named-but-unbuilt. The pass also audited the top-level README and corrected three overclaims there
 (the "0% right" catastrophic-nonlinearity phrasing; an unevidenced "hour six" oversight-decay
 claim; and attributing compounding to ambiguity rather than to length and self-conditioning).
+**Eighth amendment, 2026-07-15 (spec-interview protocol compressed — operator-directed,
+research-grounded):** the first two live interviews measured the protocol's cost — 14 and 10
+operator turns against a 25-minute unattended execution — and a post-hoc autopsy scored ~0 of
+the second interview's 7 questions as genuinely needing the operator. A four-branch external
+pass ([planning/elicitation-protocol-evidence.md](../research/external/planning/elicitation-protocol-evidence.md))
+grounds the rewrite: the interviewer acts as tech lead and asks only product-boundary questions
+(a coverage checklist — each item asked or its source named), consolidated and early; craft
+decisions are derived under a three-layer license (conventions → precedent → general
+engineering principles), reversibility-tagged (one-way doors escalate), with principle
+deviations recorded as repayment-bearing debt packages; the derived record is reviewed on a
+capped, reasoning-forcing **approval ledger** before ratification (approve-before-effect).
+D7 carries the protocol (**Provisional**, named metrics: operator turns per spec, interview
+escapes, blind-author failures-to-author, ledger challenge rate); D8's forcing mechanics are
+unchanged and reused. Also propagated cluster-4's admission-phrasing softening to one missed
+instance (research README).
 **Fourth amendment, 2026-07-12 (metabolizing an independent adversarial review of `docs/`,
 operator-run):** evidence language tightened to the grading method's own bounds — D1/D10
 gaming-ledger claims sample-bounded, D7's M7 citation narrowed (acyclicity is *a* decidable
@@ -272,6 +287,32 @@ measure the planted distribution, not the real one (M4). Experiment **T4**.
 - **The clarification interview is one of the best-evidenced levers in the corpus**: spec
   underspecification costs tens of points and interactive clarification recovers most of it
   (§3.1, three independent benchmarks, three recovery mechanisms). Budget real tokens there.
+- **The interview routes questions by owner (added 2026-07-15 — Provisional).** The
+  clarification-value evidence above says nothing about *who answers which questions*, and the
+  first two live interviews spent 14 and 10 operator turns mostly on craft decisions whose
+  recommended answers were accepted verbatim. The compressed protocol
+  ([elicitation-protocol-evidence](../research/external/planning/elicitation-protocol-evidence.md)):
+  the interviewer is the tech lead, the operator the product manager; the operator is asked
+  only the product-boundary items — scope/non-goals, use-cases, success, appetite,
+  future-scope, irreversibles + risk tier — run as a **coverage checklist** (each item asked
+  *or* its answer's source named: omission, not ambiguity, is the dominant requirements-defect
+  class, and expert interviewers skipping "obvious" questions is its documented cause), with
+  the few genuine questions **consolidated early in one structured exchange** (fragmentary
+  serial asking is a measured failure mode; winning ask-policies are few/early/calibrated;
+  >3 genuine questions = not-ready signal). Everything craft-shaped is **derived** under a
+  three-layer license (recorded conventions → ratified precedent → general engineering
+  principles), recorded with rationale, **reversibility-tagged** (two-way doors decided and
+  recorded; one-way doors escalate regardless of derivability), with principle deviations as
+  recorded debt packages (deviation + forcing constraint + repayment task). The derived record
+  is reviewed on a **capped approval ledger before ratification** — approve-before-effect
+  (74% of surveyed developers want approval before action), each surfaced entry
+  reasoning-forcing (decision · rejected alternative · why · cost of changing) against the
+  §3.3 rubber-stamping channel. *Provisional because the central bet —
+  derive-and-approve ≙ interrogation on spec quality — is measured by no source*; instruments,
+  all recorded by the spec cascade: operator turns per spec (baselines 14 and 10; target
+  ≤3–4), interview escapes per spec, blind-author failures-to-author, ledger challenge rate
+  (never-challenged across many specs ⇒ the ledger is decoration — redesign trigger). Demotion
+  trigger: escapes or author-failures rise under the compressed protocol.
 - Requirements templates are formatting, not completeness — EARS's own inventors say so (§2.3);
   a template cannot substitute for the interview.
 - **The planning machinery is a standalone artifact (R5/D15):** the interview + preflight run
@@ -335,6 +376,12 @@ cluster (the slowest-decaying evidence in the corpus) dictates the shape:
   loop, and an operator who cannot fully follow the surface decides poorly — the failure lands
   exactly where §3.3 says it will. Applies to interview questions, ratification cards, blocker
   cards, and escalation messages alike.
+- **The interview's approval ledger (D7, 2026-07-15) reuses this decision's mechanics:**
+  commit-before-reveal attaches to the few genuine questions (asked before any draft or
+  recommendation is shown); the ledger itself is the playback pass the elicitation evidence
+  demands (68% of misses surface on review, not live), kept short and stakes-flagged per the
+  alarm-fatigue law, with each entry forcing engagement with the *reasoning* rather than the
+  bare recommendation.
 
 ### D9. Memory: versioned plain files, deterministically captured, write-gated; nothing learned until closed-loop evidence exists — **Decided**
 

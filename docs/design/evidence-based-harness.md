@@ -29,8 +29,9 @@ through three adversarial lenses, 0 killed / 5 number corrections) lands **+D16*
 horizon into short, fresh-context, gated links*, the countermeasure to **error-compounding**,
 the largest and best-replicated long-horizon failure and not previously a named decision. Two
 new Tier-A §3.1 rows (task-length collapse; scale-invariant self-conditioning) carry its
-warrant; the *size* of the decomposition win stays TBD, gated on the long-horizon value
-experiment. The pass also audited the top-level README and corrected three overclaims there
+warrant; whether short fresh links beat one long thinking session (the decomposition bet)
+stays TBD — the value experiment tests only the *gating* half; the decompose-vs-continuous
+instrument is named-but-unbuilt. The pass also audited the top-level README and corrected three overclaims there
 (the "0% right" catastrophic-nonlinearity phrasing; an unevidenced "hour six" oversight-decay
 claim; and attributing compounding to ambiguity rather than to length and self-conditioning).
 **Fourth amendment, 2026-07-12 (metabolizing an independent adversarial review of `docs/`,
@@ -527,7 +528,7 @@ deliberately undecided; settle it at the first real two-artifact integration (**
 
 ---
 
-### D16. Bound the horizon into short, fresh-context, gated links — the countermeasure to error-compounding — **Decided** (the shape), **TBD** (the size of the win)
+### D16. Bound the horizon into short, fresh-context, gated links — the countermeasure to error-compounding — **Decided** (gate each link before the next builds on it), **TBD** (that short fresh links beat one long thinking session — the decomposition bet — and its size)
 
 The long horizon is never run as one continuous session. It is decomposed into short tasks,
 each implemented in a **fresh worker context**, and each **verified by the gate before the next
@@ -539,28 +540,42 @@ link downstream; the architecture's job is to make "caught at that link" the def
 adversarial lenses, 0 killed).** Error-compounding is the **largest, best-replicated, most
 on-regime** failure of long-horizon coding, and it is two mechanisms, each countered here:
 
-- **Scope / length collapse.** Single-issue → multi-file, multi-hour work drops the best model
-  from ~70% to ~25% resolved, reproduced by two independent teams on different data (SWE-EVO
-  n=48; SWE-Bench Pro n=1,865); METR's ~170-task suite fits success against log task-length
-  exponentially (R²≈0.83), near-ceiling on short tasks → ~0–10% on multi-hour ones. Shortening
-  each task is the direct counter.
+- **Scope / length collapse.** Long multi-file work scores far worse than single-issue work:
+  top agents land ~25% on the multi-file SWE-EVO suite (n=48) where they clear ~70%+ on
+  single-issue SWE-bench, and SWE-Bench Pro (n=1,865) shows the same gap on other data. These
+  are **cross-benchmark gaps, not one controlled length manipulation** — import the direction
+  (long unstructured work is much harder), not the exact ~70→~25 drop as if length alone caused
+  it. METR's ~170-task suite fits success against log task-length exponentially (R²≈0.83),
+  near-ceiling on short tasks → ~0–10% on multi-hour ones — and METR itself flags that transfer
+  to ordinary software work is conditional. Shortening each task is *a* counter; see the bet below.
 - **Self-conditioning.** A model degrades from its **own prior errors accumulating in context**
   — measured even when the plan is fully specified and only execution is tested — and it **does
   not go away as the model scales** (~32B→~1T, replicated ×3). Fresh context per link severs
-  this channel; a bigger implementer does not.
+  this channel across links; a bigger implementer does not. **Against this decision's grain,
+  from the same primary source:** *thinking* mitigates self-conditioning and lets a model run
+  **much longer within a single turn** — so for the thinking models this harness actually runs,
+  the within-turn channel is weaker than the raw result implies, and the source's own remedy
+  (more thinking per turn) points at a longer single session, not only at decomposition. That is
+  exactly why decompose-vs-continuous is a **bet, not a settled consequence** (below).
 
 Both are `llm-class` and enter as Tier-A rows in
 [distilled/external.md](../research/distilled/external.md) §3.1.
 
-**Decided in shape, TBD in size.** The runtime already spawns a fresh worker per task and gates
-each link (D2/D3/D5) — the failure-attribution pass supplies the strongest *warrant* that
-architecture was missing, not a new mechanism. But the *magnitude* of the decomposition win —
-how much a short-fresh-gated chain beats the same effort run long, at equal budget — is measured
-by **no external source** (failure-modes open questions) and is this project's central unproven
-bet. The in-house instrument is the long-horizon value experiment
-([chain-design](../research/internal/longhorizon-value/chain-design.md)), now recording
-**compounding depth** as an explicit outcome. Import the mechanism (error-compounding is real
-and structural); do not yet import a magnitude for the cure.
+**What is Decided, and what is a bet.** The per-link external verdict *is* Decided: the runtime
+spawns a fresh worker per task and gates each link before the next builds on it (D2/D3/D5), on
+the same warrant as D3/D5 — a defect must be caught by something outside the worker. What is
+**not** evidence-forced is the decomposition itself — that a short-fresh-gated chain beats the
+**same work run as one long thinking session**, at equal budget. No external source compares the
+two, and the self-conditioning caveat above shows the evidence for thinking models arguably
+points the other way, so this is a genuine **bet, not a consequence** of the failure evidence.
+Its settling instrument — a **continuous-thinking run of the same chain at equal budget** — is
+**named but unbuilt**; the current long-horizon value experiment holds decomposition *fixed*
+across all arms and therefore tests only the **gating half** (does the gate arrest cross-task
+compounding — recorded as **compounding depth** in
+[chain-design](../research/internal/longhorizon-value/chain-design.md)), never
+decompose-vs-continuous. Import the mechanism (error-compounding is real and structural); do
+**not** import a magnitude for the cure, and do not treat decomposition as proven over a long
+single session.
 
 **Relation to the other decisions.** D3 (premature completion) is the *completion-side* failure
 — declaring done too early; D16 is the *accumulation-side* failure — being wrong and building on

@@ -24,12 +24,13 @@ Coding agents are brilliant for twenty minutes and untrustworthy for eight hours
 of failure modes dominate long runs, and none of them is fixed by a better model — the
 evidence says a *bigger* model does not close the largest of them:
 
-1. **Errors compound over length.** The biggest effect, and the best-replicated: stretch a
-   task from a single change to hours of multi-file work and the strongest models fall from
-   roughly 70% to roughly 25% resolved. And it is not only scope — a model degrades from its
-   *own* accumulating mistakes in context, measurably, even when the plan is fully specified
-   and only execution is tested, and scaling the model up does not fix it. Long runs rot from
-   the inside, and one uncaught wrong turn poisons every step built on it.
+1. **Errors compound over length.** The biggest effect, and the best-replicated: the strongest
+   models resolve roughly 70% of single-issue tasks but only roughly 25% of long, multi-file
+   ones (a cross-benchmark gap, not one controlled stretch — read the direction, not the exact
+   drop). And it is not only scope — a model degrades from its *own* accumulating mistakes in
+   context, measurably, even when the plan is fully specified and only execution is tested, and
+   scaling the model up does not fix it. Long runs rot from the inside, and one uncaught wrong
+   turn poisons every step built on it.
 2. **The agent grades its own homework.** When the implementer writes, or can even read, its
    own acceptance tests, "all tests pass" is the agent's opinion of itself. Once the grader is
    in reach, gaming it is the default: reward-hacking jumps more than fortyfold the moment the
@@ -58,11 +59,13 @@ pointing at the same six levers:
 
 1. **Spec quality before any code.** Underspecification roughly halves how often a run lands
    right, and interactive clarification recovers most of it — cheapest to kill at hour zero.
-2. **Short, fresh, verified links — never one long haul.** Errors compound with length, and a
-   model degrades from its own accumulating context, so the horizon is broken into short
-   tasks, each run in a fresh worker context and gated before the next builds on it. This is
-   the direct counter to the largest failure mode, and a bigger model does not substitute for
-   it.
+2. **Short, fresh, verified links.** Errors compound with length, so the horizon is run as
+   short tasks, each in a fresh worker context and gated before the next builds on it — a defect
+   is caught at its link or it corrupts everything downstream. The gate at each link is the
+   settled part. Whether short fresh links actually beat one long, well-resourced session is the
+   harness's *central open bet*: a bigger model does not remove the compounding, but more
+   thinking in a single session might, so outrigger is built to measure that difference rather
+   than assume it.
 3. **Verification the worker cannot touch.** Not more tests: tests the implementer cannot
    read, influence, or overfit — and the *grader process* out of reach, not just the
    assertions, because a long run that can reach the scorer will game the scorer. The fix is

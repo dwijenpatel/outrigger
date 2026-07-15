@@ -31,8 +31,10 @@ verification design in [validation/](../validation/README.md), spec/plan evidenc
 - **The decomposition bet is unmeasured.** No primary source compares one long run against
   the same effort decomposed into short, fresh-session, per-link-gated tasks at equal
   budget. Chain math says success ≈ (1−ε)^N once gates catch ordinary failures, with ε =
-  the gate's false-pass rate — the design's central bet rides on it. The T2 shadow-pilot
-  program is the in-house instrument pointed at this.
+  the gate's false-pass rate — the design's central bet rides on it. The long-horizon value
+  experiment measures the **gating** half (ε and cross-task compounding-arrest); it holds
+  decomposition *fixed* across arms, so the head-to-head decompose-vs-continuous comparison
+  still needs a continuous-run arm that experiment does not include (named, unbuilt).
 - **Our own gate's false-pass rate ε.** SWE-ABS's ~20% P(wrong | pass) is specific to
   SWE-bench-style suites; nothing here measures ε for spec-authored held-out suites.
   Calibration canaries are the named probe.

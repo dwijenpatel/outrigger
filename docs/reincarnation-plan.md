@@ -60,7 +60,7 @@ are self-generated conclusions.
   OPEN by policy).
 - **The cache-weight experiment's quota-costing arms are operator-run only** — never execute
   `run_cache_weight_experiment.sh` `dry-run`/`arm-a`/`arm-b`; they spend real Max-plan quota
-  (this is experiment **T1**, the highest-value single measurement pending).
+  (this is experiment **T1** — settled 2026-07-13; the quota-costing arms stay operator-run regardless).
 - **Operator comfort is not a design goal** — gates are measured by errors caught (design R3).
 - **Do not over-design**: a design decision enters only with a distilled Tier-A citation; "the
   old design did it" is explicitly not a warrant; TBD is the required honest state where

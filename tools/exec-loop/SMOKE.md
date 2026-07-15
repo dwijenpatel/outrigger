@@ -17,7 +17,7 @@ read-attempt probe below — before any real plan uses it. When the Codex CLI la
 (the named first extension), it gets its own smoke; a green Claude smoke says nothing about it.
 Re-run the smoke after any Claude Code release (vendor-build decay).
 
-## The codex_p smoke — PENDING, operator-run (spends OpenAI quota, not Max-plan)
+## The codex_p smoke — DONE (certified end-to-end 2026-07-13; named residuals below), operator-run (spends OpenAI quota, not Max-plan)
 
 `codex_p.py` landed 2026-07-13 and was reworked the same day from `--sandbox
 workspace-write` to a **generated permission profile** (`extends = ":workspace"` + per-path
@@ -363,11 +363,11 @@ operator-run smoke; a dash = not applicable.
 | Unknown-tool halts before spawn | mock ✓ (loop registry) | mock ✓ (loop registry) |
 | File tool cannot read held-out path | live ✓ (runs 3–5) | live ✓ (smoke 2026-07-13) |
 | Shell cannot read held-out path | live ✓ (runs 3–5) | live ✓ (smoke 2026-07-13) |
-| Worker edits + commits in worktree | live ✓ (runs 3–5) | writes live ✓; commit rides the full-loop live task |
-| Requested network policy holds | live ✓ (run 3 note) | enabled=true ran live; the deny variant unprobed |
+| Worker edits + commits in worktree | live ✓ (runs 3–5) | live ✓ (writes 2026-07-13; commit in full-loop task, b9625f1) |
+| Requested network policy holds | live ✓ (run 3 note) | live ✓ (network-deny 2026-07-13: curl BLOCKED; Browser-plugin escape a named residual) |
 | Sandbox/profile unavailable ⇒ refusal | `failIfUnavailable` live ✓ (run 4) | live ✓ (attempts 1–2: loud config/profile aborts, $0) |
 | Timeout kills process group | mock ✓ | mock ✓ |
 | Ambient config cannot weaken wall | live ✓ (run 5: canary hook silent, MCP excluded vs live counterfactual) — residual: account userEmail injection, documented | wall unweakened with user config loaded, live ✓; notify neutralizer operator-confirmed — residual: plugin tool-surface leaks (named) |
 | Usage telemetry parses | live ✓ (runs 4–5) | live ✓ (turn.completed usage, primary parser branch) |
 | Full mocked exec-loop | mock ✓ (46 tests) | mock ✓ (registry + wrapper) |
-| One live task through the real CLI | live ✓ (e2e run 1) | live-pending |
+| One live task through the real CLI | live ✓ (e2e run 1) | live ✓ (full-loop task 2026-07-13) |

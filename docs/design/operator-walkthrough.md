@@ -27,8 +27,9 @@ practice is **T6 — settled only by measuring you against the rubber-stamp card
 
 Between your approval and any work starting, the harness **checks the plan is even buildable**
 — no circular dependencies, and the hand-off points between tasks nailed down before anything
-is split up. The "no circles" part is **Decided** (a mathematical precondition — an
-unrestricted plan cannot be soundly checked at all, M7). But *how strict* the determinacy check
+is split up. The "no circles" part is **Decided** — a task graph with cycles can't be ordered
+into a runnable sequence at all (plain graph theory; the harness just needs a valid order). But
+*how strict* the determinacy check
 is, and whether a machine gate beats you just eyeballing the plan, is **T3 — TBD**: some TBD
 gate will decide the seams are "determinate enough," and if T3 says the machine version isn't
 worth it, that gate becomes your eyeballs.
@@ -44,7 +45,9 @@ parallel readers genuinely help.
 **The tests that judge the code are written by someone who never sees the code**, from your
 ratified spec, and the coding worker literally cannot read or reach them — enforced by the
 operating system, not by asking nicely (D2). Every piece of evidence says an agent graded on
-its own tests games them, so the graders are walled off. **Decided, non-negotiable.**
+its own tests games them, so the graders are walled off. That **wall is Decided**; authoring the
+tests from the spec alone — rather than merely hiding them — is the design's remedy, still
+**Provisional** until its extra payoff over test-secrecy is measured (D2).
 
 **Nothing marks itself "done."** A task completes only when a real verifier — the tests
 actually running, the type-checker actually passing — says so, and the harness is built so it
@@ -60,8 +63,9 @@ unbuilt and unproven. Until it exists, a clean result is believed but flagged as
 
 **It will hit the usage wall, and that's fine.** On a subscription plan an unattended run
 eventually runs out of window. The harness doesn't crash or overspend — it **parks**: writes
-down exactly where it was and wakes when the window resets (D12). **Decided** and cheap. Two
-related things are *not* settled: how aggressively it reuses cached context depends on **T1** —
+down exactly where it was so it can resume. Halting at the wall and parking is **Decided**;
+having it *wake itself* when the window resets is **Provisional** (D12) — unbuilt, and not yet
+shown to earn its build effort. Two related things are *not* settled: how aggressively it reuses cached context depends on **T1** —
 the one measurement of whether cached reads count against your limit, which only you can run —
 and whether it needs anything *smarter* than park-and-wait (predictive throttling) is **T5 —
 TBD**, deliberately out of v1 because our own past attempt at that cleverness once deadlocked

@@ -1,13 +1,19 @@
 # Terminology
 
+> **v1-era glossary, preserved as history.** These terms are the vocabulary of the **v1 (attic)
+> design** and the internal evidence that still references it. The reincarnated project's design
+> authority is [design/evidence-based-harness.md](design/evidence-based-harness.md); the attic is
+> *never a source of current defaults* ([attic/README.md](attic/README.md)).
+
 Every acronym, coined term, and piece of jargon used across this repo's design, plan, research
 corpus, skills, and tooling — defined as *this project* uses it, with a pointer to where it is
 canonically defined.
 
 Companion pages: [reference.md](attic/reference.md) is the API/shape reference (what to *call*); this
-page is the vocabulary (what things *mean*). The design doc
-([design/token-time-optimized-harness.md](attic/token-time-optimized-harness.md)) is the
-authority for anything here that conflicts.
+page is the vocabulary (what things *mean*). For a conflict over what a **v1** term means, the
+v1 design doc ([attic/token-time-optimized-harness.md](attic/token-time-optimized-harness.md))
+is the authority for that vocabulary; the current design's authority is
+[evidence-based-harness.md](design/evidence-based-harness.md).
 
 **Reading the source column:** `§N` refers to a numbered section of the design doc.
 `plan` = [plan/implementation-plan.md](attic/plan/implementation-plan.md).

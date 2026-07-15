@@ -72,9 +72,10 @@ pointing at the same six levers:
    distance, enforced by the operating system rather than by politeness.
 4. **Externally granted completion.** The agent never declares itself done. An independent
    mechanism does, against the whole build.
-5. **Token efficiency.** Subscription windows close mid-run, and context reuse is roughly
-   9x cheaper than fresh tokens (we measured it). A long-horizon harness must halt, park,
-   and resume. Never overspend, never lose the run.
+5. **Token efficiency.** Subscription windows close mid-run, and context reuse is several times
+   cheaper than fresh tokens — a cached read weighs well under a fifth of a fresh one (we
+   measured it). A long-horizon harness must halt, park, and resume. Never overspend, never lose
+   the run.
 6. **Subtracting machinery.** Every mechanism measured. Anything that does not pay for
    itself gets dialed down or deleted, on evidence.
 
@@ -87,9 +88,11 @@ outrigger is those six levers, built as composable tools.
 **The interrogation.** Work enters through a pedantic, one-question-at-a-time spec
 interview that converts a goal into a machine-checkable plan: decisions recorded with
 rationale, constraints pinned, and a determinacy bar. Could a stranger write acceptance
-tests from this spec alone, without guessing? Ratification is explicit and content-bound (a
-stamp over the plan's hash, so there is no silence-as-approval and no drift after sign-off),
-and a structural preflight refuses malformed or unratified plans before any tokens burn.
+tests from this spec alone, without guessing? Ratification is explicit and recorded — a human
+stamp of who approved and when, on the exact plan they read; the interview voids it the moment
+the plan changes, so there is no silence-as-approval. The execution loop then pins the plan by
+content hash at launch, so it cannot drift mid-run. A structural preflight refuses malformed or
+unratified plans before any tokens burn.
 
 **The blind examiner.** A separate fresh worker authors the acceptance suite from the
 ratified spec. It never sees the implementation. The suite is validated (it must fail on
@@ -131,7 +134,7 @@ Claims like these deserve evidence, and the repo carries its own:
   refused the run, twice, exactly as specified. Exit 1 was the system working.
 - **Vendor-undocumented economics, settled for $17.** Whether cached tokens count against
   subscription rate-limit windows was officially unanswered. A pre-registered two-arm
-  experiment bounded it (cache reads weigh less than 0.1125 of fresh input) and promoted a
+  experiment bounded it (cache reads weigh well under a fifth of fresh input) and promoted a
   design decision on the result.
 - **Two vendors, one contract, fail-closed.** The same tool-neutral launcher contract runs
   Claude Code and Codex workers, and each earned trust through its own live smoke,
@@ -139,8 +142,10 @@ Claims like these deserve evidence, and the repo carries its own:
   attempts cost $0: they aborted loudly at config parse rather than ever running unwalled.
   That is the contract's core clause: never launch unwalled and hope.
 
-Everything above is reproducible from committed artifacts: raw turn logs, gate reports,
-sealed-suite manifests, and the measurement ledger.
+Everything above is backed by committed artifacts — raw turn logs, gate reports, sealed-suite
+manifests, and the measurement ledger. The economics result re-runs from those artifacts; the
+wall-catch demonstrations are attested by the committed records (some of their disposable
+scratch repos were not kept).
 
 ## Architecture, in one breath
 
@@ -161,8 +166,10 @@ A new vendor is one launcher file plus one smoke run, never surgery on the loop.
 
 ## Quickstart
 
-Requirements: macOS or Linux, git, Python 3.9+ (standard library only, nothing to install),
-and at least one worker CLI authenticated on your machine (`claude` and/or `codex`).
+Requirements: macOS or Linux (the OS-level isolation wall is currently verified on macOS; the
+Linux/bubblewrap path is supported but wants its own smoke), git, Python 3.9+ (standard library
+only, nothing to install), and at least one worker CLI authenticated on your machine (`claude`
+and/or `codex`).
 
 ```sh
 # 1. Clone

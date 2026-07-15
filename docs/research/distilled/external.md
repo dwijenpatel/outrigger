@@ -26,8 +26,11 @@ mechanism, never the effect size.*
 
 ## 1. Mathematics `M` — permanent, no recheck
 
-The only claims here that never expire. They are constraints on what any harness can do, not
-observations about a particular one.
+The **theorems and formal properties** here never expire — they are constraints on what any
+harness can do, not observations about a particular one. *Caveat: a few rows quote an empirical
+magnitude beside the theorem (M3's ~84% suite reduction, M4's ~27% uncoupled faults) and the
+cache-weight note carries a measured `w` value; those numbers are measurements with their own
+decay (their-tree / vendor-policy), not permanent — only the formal cores are.*
 
 | | Result | Source |
 |---|---|---|
@@ -37,15 +40,17 @@ observations about a particular one.
 | **M4** | **Mutation score is an adequacy criterion, and a bounded proxy.** ~**27%** of Defects4J real faults are coupled to *no* standard mutant, and the mutation-score↔fault-detection correlation is weak once suite size is controlled. A high mutation score does not entail fault detection. | DeMillo 1978; Jia & Harman, IEEE TSE 2011; Just, FSE 2014; Papadakis, ICSE 2018 |
 | **M5** | **Reward hacking, formalized.** The conditions under which optimizing a proxy reward is provably safe are *restrictive*; for non-trivial proxy/true-reward pairs you generally cannot optimize the proxy without risking the true objective. | Skalse et al., NeurIPS 2022 |
 | **M6** | **The Data Processing Inequality floor on inter-agent communication.** For X→Y→Z, I(X;Z) ≤ I(X;Y): when a worker's structured return is the orchestrator's only channel, **message-passing is lossy compression versus one model's latent reasoning** — decomposition cannot recover information the single agent's reasoning already had. The theorem is unconditional; the design corollary ("single-agent ≥ multi-agent") holds *at equal compute and absent single-agent context degradation* — that applicability condition is the empirical §3.2 claim, not the math. | Cover & Thomas (DPI), as grounded in Tran & Kiela, arXiv 2604.02460 |
-| **M7** | **General HTN plan-existence is undecidable**; decidability holds only for restricted forms — totally-ordered or **acyclic** task networks. An unrestricted hierarchical decomposition admits no sound structural preflight at all; an acyclic-DAG restriction is what makes one possible. | Erol, Hendler & Nau 1994 |
+| **M7** | **General HTN plan-existence is undecidable**; decidability holds only for restricted forms — totally-ordered or **acyclic** task networks. *(Motivating analogy, not a load-bearing warrant here: HTN undecidability is about recursive task **decomposition**; the harness's preflight is cycle-detection on a finite task-dependency graph — trivially decidable by DFS, and requiring an acyclic graph is elementary graph theory. Acyclicity is **a** sufficient restriction, not **the** precondition.)* | Erol, Hendler & Nau 1994 |
 
 **Why these are load-bearing here.** M1+M2 price the vault's **leakage budget**: a held-out
 corpus re-run against successive fix attempts is an adaptively-queried holdout, and the number of
 safe reuses is bounded and *known*. M3 licenses vault replay on unchanged surface. M4 is the
 standing caveat on calibration canaries — they measure the planted-defect distribution, not the
 real one. M5 says the correctness floor cannot be a proxy the loop is allowed to optimize. M6 is
-the theoretical floor under the equal-budget refutation of multi-agent fan-out (§3.2). M7 is why
-any plan preflight must require an acyclic task graph before it can promise anything.
+the theoretical floor under the equal-budget refutation of multi-agent fan-out (§3.2). M7 is
+motivation, not warrant, for requiring an acyclic task graph: the requirement itself rests on
+plain finite-graph theory (a cyclic dependency graph has no topological order), not on HTN
+undecidability.
 
 *(Our own cache-weight algebra — `w = (15·ratio − 5)/10` — is also `M`, given its linear model.
 It lives in [`tools/budget-governor/cache-read-quota-weight-experiment.md`](../../../tools/budget-governor/cache-read-quota-weight-experiment.md).)*
@@ -239,7 +244,7 @@ weekly windows. The only official *indirect* signal is `/usage` attribution item
 billing rate (~10%) is a statement about *API dollars*, not about *window occupancy*, and
 conflating the two is the single easiest mistake to make here. **Internally answered
 2026-07-12/13** (*internal* §4, two pre-registered runs, committed artifacts): window weight
-**w < 0.1125**, point estimate 0 — the two accountings agree in order of magnitude. The
+**w < 0.1125** (pre-registered write weight v≥1; consistent with 0; v=0 loosens to 0.1775) — the two accountings agree in order of magnitude. The
 *official* question stays open; decay `vendor-policy`.
 
 ## 5. Directly verified `A3`

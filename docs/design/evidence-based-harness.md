@@ -18,13 +18,14 @@ standalone 8-task study to **shadow mode**: comparisons embedded in real full-ti
 (harness arm = the real task; shadow null + arbiter ≈ $3–4 marginal each), accumulating from
 the operator's actual task distribution.
 **Sixth amendment, 2026-07-13 (T1 run 2 — magnitude bounded, T1 settled):** cache-read
-window weight measured **w < 0.1125** (point estimate 0; half and full weight excluded;
+window weight measured **w < 0.1125** (under the pre-registered cache-write weight v≥1;
+consistent with 0; v=0 loosens the bound to 0.1775; half and full weight excluded;
 [artifact](../research/internal/cache-weight-experiment-2026-07-13/RESULTS.md)). D12's
 append-only context discipline takes its named promotion trigger: Provisional → **Decided**.
 Window capacity ≈ 36–48M weighted tok/5h. Decay `vendor-policy`.
 **Seventh amendment, 2026-07-14 (failure-attribution pass — error-compounding named):** an
 88-agent Opus 4.8 deep-research pass on the root causes and effect sizes of long-horizon
-failure ([failure-modes](../research/external/failure-modes/README.md); 20 primary sources
+failure ([failure-modes](../research/external/failure-modes/README.md); 20 primary-source claims
 through three adversarial lenses, 0 killed / 5 number corrections) lands **+D16** — *bound the
 horizon into short, fresh-context, gated links*, the countermeasure to **error-compounding**,
 the largest and best-replicated long-horizon failure and not previously a named decision. Two
@@ -412,8 +413,10 @@ carries the vendor-build decay class.
   discount directly (*internal* §4, runs
   [1](../research/internal/cache-weight-experiment-2026-07-12/RESULTS.md) ·
   [2](../research/internal/cache-weight-experiment-2026-07-13/RESULTS.md)) — a cache read
-  weighs **< 0.1125** of a fresh input token against the 5-hour window (point estimate 0), so
-  prefix-stable context is ≥ ~9× cheaper than context that busts the cache. The ~10% billing
+  weighs **< 0.1125** of a fresh input token against the 5-hour window under the pre-registered
+  cache-write weight (v≥1; v=0 loosens the bound to < 0.1775), so prefix-stable context is
+  **several-fold cheaper (≈6–9×)** than context that busts the cache — consistent with cache
+  reads being free, but a censored meter cannot separate that from a small positive weight. The ~10% billing
   rate (§4, official) and the measured window weight now agree in order of magnitude. Decay
   `vendor-policy`: re-check on any announced plan/limits change.
 - **The wall is survivable by construction**: credits are strictly opt-in, so an unattended run
@@ -431,7 +434,8 @@ carries the vendor-build decay class.
   (§4; the vendor declined to answer, §2.1), but is now **internally measured**: run 1
   (2026-07-12) excluded full weight; run 2 (2026-07-13, 9.3× larger,
   [artifact](../research/internal/cache-weight-experiment-2026-07-13/RESULTS.md)) bounded it —
-  **w < 0.1125, point estimate 0**; half and full weight excluded outright; window capacity
+  **w < 0.1125** (pre-registered write weight v≥1; v=0 loosens to < 0.1775; consistent with 0,
+  not separately identified); half and full weight excluded outright; window capacity
   ≈ 36–48M weighted tok/5h. The community-telemetry "near-full weight" claim is contradicted
   at two run sizes on this build/plan. The official answer's absence is why the decay class is
   `vendor-policy`: any announced plan/limits change reopens the measurement, not the decision
@@ -486,7 +490,7 @@ D14's output stream is also **R6's internal-evidence feed**: the ledger, the exp
 write-backs, and the firing defect records are where post-creation improvements get their
 warrants.
 
-### D15. Composition model: standalone artifacts, file contracts, late binding — **Decided** (R5 + evidence-supported mechanisms), **TBD** (contract-versioning discipline)
+### D15. Composition model: standalone artifacts, file contracts, late binding — **Decided** (R5 + evidence-supported mechanisms; contract-versioning settled minimal 2026-07-12)
 
 R5 is operator doctrine and needs no warrant — but its mechanisms are independently
 evidence-supported, and v1 is the against-interest exhibit for the alternative.
@@ -522,9 +526,11 @@ evidence-supported, and v1 is the against-interest exhibit for the alternative.
   destroyed the better implementation because two contexts coupled through shared machinery
   state. None of these failure shapes exists between artifacts that meet only through files.
 
-**The TBD:** the contract-versioning discipline — how independently-evolving artifacts keep
-their file contracts compatible (schema versioning, tolerant readers, golden files) — is
-deliberately undecided; settle it at the first real two-artifact integration (**T11**).
+**Contract-versioning — settled minimal (2026-07-12, T11):** how independently-evolving
+artifacts keep their file contracts compatible (schema versioning, tolerant readers, golden
+files) is settled to a minimal policy ([CONTRACTS.md](../../tools/CONTRACTS.md)) — it grows
+only if a real drift failure escapes. The first live plan-preflight ↔ exec-loop integration is
+**T11**'s ongoing subject.
 
 ---
 
@@ -536,7 +542,7 @@ task builds on it**. A defect that escapes one link is caught at that link or it
 link downstream; the architecture's job is to make "caught at that link" the default.
 
 **Evidence (2026-07-14 failure-attribution pass,
-[failure-modes](../research/external/failure-modes/README.md) — 20 primary sources, three
+[failure-modes](../research/external/failure-modes/README.md) — 20 primary-source claims, three
 adversarial lenses, 0 killed).** Error-compounding is the **largest, best-replicated, most
 on-regime** failure of long-horizon coding, and it is two mechanisms, each countered here:
 
@@ -613,7 +619,7 @@ size, non-inferiority margin, decision rule — D14); a row here is a question, 
 
 | # | Question | What settles it |
 |---|---|---|
-| T1 | Do cache reads meaningfully discount *subscription-window* occupancy? | **Settled 2026-07-13: yes, by ≥ ~9×** ([run 1](../research/internal/cache-weight-experiment-2026-07-12/RESULTS.md) · [run 2](../research/internal/cache-weight-experiment-2026-07-13/RESULTS.md), both operator-run as pre-registered). Run 1 excluded full weight; run 2 (N=28, F=2500, 9.3× larger) bounded the magnitude: **w < 0.1125** of fresh-input weight (v=1; v=1.25 tightens to 0.096), point estimate pins to **0**; w=0.5 and w=1 excluded outright. Window capacity ≈ **36.2–48.3M weighted tok/5h** (nests inside run 1's 21–62M; linear model retro-predicts run 1 across the scale-up). D12's append-only discipline promoted on this trigger. Decay `vendor-policy` — re-run on any announced plan/limits change. Optional (no decision needs it): distinguish w=0 from w≈0.1 via a finer usage surface or an arm-A-only run at ≥3× reads |
+| T1 | Do cache reads meaningfully discount *subscription-window* occupancy? | **Settled 2026-07-13: yes, by several-fold (≈6–9×)** ([run 1](../research/internal/cache-weight-experiment-2026-07-12/RESULTS.md) · [run 2](../research/internal/cache-weight-experiment-2026-07-13/RESULTS.md), both operator-run as pre-registered). Run 1 excluded full weight; run 2 (N=28, F=2500, 9.3× larger) bounded the magnitude: **w < 0.1125** of fresh-input weight under the pre-registered write weight (v=1; v=1.25 tightens to 0.096; **v=0 loosens to 0.1775**), consistent with **0** but not separately identified (censored meter); w=0.5 and w=1 excluded outright. Window capacity ≈ **36.2–48.3M weighted tok/5h** (nests inside run 1's 21–62M; linear model retro-predicts run 1 across the scale-up). D12's append-only discipline promoted on this trigger. Decay `vendor-policy` — re-run on any announced plan/limits change. Optional (no decision needs it): distinguish w=0 from w≈0.1 via a finer usage surface or an arm-A-only run at ≥3× reads |
 | T2 | Does blind validation + a held-out vault pay its overhead vs test-secrecy alone, per risk tier? | Paired-arm A/B on a realistic task set (internal evidence is n=2 *existence* — P3v2-5 + smoke run 2, *internal* §5 — never a rate). **Pilot 1 registered 2026-07-12** ([protocol](../research/internal/t2-pilot-1/protocol.md), ledger-anchored): full harness vs the R2 null first, arbiter-suite oracle; **amended same-day, pre-data, to shadow mode** — comparisons embed in real full-tier work and accumulate from the operator's actual distribution; the secrecy-vs-gating decomposition is pilot 2, gated on pilot 1's outcome |
 | T3 | Does a machine-checkable determinacy bar beat human plan-eyeballing? | Gate-on/gate-off arms measuring downstream integration failures (0/10 products have one, §6) |
 | T4 | What licenses trust in a quiet verifier? | Calibration-canary catch rates, minding M4's coupling caveat |

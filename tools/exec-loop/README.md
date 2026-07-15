@@ -111,8 +111,8 @@ No pipelining (named upgrade; inherits staleness-check, depth-1, waste-metric re
 No continue-past-blocker (v1.1, gated on measured adjudication data). No park-at-wall (the
 separate D12 artifact). No notifications (stage 3). No boundary probe (its own artifact). No
 mid-run re-planning (blockers, always). Codex launcher: landed 2026-07-13
-(`launchers/codex_p.py`), smoke-pending — no real plan uses it until its operator-run smoke
-passes (SMOKE.md).
+(`launchers/codex_p.py`), **smoke passed 2026-07-13** — certified end-to-end (single-worker
+walls + full commit cycle), with named residuals; see SMOKE.md.
 
 ## Composition examples
 

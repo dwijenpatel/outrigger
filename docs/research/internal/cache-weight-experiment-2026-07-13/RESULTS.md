@@ -63,8 +63,13 @@ w = (ΔA/ΔB · fresh_B − fresh_A) / reads_A
 - **Point estimate** (displayed ΔA=0): the solve goes negative (−0.065), i.e. **pins to
   w = 0** — even free cache reads predict Arm A moved ~0.4 pt, which displayed-0 absorbs.
 - **Write-weight sensitivity:** under v=1.25 (the API billing rate for writes) the bound
-  *tightens* to **w < 0.096** — v=1 is the conservative (loosest) choice, so 0.1125 stands
-  as the headline.
+  *tightens* to **w < 0.096**. **Correction (2026-07-14):** v=1 is the loosest choice only
+  within v ∈ [1, 1.25]; the pre-registration fixed v=1 but did not measure it, and over the full
+  plausible range v ∈ [0, 1.25] the loosest is **v=0** (cache writes free against the window),
+  giving **w < 0.1775**. So the headline 0.1125 assumes **v ≥ 1**; the assumption-light bound is
+  **w < 0.1775 (≈5.6×)**. And "point estimate 0" is a **censored-meter floor** (`ΔA ∈ [0,1)`
+  displayed as 0): the data are consistent with any w in [0, bound), so read it as *consistent
+  with 0*, not a separately identified zero. Neither shifts a design decision.
 
 Same result as an exclusion table — what Arm A's delta *had to be* if w were:
 
@@ -87,12 +92,13 @@ pts (observed: 0→0 ✓).
 ## What this run establishes (each claim at its actual strength)
 
 1. **Magnitude bounded: a cache-read token weighs < 0.1125 of a fresh input token against
-   the 5-hour window** — at least a ~9× discount; the point estimate is 0 (free). Half
+   the 5-hour window** (under the pre-registered write weight v≥1; v=0 → < 0.1775) — a
+   several-fold discount (≈6–9×), consistent with 0 (free) but not separately identified. Half
    weight and full weight are excluded outright, run 1's direction finding confirmed at 9.3×
    scale. (A3 — the artifact carries it; `vendor-policy` decay: re-run on any announced
    plan/limits change.)
 2. **T1 is settled.** The design question — "do cache reads meaningfully discount
-   subscription-window occupancy?" — is answered *yes, by ≥ ~9×*. The remaining unknown
+   subscription-window occupancy?" — is answered *yes, by several-fold (≈6–9×; see the write-weight correction above)*. The remaining unknown
    (where in [0, 0.11) w sits) changes no current design decision. Distinguishing w=0 from
    w≈0.1 would need a finer usage surface or an arm-A-only run at ≥3× the reads — named,
    optional, not a settling step.

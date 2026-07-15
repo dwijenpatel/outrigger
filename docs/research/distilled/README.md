@@ -123,8 +123,10 @@ A claim reaches Tier A if it satisfies **at least one**:
 
 And **mathematics** (`M`) sits outside the scheme: a theorem is not evidence about the world, it
 is a constraint on it. The Ladder's error bound, Thresholdout's adaptive-reuse budget, safe-RTS's
-safety property, the cache-weight algebra — these never expire and never need re-checking. They
-are the only claims here with no decay class.
+safety property, the cache-weight algebra — the *theorems* never expire and never need
+re-checking. (Empirical magnitudes cited alongside them — safe-RTS's ~84% reduction, mutation's
+~27%, the measured cache-weight *value* — are measurements with their own decay, not permanent.)
+The formal cores are the only claims here with no decay class.
 
 Everything else is:
 

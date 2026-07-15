@@ -26,8 +26,8 @@ evidence; the wake-on-reset gap is field-wide.
 
 ## Open questions
 
-- **Wake-on-reset, built.** The clearest demand/supply gap in the ecosystem; parkfile + fresh
-  `claude -p` re-entry is designed but unproven.
+- **Wake-on-reset — designed, not yet built.** The clearest demand/supply gap in the ecosystem;
+  parkfile + fresh `claude -p` re-entry is designed but unproven.
 - **Liveness beyond deadlines.** Heartbeats for slow-degrading workers (explicitly open after
   P3v2-13).
 - **Multi-day supervision economics.** What does a week of unattended operation cost in

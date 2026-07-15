@@ -350,6 +350,32 @@ and [landscape-and-novelty.md §4](external/landscape/landscape-and-novelty.md))
   in-repo evidence dirs. These are working-tree facts, not external research — recorded here
   because the §4 critique and design amendments lean on them.
 
+- **Corrected 2026-07-14 (independent repo critique):** several surfaces overstated their
+  warrant; caught and fixed:
+  - **Decomposition status.** The "bound the horizon" decision claimed the short-fresh-gated
+    *shape* was evidence-forced. Corrected: the per-link gate is Decided; that short links beat
+    one long thinking session is an **untested bet** — the long-horizon value experiment holds
+    decomposition fixed and tests only the gating half. The self-conditioning source (2509.09677)
+    also finds *thinking* mitigates the effect and enables longer single-turn runs — omitted
+    before, now on the §3.1 row.
+  - **Cache-weight bound.** `w < 0.1125` assumes the pre-registered cache-write weight **v ≥ 1**;
+    at v=0 the same censored-meter logic gives **w < 0.1775 (≈5.6×)**. "Point estimate 0" is a
+    censored-meter floor (`ΔA ∈ [0,1)`), consistent with any w in [0, bound), not a separately
+    identified zero. The directional finding (reads far cheaper) is unchanged.
+  - **M7 (HTN undecidability)** was cited as *the* precondition for plan preflight; it is a
+    motivating analogy only — the preflight is finite-graph cycle detection (trivially decidable),
+    and the acyclicity requirement rests on plain graph theory. (The 2026-07-12 design-doc
+    narrowing had not reached `external.md`; now propagated.)
+  - **"Permanent math" section.** M3's ~84% and M4's ~27% are empirical measurements with decay,
+    not permanent theorems; flagged in place, in `external.md` and the grading method.
+  - **"20 primary sources"** (failure-attribution pass) overstated the enumerated **15** — it is
+    20 primary-source *claims* over 15 primaries fetched; corrected in the design doc.
+  - **Stale status labels** corrected: README's "stamp over the plan's hash" (the stamp is
+    `{by, ts}`; the content hash lives in the exec-loop at launch); the operator-walkthrough's
+    "Decided, non-negotiable" spec-only authorship (Provisional) and "Decided and cheap"
+    wake-on-reset ("cheap" struck); `terminology.md` naming the attic as the current authority;
+    the `codex_p` smoke's "PENDING" header (certified end-to-end 2026-07-13).
+
 **Hype-tier, cite for framing only:** Ralph-loop cost anecdotes ($297 MVP); the "100k sessions →
 dumb zone" statistic; Palisade's o3-86% chess figure; vendor SWE-bench scaffold-jump percentages;
 the TrueFoundry 10× caching case study (single unaudited vendor anecdote, gateway semantic caching

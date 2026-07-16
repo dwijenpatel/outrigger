@@ -88,6 +88,26 @@ the NORMAL case, not a failure. All three arms halt cleanly and resume exactly:
   is cleared and re-authored.
 - **Grading and setup are quota-free** — walls cannot affect them.
 
+## Following along (live, from a second terminal)
+
+The run scripts print progress to the terminal they run in. The durable live signal for
+every run is its **ledger** — one JSON line per event as it happens:
+
+```sh
+cd docs/research/internal/longhorizon-value
+tail -f runs/arm-H/ledger.jsonl     # spawn / seal / gate verdict / merge / blocker
+tail -f runs/arm-N/ledger.jsonl     # one outcome record per task (committed, heads, usage)
+tail -f runs/slice2/ledger.jsonl    # one seal record (with anchor) per authored suite
+python3 ../../../../tools/run-ledger/ledger.py summarize runs/arm-H/ledger.jsonl  # rollup
+cat runs/arm-H/completed.txt                             # arm H: plans fully landed
+git -C ~/repos/eaitl-arm-N log --oneline | head          # N/F: commits arriving
+find ~/repos/eaitl-heldout-slice2 -name manifest.json | wc -l   # slice-2: sealed count /11
+```
+
+Worker-session transcripts (`…/bundles/*/transcript.txt`) are written when a session
+**ends** (the launcher records the final message, not a live stream) — mid-session, the
+ledger and the script's stdout are the only live signals.
+
 ## While an arm runs
 
 - Arm H artifacts: `<heldout-root>/_runs/<plan>/` (bundles, gate reports, blocker.json);

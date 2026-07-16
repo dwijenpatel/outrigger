@@ -1,0 +1,14 @@
+# Build order for the eaitl chain (topological; numeric task order).
+# One ratified single-task plan per line, relative to ../specs/.
+# Consumed by run-arm-H.sh, null_arm_runner.py, and author-slice2.sh.
+t2-ir-contract.plan.json
+t3-ingestion.plan.json
+t4-validations.plan.json
+t5-matcher.plan.json
+t6-python-compiler.plan.json
+t7-ts-compiler.plan.json
+t8-preview.plan.json
+t9-freeze.plan.json
+t10-policy.plan.json
+t11-pipeline.plan.json
+t12-cli.plan.json

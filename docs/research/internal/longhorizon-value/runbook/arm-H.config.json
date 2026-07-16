@@ -1,0 +1,9 @@
+{
+  "workers": {
+    "author": {"tool": "claude", "model": "claude-opus-4-8", "effort": "xhigh"},
+    "implementer_a1": {"tool": "claude", "model": "claude-sonnet-5", "effort": "xhigh"},
+    "implementer_a2": {"tool": "claude", "model": "claude-sonnet-5", "effort": "xhigh"},
+    "bare": {"tool": "claude", "model": "claude-opus-4-8", "effort": "xhigh"}
+  },
+  "max_attempts": 3
+}

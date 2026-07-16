@@ -282,10 +282,16 @@ operator turns per exchange vs 14/10 baselines, and every operator intervention 
 through the designed channels — 1 accepted ledger challenge (T4 nulls), 1 pre-ratification
 redirect (T7 TypeScript), 5 review questions that changed artifacts (T8/9/10: freeze
 iteration story + LLM-PII register; T11/12: the three above).
-Next: **held-out suite authorship** (blind, from the ratified specs alone, per task +
-end-to-end; second slice recommended per the oracle-circularity control), then the
-**arm runs** (operator-run, quota-gated; open pre-run decisions: oracle granularity,
-naive one-session floor arm).
+Next: the **arm runs** — start kit built and validated 2026-07-16 (see
+[runbook/RUNBOOK.md](runbook/RUNBOOK.md)): one operator-run command per arm. Arm H's blind
+suites are authored **in-loop** by the exec-loop (materialize → author → seal precede each
+implementer spawn), so no pre-authored suites block starting; the recommended **second
+independently-authored slice** (the oracle-circularity control, grading-only) is its own
+one-command script. The runbook registers the remaining operational rules (N/F prompt
+parity with the gated implementer, the no-stop-channel proceed rule, timeout parity,
+no mid-run peeking) and lists the open decisions, none of which block starting (second
+slice; oracle granularity — grading-time; optional naive floor; continuous-thinking arm
+default-off).
 
 ## Post-experiment follow-ups (deferred — do NOT touch during the chain)
 

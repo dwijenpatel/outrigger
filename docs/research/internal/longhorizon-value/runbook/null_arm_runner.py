@@ -12,15 +12,22 @@ REGARDLESS of the session's outcome (registered protocol: the ungated arms
 have no stop channel — a session that lands nothing is recorded, and the
 chain continues so downstream compounding can be measured).
 
-Infrastructure failures are different from arm outcomes: a launcher
-REFUSAL or spawn failure aborts the run (fix the environment, re-run —
-completed tasks are skipped via the ledger); a session that ran (even to
-timeout) is an arm outcome and never aborts.
+Infrastructure failures are different from arm outcomes (same classification
+the exec-loop uses for arm H):
+  - session completed (ok) — with or without a commit — is an ARM OUTCOME:
+    recorded, chain proceeds;
+  - a usage-window wall (quota exhausted; detected by the same vendor-string
+    heuristic the exec-loop uses) HALTS the run consuming nothing — re-run
+    after the reset and the task is redone;
+  - any other abnormal end (error exit, timeout, launcher refusal) HALTS as
+    suspected infrastructure: either re-run (the task is retried) or record
+    it as a genuine arm outcome with --accept-failure TASK_ID (no respawn).
 
 Usage:
   python3 null_arm_runner.py --arm N --model claude-sonnet-5  --repo ~/repos/eaitl-arm-N --yes
   python3 null_arm_runner.py --arm F --model claude-opus-4-8  --repo ~/repos/eaitl-arm-F --yes
-  ... --dry-run      # launcher --dry-run: print what WOULD spawn; no quota, no ledger
+  ... --dry-run                  # launcher --dry-run: nothing spawned, no quota, no ledger
+  ... --yes --accept-failure ID  # record task ID's prior abnormal end as its arm outcome
 """
 import argparse
 import datetime
@@ -41,6 +48,16 @@ TIMEOUT_S = 3600  # identical to the gated arm's implementer_timeout_s
 def chain_plans():
     with open(os.path.join(HERE, "chain-order.txt"), encoding="utf-8") as fh:
         return [ln.strip() for ln in fh if ln.strip() and not ln.startswith("#")]
+
+
+def looks_like_wall(text):
+    """Same vendor-string heuristic as tools/exec-loop/loop.py: does a failed
+    session look like the USAGE WINDOW closing rather than model behavior?
+    Fail-open — an unrecognized error is treated as suspected infrastructure
+    (halt for adjudication), never silently as an arm outcome."""
+    lowered = (text or "").lower()
+    return any(p in lowered for p in
+               ("usage limit", "rate limit", "limit reached", "out of extra usage"))
 
 
 def instructions(plan, task):
@@ -76,6 +93,9 @@ def ledger_append(ledger, subject, data):
 
 
 def completed_tasks(ledger):
+    """Tasks whose ARM OUTCOME is on the ledger (session completed, or an
+    operator-accepted failure). Wall/infra halts never count — those tasks
+    are redone on the next run."""
     done = set()
     if os.path.exists(ledger):
         with open(ledger, encoding="utf-8") as fh:
@@ -85,7 +105,7 @@ def completed_tasks(ledger):
                 except json.JSONDecodeError:
                     continue
                 data = rec.get("data", {})
-                if data.get("session_ran"):
+                if data.get("counts_as_outcome"):
                     done.add(data.get("task_id"))
     return done
 
@@ -99,6 +119,9 @@ def main(argv=None):
     ap.add_argument("--bundles", default=None)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--yes", action="store_true")
+    ap.add_argument("--accept-failure", metavar="TASK_ID", default=None,
+                    help="record this task's prior abnormal end as its arm "
+                         "outcome (no respawn) and continue the chain")
     args = ap.parse_args(argv)
 
     if not args.dry_run and not args.yes:
@@ -127,7 +150,20 @@ def main(argv=None):
             plan = json.load(fh)
         task = plan["tasks"][0]
         if task["id"] in done:
-            print(f"=== skip (session already ran): {task['id']}")
+            print(f"=== skip (outcome recorded): {task['id']}")
+            continue
+        if args.accept_failure == task["id"] and not args.dry_run:
+            head = git_head(repo)
+            ledger_append(ledger, f"longhorizon/arm-{args.arm}/{task['id']}/implementer", {
+                "arm": args.arm, "task_id": task["id"], "plan": plan_name,
+                "model": args.model, "accepted_failure": True,
+                "counts_as_outcome": True, "committed": False,
+                "head_before": head, "head_after": head,
+                "note": "operator adjudicated a prior abnormal session end as "
+                        "this task's arm outcome; no respawn",
+            })
+            print(f"=== {task['id']}: prior failure ACCEPTED as arm outcome "
+                  "(operator adjudication) — chain continues")
             continue
 
         ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
@@ -158,31 +194,43 @@ def main(argv=None):
         if os.path.exists(result_path):
             with open(result_path, encoding="utf-8") as fh:
                 result = json.load(fh)
+        ok = bool(result.get("ok"))
         refused = result.get("refused_reason")
-        session_ran = bool(result.get("ok")) or (
-            launch.returncode == 0 and not refused)
-        timed_out = (not result.get("ok", False)) and not refused and launch.returncode != 0
-
+        wall = looks_like_wall(result.get("error_summary"))
         head_after = git_head(repo)
+        committed = head_before != head_after
+        # An arm outcome = the session completed (committed or not). A wall
+        # or any other abnormal end is infrastructure — never an outcome.
+        counts_as_outcome = ok or committed
+
         record = {
             "arm": args.arm, "task_id": task["id"], "plan": plan_name,
             "model": args.model, "bundle": os.path.abspath(bundle),
-            "launcher_exit": launch.returncode,
-            "session_ran": session_ran or timed_out,
-            "refused_reason": refused,
+            "launcher_exit": launch.returncode, "session_ok": ok,
+            "counts_as_outcome": counts_as_outcome,
+            "window_wall": wall, "refused_reason": refused,
             "head_before": head_before, "head_after": head_after,
-            "committed": head_before != head_after,
+            "committed": committed,
             "usage": result.get("usage"),
         }
         ledger_append(ledger, f"longhorizon/arm-{args.arm}/{task['id']}/implementer", record)
 
-        if refused or (launch.returncode != 0 and not record["session_ran"]):
-            print(f"ABORT: launcher failure on {task['id']} "
-                  f"(refused: {refused}) — infrastructure, not an arm outcome. "
-                  "Fix and re-run; ran sessions are skipped.", file=sys.stderr)
-            return 1
-        status = "committed" if record["committed"] else "NO COMMIT (recorded; chain continues)"
-        print(f"    session done -> {status}")
+        if counts_as_outcome:
+            status = "committed" if committed else "NO COMMIT (recorded outcome; chain continues)"
+            print(f"    session done -> {status}")
+            continue
+        if wall:
+            print(f"\nHALT: usage window closed during {task['id']} — nothing "
+                  "consumed, no outcome recorded. Re-run after the reset; this "
+                  "task is redone.", file=sys.stderr)
+            return 3
+        print(f"\nHALT: abnormal session end on {task['id']} "
+              f"(exit {launch.returncode}, refused: {refused}) — suspected "
+              "infrastructure, not recorded as an arm outcome. Inspect "
+              f"{bundle}, then either re-run (task retries) or re-run with "
+              f"--accept-failure {task['id']} to record it as the arm's real "
+              "outcome and continue.", file=sys.stderr)
+        return 1
 
     if args.dry_run:
         print(f"ARM {args.arm} DRY-RUN COMPLETE — nothing spawned, no quota spent. "

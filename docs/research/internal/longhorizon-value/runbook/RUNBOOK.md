@@ -52,11 +52,33 @@ Skipping it is legitimate — it just restricts head-to-head claims to canaries 
   channel). Adjudicate via the two doors (amend spec → re-ratify → rerun, or edit suite →
   `seal --retire --adjudicated-by …` → rerun), append the `lesson_target` ledger record,
   re-run the script; completed plans are skipped via `runs/arm-H/completed.txt`.
-- **Timeout parity**: 3600 s per implementer session in every arm; a timeout in N/F is an
-  arm outcome (recorded, chain continues), matching H where a timed-out attempt burns one
-  of its 3 attempts.
+- **Timeout parity**: 3600 s per implementer session in every arm.
+- **Outcome vs infrastructure (all arms, same classification)**: a session that
+  *completes* is an arm outcome, committed or not. A session that ends abnormally is
+  infrastructure until adjudicated: a detected usage-window wall halts consuming nothing
+  (the task/attempt is redone after the reset); any other abnormal end halts for operator
+  adjudication — in N/F, `--accept-failure TASK_ID` records it as the arm's real outcome
+  and continues. Infrastructure halts are never graded as honest-stops.
 - **No mid-run peeking**: grading artifacts (suite replays, overlap runs) are produced
   only after an arm finishes; no arm ever receives feedback from them.
+
+## Quota walls mid-run (expected, not exceptional)
+
+A full arm is a working day of serial sessions, so hitting a 5-hour window cap mid-run is
+the NORMAL case, not a failure. All three arms halt cleanly and resume exactly:
+
+- **Arm H**: the exec-loop detects wall-shaped session failures (`window-wall` blocker,
+  vendor strings, fail-open) and halts **without consuming the attempt** — no gate verdict
+  is recorded, so re-running `run-arm-H.sh --yes` after the reset redoes that same attempt;
+  completed plans are skipped, sealed suites persist. A wall blocker needs no two-door
+  adjudication — just re-run. (Unrecognized errors fall back to normal attempt handling —
+  fail-open means a pattern miss costs a wasted attempt, never a stranded run.)
+- **Arms N/F**: the runner uses the same wall heuristic — wall ⇒ halt (exit 3), nothing
+  recorded, task redone on re-run. Weekly cap: identical, longer wait. Sessions are
+  serial, so at most one session's partial work is lost at any wall.
+- **author-slice2.sh**: fail-fast; sealed workspaces skip on re-run, an unsealed leftover
+  is cleared and re-authored.
+- **Grading and setup are quota-free** — walls cannot affect them.
 
 ## While an arm runs
 

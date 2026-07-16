@@ -45,10 +45,15 @@ grep -v '^#' "$HERE/chain-order.txt" | while read -r plan; do
     continue
   fi
   echo "=== slice2 author: $tid ($plan)"
-  if [ ! -d "$ws" ]; then
-    python3 "$HELDOUT_CLI" materialize --plan "$SPECS/$plan" --task "$tid" \
-      --repo "$BASE_REPO" --out "$OUT" || { echo "ABORT: materialize $tid" >&2; exit 1 }
+  if [ -d "$ws" ]; then
+    # Unsealed leftover from an interrupted run (e.g. a quota wall killed the
+    # author mid-session): clear it and re-author fresh — only the SEAL is
+    # durable state, and materialize refuses to overwrite.
+    echo "    clearing unsealed leftover workspace"
+    rm -rf "$ws"
   fi
+  python3 "$HELDOUT_CLI" materialize --plan "$SPECS/$plan" --task "$tid" \
+    --repo "$BASE_REPO" --out "$OUT" || { echo "ABORT: materialize $tid" >&2; exit 1 }
 
   ts="$(date -u +%Y-%m-%dT%H%M%SZ)"
   bundle="$RUNS/bundles/$ts-$(printf %03d $seq)-$tid-author-slice2"

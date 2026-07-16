@@ -75,7 +75,11 @@ the NORMAL case, not a failure. All three arms halt cleanly and resume exactly:
   fail-open means a pattern miss costs a wasted attempt, never a stranded run.)
 - **Arms N/F**: the runner uses the same wall heuristic — wall ⇒ halt (exit 3), nothing
   recorded, task redone on re-run. Weekly cap: identical, longer wait. Sessions are
-  serial, so at most one session's partial work is lost at any wall.
+  serial, so at most one session's partial work is lost at any wall — and a fresh session
+  never inherits it: before every spawn the runner discards any uncommitted leftovers
+  (`reset --hard` + `clean -fd`, recorded as `discarded_dirty_tree`), enforcing "work not
+  committed does not exist" mechanically. (Arm H gets this for free: each attempt runs in
+  a dedicated worktree that is torn down and redone.)
 - **author-slice2.sh**: fail-fast; sealed workspaces skip on re-run, an unsealed leftover
   is cleared and re-authored.
 - **Grading and setup are quota-free** — walls cannot affect them.

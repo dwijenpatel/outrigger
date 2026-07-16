@@ -166,6 +166,20 @@ def main(argv=None):
                   "(operator adjudication) — chain continues")
             continue
 
+        # Enforce the registered protocol line "work not committed does not
+        # exist" mechanically: every session starts from a clean committed
+        # tree. Partial work left by a wall-killed or non-committing prior
+        # session is discarded here (and recorded), never inherited.
+        dirty = subprocess.run(["git", "-C", repo, "status", "--porcelain"],
+                               capture_output=True, text=True).stdout.strip()
+        if dirty and not args.dry_run:
+            subprocess.run(["git", "-C", repo, "reset", "--hard", "HEAD"],
+                           check=True, capture_output=True)
+            subprocess.run(["git", "-C", repo, "clean", "-fd"],
+                           check=True, capture_output=True)
+            print(f"    (discarded uncommitted leftovers from a prior session: "
+                  f"{len(dirty.splitlines())} path(s))")
+
         ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
         bundle = os.path.join(bundles, f"{ts}-{seq:03d}-{task['id']}-arm{args.arm}")
         os.makedirs(bundle)
@@ -211,6 +225,7 @@ def main(argv=None):
             "window_wall": wall, "refused_reason": refused,
             "head_before": head_before, "head_after": head_after,
             "committed": committed,
+            "discarded_dirty_tree": bool(dirty),
             "usage": result.get("usage"),
         }
         ledger_append(ledger, f"longhorizon/arm-{args.arm}/{task['id']}/implementer", record)

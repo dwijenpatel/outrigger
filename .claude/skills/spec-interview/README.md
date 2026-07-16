@@ -79,6 +79,24 @@ mapping plan), which produced a recorded cross-task requirement for the matcher'
 Operator's verdict, verbatim: "MUCH easier and less cognitively demanding than the previous
 interview." Escapes and blind-author-failure counts pend the task's execution.
 
+**Live runs 5–10 (2026-07-16, the remaining eight eaitl cascade specs — the compressed
+protocol's full trial):** eight specs across six exchanges (validations, Python compiler,
+TypeScript compiler, matcher singly; preview+freeze+policy and pipeline+CLI as consolidated
+multi-plan exchanges). Every exchange: **0 interview questions** (all seven coverage items
+asked-or-sourced) and **2 operator turns** (vs baselines 14/10). The metric that mattered:
+the operator's engagement channels were exercised, not silent — run 5 produced the first
+**accepted ledger challenge** (the null-semantics ruling; artifact changed
+pre-ratification), run 7 a full **pre-ratification redirect** (JavaScript → TypeScript,
+caught at the approval surface — the wrongly-aimed plan was superseded before any
+implementation existed), and the two consolidated exchanges drew **five review questions,
+every one an artifact change**: two real omission catches (the freeze's
+fixing-an-approved-plan-later story; an LLM-PII follow-up that was named but recorded
+nowhere) and one **rewrite of a weak recorded rationale** (no-job_id: "purity forbids" →
+ids-arrive-with-persistence + equal-inputs-equal-record). Verdict so far: turns collapsed
+7×, and the saved attention visibly moved to the approval surface — challenges, redirects,
+and omission catches replaced clarification volleys. Escapes and blind-author-failure
+counts still pend chain execution.
+
 ## Versioning
 
 Contract **v1**, shared with plan-preflight. SKILL.md's example and preflight's schema table

@@ -41,6 +41,28 @@ authoring — H authors its own gating suites regardless (that step is part of t
 under test, and part of H's ~$80). One suite cannot do both jobs: gating H on a suite is
 exactly what destroys its independence as the head-to-head oracle.
 
+## Cross-repo read walls (walls, not politeness)
+
+The sandbox confines writes and denies only *listed* reads — everything else on disk is
+readable, so a live worker could in principle read a sibling arm's finished code, the
+sealed slice-2 grading suites, or outrigger (whose chain design names the canary
+locations). Behavior makes this ≈0 (workers have no pointer to those paths); the
+experiment's standard is walls anyway:
+
+- **Arms N/F**: the runner spawns every worker with OS deny-read walls over the slice-2
+  root, arm H's held-out root, outrigger, and the sibling arm repos (dry-run shows the
+  generated rules; the launcher refuses to spawn if it cannot express them).
+- **Arm H (do before starting it)**: the loop's own spawns wall only their task's hidden
+  suite. Before `run-arm-H.sh`, commit an identical `.claude/settings.json` carrying the
+  same deny rules to ALL THREE arm repos (identical across arms = fair; pre-existing, so
+  no worker diff touches it and no protected-path trip), and **probe it live**: one
+  throwaway session in an arm repo asked to read a denied path must be refused — the
+  mechanism is vendor-build behavior, never trusted from documentation.
+- **Slice-2 authors** ran without these walls (they predate them): acceptable — during
+  their run the arm repos contained only the shared base (nothing to leak, provable by
+  timestamps), and their one designed outrigger read is the authoring role contract.
+  Residual named: nothing pointed them at the chain design, but nothing OS-denied it.
+
 ## Registered operational rules (protocol details fixed before any run)
 
 - **Arm N/F prompt parity**: the ungated sessions receive the exec-loop implementer's

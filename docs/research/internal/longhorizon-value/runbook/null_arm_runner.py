@@ -45,6 +45,25 @@ LEDGER_CLI = os.path.join(OUTRIGGER, "tools", "run-ledger", "ledger.py")
 TIMEOUT_S = 3600  # identical to the gated arm's implementer_timeout_s
 
 
+def read_walls(own_repo):
+    """OS-level deny-read walls (walls, not politeness): everything an ungated
+    implementer could read to contaminate the experiment — the sealed grading
+    suites (slice-2 + arm H's), the sibling arms' repos (answer copying), and
+    outrigger itself (the chain design names the canary locations). The
+    launcher translates these into enforced settings or refuses to spawn."""
+    home = os.path.expanduser("~")
+    walls = [
+        os.path.join(home, "repos", "eaitl-heldout-slice2"),
+        os.path.join(home, "repos", "eaitl-arm-H-heldout"),
+        OUTRIGGER,
+    ]
+    for arm_repo in ("eaitl-arm-H", "eaitl-arm-N", "eaitl-arm-F"):
+        path = os.path.join(home, "repos", arm_repo)
+        if os.path.realpath(path) != os.path.realpath(own_repo):
+            walls.append(path)
+    return walls
+
+
 def chain_plans():
     with open(os.path.join(HERE, "chain-order.txt"), encoding="utf-8") as fh:
         return [ln.strip() for ln in fh if ln.strip() and not ln.startswith("#")]
@@ -191,7 +210,8 @@ def main(argv=None):
                 "role": "implementer",
                 "attempt": 1,
                 "worker": {"tool": "claude", "model": args.model, "effort": "xhigh"},
-                "isolation": {"deny_read": [], "sandbox": True, "network": True},
+                "isolation": {"deny_read": read_walls(repo), "sandbox": True,
+                              "network": True},
                 "cwd": repo,
                 "timeout_s": TIMEOUT_S,
             }, fh, indent=2)

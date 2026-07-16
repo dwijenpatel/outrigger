@@ -34,9 +34,13 @@ if [ "${1:-}" != "--yes" ]; then
 fi
 
 mkdir -p "$RUNS"
+# Iterate over an ARRAY, never a stdin pipe: a `... | while read` loop shares
+# its stdin with every command in the body, and a spawned claude session
+# DRAINS it — the 2026-07-16 first run processed exactly one task and then
+# printed the completion banner (caught live; the sealed task was kept).
+plans=(${(f)"$(grep -Ev '^#|^$' "$HERE/chain-order.txt")"})
 seq=0
-grep -v '^#' "$HERE/chain-order.txt" | while read -r plan; do
-  [ -n "$plan" ] || continue
+for plan in $plans; do
   seq=$((seq + 1))
   tid="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['tasks'][0]['id'])" "$SPECS/$plan")"
   ws="$OUT/$tid"
@@ -79,7 +83,8 @@ json.dump({
     "cwd": ws, "timeout_s": 1800,
 }, open(f"{bundle}/params.json", "w"), indent=2)
 EOF
-  python3 "$LAUNCHER" "$bundle" || { echo "ABORT: author launch failed for $tid (see $bundle/result.json)" >&2; exit 1 }
+  python3 "$LAUNCHER" "$bundle" < /dev/null \
+    || { echo "ABORT: author launch failed for $tid (see $bundle/result.json)" >&2; exit 1 }
 
   seal_out="$(python3 "$HELDOUT_CLI" seal --workspace "$ws" --repo "$BASE_REPO")" \
     || { echo "ABORT: seal refused for $tid (policy failure — inspect $ws)" >&2; exit 1 }
@@ -99,4 +104,11 @@ subprocess.run([sys.executable, ledger_cli, "append", ledger, "--kind", "run",
                 "--data", json.dumps(seal)], check=True)
 EOF
 done
-echo "SLICE 2 COMPLETE — sealed workspaces under $OUT, anchors in $LEDGER"
+# A completion banner must be EARNED: assert every plan's workspace is sealed
+# (the first run printed COMPLETE after 1/11 — never again).
+sealed=$(find "$OUT" -name manifest.json | wc -l | tr -d ' ')
+if [ "$sealed" -ne "${#plans}" ]; then
+  echo "ABORT: only $sealed of ${#plans} suites are sealed — NOT complete" >&2
+  exit 1
+fi
+echo "SLICE 2 COMPLETE — all ${#plans} suites sealed under $OUT, anchors in $LEDGER"

@@ -32,8 +32,10 @@ if [ "${1:-}" != "--yes" ]; then
 fi
 
 mkdir -p "$RUNS"; touch "$DONE"
-grep -v '^#' "$HERE/chain-order.txt" | while read -r plan; do
-  [ -n "$plan" ] || continue
+# Array iteration, never a stdin pipe: spawned claude sessions drain a piped
+# loop's stdin (proven live on slice-2's first run — one task, lying banner).
+plans=(${(f)"$(grep -Ev '^#|^$' "$HERE/chain-order.txt")"})
+for plan in $plans; do
   if grep -qx "$plan" "$DONE"; then
     echo "=== skip (completed): $plan"
     continue
@@ -57,4 +59,10 @@ grep -v '^#' "$HERE/chain-order.txt" | while read -r plan; do
   fi
   echo "$plan" >> "$DONE"
 done
-echo "ARM H COMPLETE — all 11 tasks landed behind the gate. Ledger: $LEDGER"
+# The completion banner must be earned: every plan in the chain, recorded done.
+landed=$(grep -cvE '^\s*$' "$DONE")
+if [ "$landed" -ne "${#plans}" ]; then
+  echo "ABORT: only $landed of ${#plans} plans recorded complete — NOT done" >&2
+  exit 1
+fi
+echo "ARM H COMPLETE — all ${#plans} tasks landed behind the gate. Ledger: $LEDGER"

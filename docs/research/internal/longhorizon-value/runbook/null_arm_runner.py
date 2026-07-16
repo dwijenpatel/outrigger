@@ -199,7 +199,9 @@ def main(argv=None):
         head_before = git_head(repo)
         print(f"=== arm {args.arm}: {task['id']} ({plan_name}) @ {head_before[:9]}")
         launch_argv = [sys.executable, LAUNCHER] + (["--dry-run"] if args.dry_run else []) + [bundle]
-        launch = subprocess.run(launch_argv)
+        # stdin closed: a claude session drains any inherited stdin (proven
+        # live on slice-2's first run) — workers never get one.
+        launch = subprocess.run(launch_argv, stdin=subprocess.DEVNULL)
         if args.dry_run:
             continue
 

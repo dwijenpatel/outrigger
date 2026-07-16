@@ -56,9 +56,8 @@ echo "held-out (slice 2, grading-only): $ARM_ROOT/eaitl-heldout-slice2"
 echo "results: $RUNS/arm-{H,N,F}"
 
 echo "--- plan admission (all 11 must pass --require-ratified) ---"
-ok=0
-grep -v '^#' "$HERE/chain-order.txt" | while read -r plan; do
-  [ -n "$plan" ] || continue
+plans=(${(f)"$(grep -Ev '^#|^$' "$HERE/chain-order.txt")"})
+for plan in $plans; do
   python3 "$HERE/../../../../../tools/plan-preflight/preflight.py" check \
     "$HERE/../specs/$plan" --require-ratified >/dev/null || fail "preflight failed: $plan"
   echo "  ok: $plan"

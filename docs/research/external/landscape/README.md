@@ -19,6 +19,13 @@ single-topic.
   ecosystem repos: per-repo profiles, five theme documents, ranked contribution
   opportunities. Headlines: reward-hacking hole 11/11, window awareness 0/11, planning
   interview commoditized 5/11.
+- [anthropic-long-running-agents.md](anthropic-long-running-agents.md) — the 2026-07-16
+  ingestion of Anthropic's five-artifact long-running-agent family (two guidance posts,
+  two showcase demos, the CwC-2026 hooks repo studied at a pinned SHA) plus independent
+  reception. Headlines: zero controlled data anywhere in the family; ~12 admissions
+  against interest; the repo extends the implementer-can-edit-its-judge census to 13/13
+  and its three blocking hooks are schema-dead on current Claude Code; vendor guidance
+  converges on this design's shape at prompt strength; ranked contribution options.
 
 **Reading note:** ecosystem-mining's five theme documents are the thin-subtopic folders'
 best current material — [spec-elicitation-and-planning](ecosystem-mining/spec-elicitation-and-planning.md)

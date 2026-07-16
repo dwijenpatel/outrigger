@@ -57,7 +57,14 @@ independent-replication; ≥2/3 refutes kill; 0 killed, 5 single-lens number cor
 adjudicating the root causes and effect sizes of long-horizon coding-agent failure against the
 top-level README's claims, adding the fifteenth subtopic folder
 ([external/failure-modes/](external/failure-modes/README.md)) with a committed machine-readable
-verification record. An **auto-research retrieval pass (2026-07-15)** — four Opus 4.8 agents
+verification record. An **Anthropic long-running-agents ingestion (2026-07-16)** ran four Opus
+4.8 agents (dual-fetch post reads, a complete-file code study of `anthropics/cwc-long-running-agents`
+at a pinned SHA, a 9-search reception scan) over the vendor's five-artifact harness family and
+its independent reception — producing
+[external/landscape/anthropic-long-running-agents.md](external/landscape/anthropic-long-running-agents.md),
+extending the implementer-can-edit-its-judge census to 13/13, and surfacing two independent
+measured papers (physicist-supervised oracle-gaming, arXiv 2605.30353; Harness-Bench's 21.6pp
+harness-choice spread, arXiv 2605.27922). An **auto-research retrieval pass (2026-07-15)** — four Opus 4.8 agents
 mirroring the primary artifacts of Karpathy's `autoresearch`, NVIDIA's ENPIRE, and AlphaEvolve's
 2026 developments (product GA, the 67-problem math repo, the matmul-novelty dispute), plus a
 landscape sweep, ahead of the 2026-07-18 AGI House auto-research summit — added
@@ -92,7 +99,7 @@ Coverage: **● rich · ◐ moderate · ○ thin (no dedicated document)** — a
 | [validation/](external/validation/README.md) — the correctness floor: blind validation, held-out testing, gates, verifier calibration, leakage theory | correctness-and-verification-evidence; revalidation-reuse-and-leakage | ● |
 | [self-improvement/](external/self-improvement/README.md) — harnesses as the optimized object; the gaming ledger; governance of self-modification | meta-harness-and-self-improving-harnesses | ● |
 | [economics/](external/economics/README.md) — token/quota budgeting, burn forecasting, admission control, parallelism's exchange rate | token-economics-and-scheduling | ● |
-| [landscape/](external/landscape/README.md) — whole-system comparative studies (span every subtopic; the thin folders' best current material lives here) | landscape-and-novelty; zenith-and-meta-zenith; ecosystem-mining/ | ● |
+| [landscape/](external/landscape/README.md) — whole-system comparative studies (span every subtopic; the thin folders' best current material lives here) | landscape-and-novelty; zenith-and-meta-zenith; ecosystem-mining/; anthropic-long-running-agents | ● |
 | [platform-facts/](external/platform-facts/README.md) — the vendor substrate: cache, windows, quota surfaces, credits. **Most volatile; recheck on schedule** | claude-code-and-max-plan-facts | ● |
 | [isolation/](external/isolation/README.md) — sandboxing, deny rules, egress, per-role boundaries, documented escapes | isolation-and-sandboxing | ◐ |
 | [routing/](external/routing/README.md) — model/effort selection, task-horizon and difficulty prediction | task-horizon-prediction | ◐ |
@@ -290,6 +297,14 @@ Corrections produced by the fact-check passes, kept so future readers don't re-i
   Qwen3-32B; (5) **MAST (2503.13657)** inter-agent misalignment is version-unstable across
   restatements (31.3/32.3/36.9/38.4; v2-text read 36.94%) — cite the ranking
   (second-largest), never a point value.
+
+- **From the 2026-07-16 Anthropic-family ingestion:** Addy Osmani's summary of the
+  Anthropic long-running-agent posts carries figures absent from the primaries ("~60% p50 /
+  >90% p95 time-to-first-token", an "11,000-line Slack-style app / 30+ hr" run) — likely
+  summarizer conflation; do not attribute them to Anthropic. And do not cite the
+  cwc-long-running-agents kill-switch/steering/verify-gate hooks as working prior art
+  without the schema caveat: all three are silent no-ops on current Claude Code (repo
+  issue #2, confirmed by direct code study at `ad107a97`).
 
 **Absence-of-feature findings** (strong, but inherently harder to prove than a positive): Kiro
 closure gate; Spec Kit automated final gate; LangGraph built-in critic; any published

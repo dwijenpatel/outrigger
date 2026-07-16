@@ -36,6 +36,10 @@ named in the chain design; the pre-registered arm-F rules and the canaries survi
 head-to-head silent-wrong *rates* need an oracle no arm was optimized against. This script
 authors that second slice (11 fresh blind Opus authors against base, sealed, grading-only).
 Skipping it is legitimate — it just restricts head-to-head claims to canaries + arm-F rules.
+**Additive, not a substitute**: slice-2 does not replace or reduce arm H's in-loop
+authoring — H authors its own gating suites regardless (that step is part of the machinery
+under test, and part of H's ~$80). One suite cannot do both jobs: gating H on a suite is
+exactly what destroys its independence as the head-to-head oracle.
 
 ## Registered operational rules (protocol details fixed before any run)
 

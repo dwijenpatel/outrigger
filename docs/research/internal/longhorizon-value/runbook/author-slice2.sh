@@ -86,11 +86,13 @@ EOF
   echo "$seal_out"
   # seal prints a JSON object whose manifest_sha256 is the out-of-band anchor;
   # record the whole object (plus workspace + bundle provenance) on the ledger.
-  echo "$seal_out" | python3 - "$LEDGER_CLI" "$LEDGER" "$tid" "$ws" "$bundle" <<'EOF' \
+  # Seal JSON travels as an ARGUMENT: a heredoc supplies python's stdin, so a
+  # pipe here would be silently clobbered (caught pre-launch 2026-07-16).
+  python3 - "$LEDGER_CLI" "$LEDGER" "$tid" "$ws" "$bundle" "$seal_out" <<'EOF' \
     || { echo "ABORT: ledger append failed for $tid" >&2; exit 1 }
 import json, subprocess, sys
-ledger_cli, ledger, tid, ws, bundle = sys.argv[1:6]
-seal = json.load(sys.stdin)
+ledger_cli, ledger, tid, ws, bundle, seal_json = sys.argv[1:7]
+seal = json.loads(seal_json)
 seal.update({"task_id": tid, "workspace": ws, "bundle": bundle})
 subprocess.run([sys.executable, ledger_cli, "append", ledger, "--kind", "run",
                 "--subject", f"longhorizon/slice2/{tid}/seal",

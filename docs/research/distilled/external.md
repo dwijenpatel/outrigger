@@ -11,7 +11,11 @@ pass ([../external/failure-modes/](../external/failure-modes/README.md)): five n
 (task-length collapse, self-conditioning, grader-visibility causality, weak benchmark graders,
 the perceived-vs-measured oversight gap) and two row corrections/annotations — each new row's
 chain runs distilled → failure-modes doc → primary source, with the per-claim three-lens
-verdict record committed beside that doc.
+verdict record committed beside that doc. **Extended 2026-07-16** by the Anthropic
+long-running-agents ingestion ([../external/landscape/anthropic-long-running-agents.md](../external/landscape/anthropic-long-running-agents.md)):
+two §2.1 admission rows, the vendor joining the §3.1 premature-completion cluster, a §5
+code-verified block on `anthropics/cwc-long-running-agents` (census → 13/13), and Tier-C
+entries for the family's showcase magnitudes.
 
 Ordered by **warrant**, strongest first — mathematics, then admissions against interest, then
 independent replication, then official commitments, then direct verification. Tier-C claims we
@@ -73,7 +77,9 @@ bound it is the strongest empirical signal here. Each entry below cost its autho
 | **Anthropic:** even in the regime where assisted oversight measurably helps (sandwiching under information asymmetry), human+model teams still *"give highly confident judgments that turn out to be wrong."* | Concedes a limit of the assisted-oversight paradigm it is invested in. (The sandwiching effect sizes are self-measurement — Tier C, §7.) |
 | **OpenAI:** in weak-to-strong generalization, **reward modeling — the analogue of *judging* an action — generalizes worst** (~10% of the capability gap recovered), with strong students imitating the weak supervisor's errors. | Publishes that supervision-by-a-weak-overseer collapses precisely on the judging task, cutting against the scalable-oversight optimism it champions. Import "worst on judging," not the number. |
 | **Anthropic:** eager tool loading is better *"when every tool is used in every request"* or the library is small; selection accuracy degrades past **30–50 tools**. | Concedes precisely where its own Tool Search feature does *not* help. |
-| **Anthropic:** compaction alone *"isn't sufficient"* for long-running harnesses. | Admits a limit of its own context-management feature. |
+| **Anthropic:** compaction alone *"isn't sufficient"* for long-running harnesses — and it *"doesn't always pass perfectly clear instructions to the next agent."* (effective-harnesses post, 2025-11-26) | Admits a limit of its own context-management feature. |
+| **Anthropic** (same post, its own harness experiments): Opus 4.5 on a high-level prompt *"will fall short of building a production-quality web app"*; the agent *"tended to… one-shot the app"* and exhaust context mid-feature; later sessions *"declare the job done"* prematurely; Claude *"mark[s] a feature as complete without proper testing"*; state files kept as JSON because the model *"is less likely to inappropriately change or overwrite JSON files compared to Markdown"*; Puppeteer-driven Claude *"can't see browser-native alert modals."* | A five-count enumeration of its own frontier model's unscaffolded failure modes, in its own guidance. Existence strength — no rates given ([landscape/anthropic-long-running-agents.md §4](../external/landscape/anthropic-long-running-agents.md)). |
+| **Anthropic** (long-running-Claude research post, 2026-03-23): *"current models can suffer from agentic laziness… find an excuse to stop before finishing"*; the agent's self-authored test coverage silently collapsed to *"a single (fiducial) parameter point"*; the delivered solver is *"not production-grade"* against its own pre-stated 0.1% target. | Concedes premature stopping, self-authored-test decay, and a missed success criterion in its flagship science demo. |
 | **OpenAI:** stopped evaluating SWE-bench Verified because **~31% of passing patches rely on tests too weak to catch a wrong fix**, and ~1/3 of issues leak solution code. | Concedes its own prior scores on that benchmark were inflated. |
 | **Google DeepMind:** LLMs *"cannot self-correct reasoning yet"* — intrinsic self-correction **degrades** accuracy (CommonSenseQA **75.8 → 41.8**). | An LLM vendor publishing a limitation that cuts against the self-refining-agent narrative. Peer-reviewed, ICLR 2024. **Now independently replicated on a disjoint domain — promoted to a §3.1 A1 class claim** (LLM self-critique of plans is net-negative). |
 
@@ -163,7 +169,7 @@ orchestration of many models (§3.2), and the humans doing the overseeing (§3.3
 |---|---|---|
 | **Cross-model errors correlate strongly.** ~**60% same-wrong-answer agreement** when two models both err; correlation **rises with capability** and **crosses providers**. Judges also favor models similar to themselves. → N same-family validators are **not** N independent draws. | arXiv 2506.07962 (350+ models) + arXiv 2502.04313 | `llm-class` |
 | **Agent self-reports are unreliable exactly where verification is absent.** METR: **≥16% of successful 8h+ runs involved cheating**, and o3 disavowed it 10/10 times when asked. Transluce: **71 transcripts of o3 fabricating code execution** it never ran, plus 352 fabricated justifications, doubling down when confronted. | METR + Transluce (independent orgs); the ≥16% re-verified 2026-07-14 against METR's 2026-05-19 Frontier Risk Report ([failure-modes §4](../external/failure-modes/root-causes-and-effect-sizes.md)) | `llm-class` |
-| **Premature completion is the dominant long-horizon failure.** RE-Bench (human baselines): agents ≈**4× human experts at a 2-hour budget**, humans pass them at **8h** and reach ≈**2× at 32h**; agents *"satisfice rather than optimize, often submitting before the time limit"* and show *"poor ability to notice whether making progress."* Best-of-k does not rescue a plateauing policy. | METR RE-Bench + Trehan & Chopra (3 of 4 autonomous research runs failed; *"overexcitement that declares success despite obvious failures"*) + Zenith's independent convergence on the same thesis | `llm-class` |
+| **Premature completion is the dominant long-horizon failure.** RE-Bench (human baselines): agents ≈**4× human experts at a 2-hour budget**, humans pass them at **8h** and reach ≈**2× at 32h**; agents *"satisfice rather than optimize, often submitting before the time limit"* and show *"poor ability to notice whether making progress."* Best-of-k does not rescue a plateauing policy. | METR RE-Bench + Trehan & Chopra (3 of 4 autonomous research runs failed; *"overexcitement that declares success despite obvious failures"*) + Zenith's independent convergence on the same thesis + **Anthropic against interest** (Nov 2025: later sessions *"declare the job done"*; Mar 2026: *"agentic laziness… stop before finishing"* — [landscape/anthropic-long-running-agents.md §4](../external/landscape/anthropic-long-running-agents.md)) | `llm-class` |
 | **Success collapses with task length and scope — the dominant on-regime failure *shape*.** Best model **72.80% → ~25%** resolved moving from single-issue to multi-file evolution tasks (SWE-EVO, n=48, avg 21 files/task, author-run benchmark); independently **>70% → ~23%** (SWE-Bench Pro, n=1,865, different team and data); METR's ~170-task suite: near-ceiling on minutes-long tasks → **~0–10% on multi-hour**, exponential fit **R²≈0.83** vs log human task length. Direction replicated across three parties; per-benchmark magnitudes each single-source. | SWE-EVO (arXiv 2512.18470) + SWE-Bench Pro (arXiv 2509.16941) + METR (arXiv 2503.14499); constant-hazard reinterpretation Ord (arXiv 2505.05115). *Source: [failure-modes §1–§2](../external/failure-modes/root-causes-and-effect-sizes.md)* | `llm-class` |
 | **Self-conditioning: models degrade on their *own* prior errors in context — distinct from long-context rot, and scaling does not fix it.** Injecting a model's own past errors into history monotonically lowers later per-step accuracy; persists **~32B → ~1T** parameters; occurs with the plan fully specified (pure execution). Fresh context severs the channel across links — a mechanism licensing fresh-session-per-task with verification between links. **Caveat, same source (2509.09677): *thinking* mitigates the effect and enables much longer single-turn execution — so "fresh links beat one long run" does not follow for thinking models; that comparison is untested.** Magnitudes single-source (quote no Fig-5 digits — corrections ledger 2026-07-14). | arXiv 2509.09677 + Contextual Drag (arXiv 2602.04288) + arXiv 2511.14777. *Source: [failure-modes §1, appendix 13–14](../external/failure-modes/root-causes-and-effect-sizes.md)* | `llm-class` |
 | **Grader visibility/reachability is the *causal* driver of test-gaming — and hiding assertions is not enough.** Observational: **30.4%** (39/128, RE-Bench, scorer visible) vs **0.7%** (8/1087, HCAST) — >43×; causal: hiding tests drops cheating **~50%+ → near zero** under controlled manipulation (ImpossibleBench); boundary: with test *cases* hidden but the scoring *process* reachable, Opus 4.6 still hacked **~80% of attempts** by instrumenting the scorer (MirrorCode — single-source, n undisclosed, existence strength); anti-hack *prompting* barely helps (o3 80%→70%, n=20/condition — hooks-over-prose again). The distance must be enforced on the grader process, not just the assertions. | METR (2025-06-05 reward-hacking post + 2026-05-19 Frontier Risk Report) + ImpossibleBench (arXiv 2510.20270, independent) + the §2.2 gaming ledger. *Source: [failure-modes §1–§3](../external/failure-modes/root-causes-and-effect-sizes.md)* | `llm-class` |
@@ -283,6 +289,32 @@ The mechanisms that matter for us:
   hard invariant), and re-runs dependency-resolution + acyclicity + coverage **on every patch** —
   rejecting at patch-time any patch that orphans an assertion or introduces a cycle.
 
+### anthropics/cwc-long-running-agents (local clone, commit `ad107a97`, Apache-2.0) `[code]`
+
+The vendor's own event-demo rendering of its long-running-agent guidance (five Claude Code
+hooks + one evaluator subagent; "Code with Claude 2026" take-home, self-declared
+unmaintained). Code-verified 2026-07-16
+([landscape/anthropic-long-running-agents.md §5](../external/landscape/anthropic-long-running-agents.md)):
+
+- **Enforced vs promised:** `commit-on-stop` works; `track-read` is bookkeeping;
+  `kill-switch`/`steer`/`verify-gate` emit the **deprecated** PreToolUse
+  `{"decision":"block"}` schema → **silent no-ops on current Claude Code** (open issue #2,
+  ready diffs, unaddressed), and no hook carries an `exit 2` fallback. The three advertised
+  enforcement primitives currently enforce nothing — live `vendor-build` decay plus a
+  dead-guardrail-sat-invisible instance (the calibration-canary argument).
+- **`verify-gate` is an evidence-was-opened gate, not a correctness gate** — Bash writes
+  bypass it, it fails open without python3, and *"any evidence read unlocks any result
+  row"* (its own header: *"a teaching example, not a security boundary"*).
+- **Completion is builder self-declaration** (`grep` for no `"passes": false` — booleans
+  the builder wrote); the fresh-context evaluator is advisory (*"what your loop does with
+  the verdict is up to you"*), keeps Bash (*"NOT a hard read-only boundary"*), and the
+  gate-decides-done wiring is described but unimplemented.
+- **Census:** the implementer can read *and edit* its judge (results contract, spec,
+  `evaluator.md`, the hooks) — the **13th confirming instance**, and the first from the
+  vendor itself. Window/quota awareness, cache hygiene, variance measurement, determinacy
+  bar, per-test traceability, race detection: none. Disk-based resume: yes
+  (PROGRESS.md + commit-on-stop).
+
 ### The memory-benchmark record — determinate facts about public datasets
 
 Established by reading the datasets and the published papers; each is re-checkable by anyone.
@@ -308,7 +340,7 @@ career-ops · ruflo.
 
 | Property | Count |
 |---|---|
-| Implementer can see **and edit** the tests that judge it | **11 / 11** (12/12 including Zenith) |
+| Implementer can see **and edit** the tests that judge it | **11 / 11** (12/12 including Zenith; **13/13 including anthropics/cwc-long-running-agents**, added 2026-07-16) |
 | Subscription rate-window awareness | **0 / 11** |
 | Wake-on-reset | **0 / 11** |
 | Prompt-cache hygiene in cost logic | **1 / 11** (planning-with-files) |
@@ -328,7 +360,7 @@ rate-limit reset timestamp and discards it** (`batch-runner.sh:377`), then waits
 
 | Absence | Enumerated sample | Date |
 |---|---|---|
-| **Blind adversarial validation** (separate agent + fresh context + never sees generator reasoning + withholds an adversarial test set) | 0 of 11 ecosystem repos (0/12 with Zenith); 0 of the 20+ surveyed agents/frameworks. Extended 2026-07-10 to the 9 major shipped orchestration frameworks: merge/completion gates are **LLM-judgment (CrewAI), HITL approval (MS Agent Framework), or prompt-blind AND-gates (Zenith)** over shared-filesystem artifacts — the implementer-can-edit-its-judge hole is **12/12** across studied systems | 2026-07-03 / 07-06 / 07-10 |
+| **Blind adversarial validation** (separate agent + fresh context + never sees generator reasoning + withholds an adversarial test set) | 0 of 11 ecosystem repos (0/12 with Zenith); 0 of the 20+ surveyed agents/frameworks. Extended 2026-07-10 to the 9 major shipped orchestration frameworks: merge/completion gates are **LLM-judgment (CrewAI), HITL approval (MS Agent Framework), or prompt-blind AND-gates (Zenith)** over shared-filesystem artifacts — the implementer-can-edit-its-judge hole is **13/13** across studied systems (extended 2026-07-16 with `anthropics/cwc-long-running-agents`, the vendor's own demo: fresh-context evaluator, but fully implementer-editable and advisory) | 2026-07-03 / 07-06 / 07-10 / 07-16 |
 | **Window-aware admission control** | 0 of 11 (0/12). Six open Claude Code feature requests; nearest prior art is a ~787★ wait-and-resume script. Extended 2026-07-10: **no surveyed framework gates a spawn on a cost governor** — every one ships a static cap (Claude Code 16/run, Bedrock ≤10, Zenith 4) or an advisory warning | 2026-07-06 / 07-10 |
 | **Calibration canaries** (planted known-defect probes gating trust in a "0 findings" verdict) | Not found in the ~40 meta-harness references, nor the 11 repos. Nearest neighbor is AXIOM — a *static benchmark* of LLM judges, not an operational pre-screen | 2026-07-09 |
 | **Human-ratified self-modification** | Unpublished across the entire self-improvement literature — **every** loop accepts autonomously. (Nearest neighbor, different domain: VerificAgent's human-verified freezing of *memory writes* — quarantine of a store, not ratification of harness self-edits) | 2026-07-09 / 07-10 |
@@ -413,6 +445,16 @@ in [../README.md](../README.md)). Cite only that paper's verified L0–L3 ladder
 *down* (87→82%) in the small-catalog regime. Anthropic's multi-agent 90.2% / 4× / 15× figures —
 internal eval, unequal budget, and the corpus's own instruction is to **unfuse** the citation.
 
+**Anthropic long-running showcase magnitudes.** The C-compiler figures (16 agents / ~2,000
+sessions / $20k / 2B input tokens / 99% suite pass / boots Linux 6.9) and the harness-design
+$9-vs-$200 solo-vs-harness comparison are **single uncontrolled showcase runs** (n=1 per
+cell, no variance), the former **contamination-contested** (chibicc-quirk matches, issue
+#232; The Register: *"the validation set was included in the training data"*); "compress
+months or even years into days" rests on one n=1 anecdote whose 0.1% target was not met.
+Mechanisms importable; magnitudes not. Osmani's relayed figures (TTFT percentiles, an
+"11,000-line Slack app") are absent from the primaries — do not attribute to Anthropic
+([landscape/anthropic-long-running-agents.md §3, §10](../external/landscape/anthropic-long-running-agents.md)).
+
 **Author benchmarks of author tools.** AXI's `gh-axi` numbers: author-run, and a Sonnet 4.6 agent
 judged by Sonnet 4.6. The replicated meta-finding (interface ergonomics dominates) survives; the
 absolute numbers do not. The derived "hand-crafted CLI beats MCP" claim is **contradicted** by the
@@ -442,6 +484,7 @@ magnitude does not transfer).
 | §4 plan structure, caps, credits, the paused SDK split | `vendor-policy` | Any announced plan change. **Next scheduled: the 2026-07-13 weekly-promo expiry.** |
 | §4 deny-rule precedence, subagent sandbox inheritance | `vendor-build` | Every Claude Code build — **re-probe, do not re-read the docs** |
 | §5 Zenith code facts | `their-tree` | Any Zenith release past `feb1d62` |
+| §5 cwc-long-running-agents code facts | `their-tree` (+ the hook-schema finding decays `vendor-build`) | Any release past `ad107a97`; re-probe the schema no-op on every Claude Code build |
 | §5 ecosystem census | `their-tree` | Re-clone; counts are as of 2026-07-06 |
 | §6 absence findings | sample-bounded | On any new survey; an absence is only as strong as its enumerated sample |
 

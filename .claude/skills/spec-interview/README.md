@@ -67,8 +67,17 @@ standalone-readability rule, the tradeoffs requirement); recorded in the v2 ledg
 and a post-hoc autopsy scored ~0 of the validator interview's 7 questions as genuinely
 needing the operator (the near-real one was the scope question; every craft recommendation
 was accepted verbatim, answers shrinking to single letters). Operator directive + a
-four-branch research pass produced the 2026-07-15 compression (the tech-lead/PM split above);
-first live trial under it: the next chain spec.
+four-branch research pass produced the 2026-07-15 compression (the tech-lead/PM split above).
+
+**Live run 4 (2026-07-15, the eaitl source-introspection task — first trial of the
+compressed protocol):** **0 questions** (all seven coverage-checklist items sourced from the
+chain design, the product draft, and ratified precedent), **2 operator turns** (vs baselines
+14/10; target ≤3–4), 6-entry approval ledger, 0 entries challenged. The omission sweep did
+real work: it surfaced the operator's IR-edit-model question (how humans modify a proposed
+mapping plan), which produced a recorded cross-task requirement for the matcher's future spec
+— the engagement channel the ledger-challenge-rate metric watches was exercised, not silent.
+Operator's verdict, verbatim: "MUCH easier and less cognitively demanding than the previous
+interview." Escapes and blind-author-failure counts pend the task's execution.
 
 ## Versioning
 

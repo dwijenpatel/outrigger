@@ -1,0 +1,80 @@
+{
+  "contract": 1,
+  "goal": "Add a standalone well-formedness validator for eaitl mapping plans as a new function `validate_ir` in the eaitl package, without changing the committed engine's behavior. `validate_ir` takes any object and returns a list of problems (an empty list means the plan is well-formed); each problem is a dict with a machine-readable `code`, a plain-English `message`, and a `location`. One call reports every problem at once (fundamentally-broken plans short-circuit), covering the executable core (mappings and filters), the output checks, and the light source/target identifiers, while ignoring proposer-only fields and never checking whether referenced columns exist. Done when `validate_ir` is importable from `eaitl`, the full rule set is enforced with the exact codes named in the task spec, the package type-checks under `mypy --strict`, and the existing engine tests still pass.",
+  "risk_tier": "full",
+  "non_goals": [
+    "Does not modify the committed engine's behavior — new file `eaitl/validate.py` only, plus a single additive export line in `eaitl/__init__.py`.",
+    "Does not check whether the source columns a mapping references actually exist (no schema is available; semantic/schema validation belongs to a later piece).",
+    "Does not execute filters or output checks — it validates their structure only; running them belongs to the engine and a later piece.",
+    "Does not include the automatic (LLM) mapping proposer or any code generation.",
+    "Does not validate the proposer-only fields (`confidence`, `rationale`, `status`) — they are ignored pass-through."
+  ],
+  "constraints": [
+    "The engine's committed behavior at c646832 must not change: `apply_ir`, `MappingError`, and all engine/ops/parser/model/resolve code and their existing tests remain exactly as committed. The only edit to an existing file is adding the `validate_ir` export to `eaitl/__init__.py`.",
+    "`validate_ir` must never raise on any input; it always returns a list (a non-object input is reported as a `not_an_object` problem, not an exception).",
+    "Operation-name recognition reads the engine's live registry `eaitl.ops.OP_REGISTRY`, never a hardcoded copy of the names.",
+    "A test must assert the validator's argument-count table has exactly the same keys as `OP_REGISTRY`, so a new engine operation without a count entry fails loudly.",
+    "No irreversible or externally-visible actions: `validate_ir` is a pure function (no I/O, no network, no writes)."
+  ],
+  "decisions": [
+    {
+      "q": "How wide is the contract the validator defines?",
+      "a": "The deterministic-spine contract: mappings + filters + output checks (validations) + light source/target identifiers. Proposer-only fields (confidence, rationale, status) are ignored pass-through, as the engine already treats them."
+    },
+    {
+      "q": "When the validator finds problems, does it stop at the first or report them all?",
+      "a": "Report them all: return a list of every problem (empty = well-formed); do not raise. Each entry has a code, a message, and a location."
+    },
+    {
+      "q": "Should one call catch everything, or only the new checks?",
+      "a": "One complete standalone check: it reports every well-formedness problem including the ones the engine's parse already catches (may reuse parse_ir internally). Fundamentally-broken plans short-circuit."
+    },
+    {
+      "q": "Should each problem entry carry a machine-readable code?",
+      "a": "Yes — a stable code alongside the message and location, so callers and hidden tests match on the code rather than fragile message text."
+    },
+    {
+      "q": "What is the public interface, and is the typed model exposed?",
+      "a": "New file eaitl/validate.py with validate_ir(ir: object) -> list[dict[str,str]], exported from eaitl. The engine's internal typed representation stays internal; the public surface is just apply_ir and validate_ir; plans are passed as JSON dicts."
+    },
+    {
+      "q": "May this piece modify the engine, or only add alongside it?",
+      "a": "Add-alongside-only; the committed engine is untouched (except the one export line). The validator keeps its own argument-count table mirroring the engine and syncs operation names live against OP_REGISTRY. A post-experiment follow-up task will refactor to a single source of truth for argument counts."
+    },
+    {
+      "q": "How strict is the validator about the edges?",
+      "a": "source/target optional-but-checked (if present, an object with a string name); unknown/extra keys ignored (matching the engine); an output check's type_check `expected` must be one of string/int/float/bool; no column-existence checks."
+    },
+    {
+      "q": "Is the validator ever stricter than the engine?",
+      "a": "Intentionally stricter on exactly three points that the engine tolerates at runtime but are almost always bugs: wrong argument counts, duplicate target columns, and non-predicate filters. It is NOT stricter on optional fields (never forces source/target, never flags unknown keys, never checks column existence)."
+    }
+  ],
+  "open_questions": [],
+  "tasks": [
+    {
+      "id": "ir-contract",
+      "title": "Add a well-formedness validator for mapping plans",
+      "spec": "# Well-formedness validator for eaitl mapping plans\n\n## What and why\neaitl converts source rows into target rows using a **mapping plan** — a JSON object that lists,\nper target column, which source column(s) feed it and what operation computes it, plus optional\nrow filters and output checks. The committed **engine** (commit `c646832`) applies a plan to rows.\nThis task adds a standalone **well-formedness validator**: a check that a plan is structurally\nsound *before* anything downstream builds on it. It is the keystone contract every later piece\nimports.\n\n## Public interface (pin exactly — an independent author writes hidden tests against this)\n- New file **`eaitl/validate.py`** exporting one function:\n  - `validate_ir(ir: object) -> list[dict[str, str]]`\n- Add `validate_ir` to `eaitl/__init__.py` so `from eaitl import validate_ir` works. **This export\n  line is the ONLY edit to an existing file**; all existing exports and every engine/ops/parser/\n  model/resolve line stay exactly as at `c646832`.\n- **Input:** any object. Non-dicts are accepted on purpose (they are reported, not crashed on).\n- **Output:** a list of **problems**. An **empty list means the plan is well-formed.** Each problem\n  is a dict with exactly three string keys:\n  - `code` — a stable machine-readable label from the fixed set below.\n  - `message` — a plain-English description.\n  - `location` — where in the plan, e.g. `\"ir\"`, `\"mappings[2]\"`, `\"mappings[2].transform\"`,\n    `\"filters[0]\"`, `\"validations[1]\"`, `\"source\"`, `\"target\"`.\n- `validate_ir` **never raises**: every problem, including \"not an object\", comes back in the list.\n\n## Behavior\n- **Reports every problem at once**, with one exception: **fatal problems short-circuit.** If the\n  plan is not an object (`not_an_object`) or the `mappings` value is missing / not a list\n  (`mappings_missing`), return just that one problem — nothing further can be examined. Otherwise,\n  collect all problems across every mapping, filter, and output check.\n- May **reuse the engine's parser internally** (`eaitl.parser.parse_ir`, catching its `MappingError`\n  and re-expressing it as a problem) so structural checks are not rewritten — but the return shape\n  is always the problem-list above, never a raised error.\n- **Lenient on unknown keys:** extra top-level keys and extra per-mapping keys — including the\n  proposer-only `confidence`, `rationale`, `status`, `sources`, `type` — are ignored, exactly as\n  the engine ignores them.\n- **No column-existence checks:** the validator has no source schema, so it does NOT check whether\n  a column a mapping references exists. That belongs to a later piece.\n- **Intentionally stricter than the engine on three points** (this is the validator's value — the\n  engine tolerates all three at runtime, but they are almost always bugs): duplicate target\n  columns, wrong argument counts, and non-predicate filters. It is NOT stricter on optional fields:\n  it never *requires* `source`/`target`, never flags unknown keys, never checks column existence.\n\n## Rules and codes\n\nWhole-plan:\n- `not_an_object` (`ir`, fatal): the plan is not a JSON object.\n- `mappings_missing` (`ir`, fatal): no `mappings` key, or it is not a list.\n- `filters_not_a_list` (`ir`): `filters` present but not a list.\n- `validations_not_a_list` (`ir`): `validations` present but not a list.\n\nEach mapping (location `mappings[i]`):\n- `mapping_not_an_object`: the entry is not an object.\n- `missing_target_field`: no `target_field`, or it is not a string.\n- `duplicate_target_field`: another mapping has the same `target_field` (exact text match);\n  report on the later occurrence(s).\n- `transform_missing`: no `transform`, or it is not an object.\n- `op_missing` (`mappings[i].transform`): the transform has no `op`, or it is not a string.\n- `args_missing` (`mappings[i].transform`): the transform has no `args`, or it is not a list.\n- `unknown_op` (`mappings[i].transform`): `op` is not in the engine registry\n  (`eaitl.ops.OP_REGISTRY`).\n- `wrong_argument_count` (`mappings[i].transform`): the number of `args` is outside the op's\n  allowed range (table below).\n\nEach filter (location `filters[i]`; a filter object is itself `{op, args}` — no `target_field`):\n- `filter_not_an_object`: the entry is not an object.\n- `op_missing`: no `op`, or it is not a string.\n- `args_missing`: no `args`, or it is not a list.\n- `unknown_op`: `op` is not in the registry.\n- `wrong_argument_count`: args count outside the op's range.\n- `non_predicate_filter`: `op` is not one of the six true/false operations `equals`,\n  `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`.\n\nEach output check (location `validations[i]`):\n- `validation_not_an_object`: the entry is not an object.\n- `unknown_validation_kind`: `kind` missing or not one of `not_null`, `type_check`.\n- `missing_validation_field`: `field` missing or not a string.\n- `bad_expected_type`: for `kind == \"type_check\"`, `expected` missing or not one of `string`,\n  `int`, `float`, `bool`.\n\nSource / target (optional, but checked if present):\n- `bad_source` (`source`): `source` is present but not an object with a string `name`.\n- `bad_target` (`target`): `target` is present but not an object with a string `name`.\n- Other keys (such as `format`) are ignored.\n\n## Operation argument counts (the validator's own table, mirroring the engine)\nExact counts unless a range is given:\n\n| operation | args |\n|---|---|\n| copy | 1 |\n| rename | 1 |\n| concat | 0 or more |\n| substring | 2 or 3 |\n| cast | 2 |\n| add | 2 |\n| subtract | 2 |\n| multiply | 2 |\n| divide | 2 |\n| to_date | 1 |\n| equals | 2 |\n| not_equals | 2 |\n| greater_than | 2 |\n| less_than | 2 |\n| greater_equal | 2 |\n| less_equal | 2 |\n| hash | 1 |\n\nThe validator recognizes operation *names* by reading the live `OP_REGISTRY`; the argument counts\nabove live in the validator itself. A test MUST assert that the count-table's keys exactly equal\nthe registry's keys, so a newly-added engine operation with no count entry fails loudly. (A\npost-experiment follow-up task will unify these into a single source of truth.)\n\n## Edge behaviors\n- An empty `mappings` list is well-formed (the engine allows it).\n- `validate_ir(\"not a dict\")`, `validate_ir(None)`, `validate_ir(123)` each return exactly one\n  `not_an_object` problem.\n- A plan that is valid except for three wrong-argument-count mappings returns three problems.\n\n## Conventions\n- Python standard library only; no third-party dependencies.\n- `mypy --strict` clean across the `eaitl` package.\n- Functional style; typed internal helpers; the public boundary is plain JSON objects (dicts) in,\n  a list of dicts out.\n- New tests under `tests/` using the standard-library `unittest`.\n",
+      "depends_on": [],
+      "checks": [
+        "python3 -m mypy --strict eaitl",
+        "python3 -m unittest discover -s tests -t ."
+      ],
+      "provides": [
+        "ir-well-formedness-validator"
+      ],
+      "requires": [
+        "eaitl-engine"
+      ]
+    }
+  ],
+  "external": [
+    "eaitl-engine",
+    "The landed eaitl engine at commit c646832 (provides apply_ir, parser.parse_ir, ops.OP_REGISTRY, errors.MappingError, and the internal typed plan model). Implementation and the acceptance checks run in the eaitl repository at /Users/dwijen/repos/eaitl."
+  ],
+  "ratified": {
+    "by": "dwijen",
+    "ts": "2026-07-15T08:39:38Z"
+  }
+}

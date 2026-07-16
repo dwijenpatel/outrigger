@@ -49,19 +49,28 @@ sealed slice-2 grading suites, or outrigger (whose chain design names the canary
 locations). Behavior makes this ≈0 (workers have no pointer to those paths); the
 experiment's standard is walls anyway:
 
-- **Arms N/F**: the runner spawns every worker with OS deny-read walls over the slice-2
-  root, arm H's held-out root, outrigger, and the sibling arm repos (dry-run shows the
-  generated rules; the launcher refuses to spawn if it cannot express them).
-- **Arm H (do before starting it)**: the loop's own spawns wall only their task's hidden
-  suite. Before `run-arm-H.sh`, commit an identical `.claude/settings.json` carrying the
-  same deny rules to ALL THREE arm repos (identical across arms = fair; pre-existing, so
-  no worker diff touches it and no protected-path trip), and **probe it live**: one
-  throwaway session in an arm repo asked to read a denied path must be refused — the
-  mechanism is vendor-build behavior, never trusted from documentation.
-- **Slice-2 authors** ran without these walls (they predate them): acceptable — during
-  their run the arm repos contained only the shared base (nothing to leak, provable by
-  timestamps), and their one designed outrigger read is the authoring role contract.
-  Residual named: nothing pointed them at the chain design, but nothing OS-denied it.
+- **Arms N/F**: the runner spawns every worker with deny-read walls over the slice-2
+  root, arm H's held-out root, outrigger, and the sibling arm repos (launcher params;
+  the launcher refuses to spawn if it cannot express them).
+- **All arms, repo-scope**: `make_walls.py` (run 2026-07-16) commits a `.claude/
+  settings.json` with the same walls into EVERY arm repo (symmetric across arms; pre-run,
+  so no worker diff touches it — arm H's protected-paths interlock guards it besides),
+  and writes the equivalent file at arm H's held-out root for the in-loop AUTHORS
+  (walling slice-2, both sibling arms, and outrigger/docs — the canary-naming surface —
+  while outrigger/tools stays readable: the authoring role contract lives there).
+  Re-run `make_walls.py` if the arm repos are ever recreated.
+- **Probed 2026-07-16 (three live probes, transcripts in the session record), because the
+  mechanism is vendor-build behavior**: (1) repo-scope settings BIND launcher-spawned
+  workers (control read OK, walled reads refused with empty params); (2) the walls hold
+  from a workspace SUBDIRECTORY of the held-out root (settings walk up from cwd); (3) the
+  read matrix — the built-in Read tool is cwd-confined by default (pre-existing, pilot
+  included), **bash is NOT** (`head` on unwalled external paths succeeds), and the walls
+  block **both** channels ("operation not permitted" at the OS layer for a shell read of
+  a walled path). Bash was the real open channel; the walls are load-bearing.
+- **Slice-2 authors** ran before the walls: acceptable — during their run the arm repos
+  contained only the shared base (nothing to leak, provable by timestamps), and the
+  authoring flow's designed reads (own workspace, base repo, role contract) are exactly
+  what remained reachable.
 
 ## Registered operational rules (protocol details fixed before any run)
 

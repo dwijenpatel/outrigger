@@ -1,0 +1,19 @@
+{
+  "contract": 1,
+  "role": "implementer",
+  "attempt": 1,
+  "worker": {
+    "tool": "claude",
+    "model": "claude-sonnet-5",
+    "effort": "xhigh"
+  },
+  "isolation": {
+    "deny_read": [
+      "/Users/dwijen/repos/outrigger/docs/research/internal/t2-pilot-1/pilot-eaitl-preview/heldout/eaitl-preview-engine"
+    ],
+    "sandbox": true,
+    "network": true
+  },
+  "cwd": "/Users/dwijen/repos/outrigger/docs/research/internal/t2-pilot-1/pilot-eaitl-preview/heldout/_runs/plan/wt-eaitl-preview-engine-a1",
+  "timeout_s": 3600
+}

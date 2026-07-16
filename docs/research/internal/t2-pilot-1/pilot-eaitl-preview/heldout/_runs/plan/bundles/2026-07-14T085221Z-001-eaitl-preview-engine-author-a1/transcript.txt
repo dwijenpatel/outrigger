@@ -1,0 +1,28 @@
+Done. The suite is written, validated, and mutation-tested.
+
+## What's in `suite/`
+
+126 tests across 7 modules, plus `_fixtures.py` (shared IR/row data, no `eaitl` import so the base-passing guard runs before the package exists):
+
+- **`test_worked_example.py`** — the oracle. The draft's `raw_orders → analytics_orders` example must reproduce `preview_rows` exactly. Also poisons the `sources`/`confidence`/`status` metadata and adds a `validations` entry that would certainly fail, to prove both are ignored.
+- **`test_ops.py`** — every op with its pinned semantics: true division (not floor), `concat` rendering `None` as `''`, `substring` as `str(s)[start:end]`, unsalted sha256, comparisons returning real `bool`s, `>=`/`<=` boundaries.
+- **`test_arg_resolution.py`** — row-key match, literal fallback, and the `{"lit": v}` escape.
+- **`test_errors.py`** — fatal `MappingError` vs captured per-row errors, including that structural problems raise *even with zero rows*.
+- **`test_filters.py`** — AND-ing, truthiness, and the `row_index` integrity traps.
+- **`test_public_contract.py`** — the import seam, plus purity/determinism (no mutation of `ir` or `rows`, no state between calls).
+- **`test_package_constraints.py`** — package layout and an AST walk asserting no third-party runtime imports.
+- **`test_design_draft_regression.py`** — the base-passing guard: `design-draft.md` and its oracle stay in the repo.
+
+## Results
+
+`validate` reports `ok: true` — **7 errored, 0 failed, 5 passed** on base. The 7 are the modules that import `eaitl` (greenfield repo, so the package doesn't exist yet); the 5 passing are the design-draft regression guard.
+
+Because "fails on base" is trivially satisfied here, I did the check that actually matters: I wrote a throwaway spec-faithful implementation in the scratchpad and confirmed **all 126 tests pass** against it — the suite is satisfiable, not accidentally impossible. Then I mutation-tested it with 27 plausible misreadings (floor division, md5 hashing, filters resolved against the input row, `row_index` counting survivors instead of input rows, structural checks done lazily, errors dropped for filtered-out rows, output rows leaking source fields, …). **27/27 were caught.** The first pass caught 26 — the survivor was an engine casting to int *through* float, which would silently truncate `"25.99"` to `25` where the spec's "via `int`" means it raises and the error is captured. I added a test for that. Scratch artifacts are cleaned up.
+
+## Two spec tensions you should know I ruled on
+
+**Missing field vs. literal fallback.** The arg-resolution rule says a non-matching string is a *literal*; the error model says a missing referenced field is a *captured error*. For bare strings these conflict. The worked example settles it: `concat`'s `" "` separator is a non-matching string that must be a literal, so literal fallback is mandatory for anything that passes the oracle. I therefore test missing fields only through ops where the literal fallback *also* fails (`divide`, `to_date`, `cast`) — both readings converge on "field is `None`, one error captured". I deliberately do **not** test `copy` of a missing field, where the readings diverge and either answer is defensible.
+
+**Filters: input row or output row?** The arg-resolution paragraph says args resolve "against the input row", but the order-of-operations clause and decision #9 both say filters evaluate against the mapped *output* row. I went with the output row (two clauses to one, and the more specific ones). One truthiness test uses a field name identical in both rows, so if an implementer reads it the other way the failure isolates cleanly rather than cascading.
+
+I also left genuinely ambiguous points unpinned: an unknown `cast` target_type (fatal vs. captured is not stated), a mapping missing `transform` entirely, duplicate `target_field`s, and error ordering within a row (I compare order-free).

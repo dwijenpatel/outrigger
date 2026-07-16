@@ -1,0 +1,40 @@
+{
+  "base_sha": "e64604deb3851c6fd1f082df414d9553a847cdcd",
+  "contract": 1,
+  "fails_on_base": {
+    "errored": 7,
+    "failed": 0,
+    "passed": 5
+  },
+  "files": {
+    "_fixtures.py": "1ec3e4786e6ab9018166f21fdd0aa481e2ed60c001018c94dc3af98611b65f6f",
+    "test_arg_resolution.py": "8425b93e8d84addfb473c0ae1acdad2d4ff1601f265d636c99db1d0befb12eff",
+    "test_design_draft_regression.py": "34b1b792c27c721943218cde5b04108e22613e04fd2a0399ea9a6dd1ad704d6b",
+    "test_errors.py": "9f604384885102f123cce0de2256b936bc04de170460616204f40fbdc254d297",
+    "test_filters.py": "100b59270f6c77142b05318801171eb667120c5740d6dc0cfe7b890d778fac29",
+    "test_ops.py": "d376f7c94e6e797ec2996f062dfac86e6e2fdf54eb87569aa84ec156467f58c8",
+    "test_package_constraints.py": "1a824adee4174cef9b936f18ccbb8bc1ba5dbf827041d4f18deeb5f41d3dfc5a",
+    "test_public_contract.py": "1c6a6082304e2d302f7b5c7ac9f5c69e10543a1413870b7675d2145732204545",
+    "test_worked_example.py": "c0f810f27416b892758d14b322addee2cbcca8de5e6207b402c44c481c267bca"
+  },
+  "run": {
+    "argv": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "/Users/dwijen/repos/outrigger/docs/research/internal/t2-pilot-1/pilot-eaitl-preview/heldout/eaitl-preview-engine/suite",
+      "-t",
+      "/Users/dwijen/repos/outrigger/docs/research/internal/t2-pilot-1/pilot-eaitl-preview/heldout/eaitl-preview-engine/suite"
+    ],
+    "cwd": "$CHECKOUT",
+    "env": {
+      "PYTHONPATH": "$CHECKOUT"
+    },
+    "note": "$CHECKOUT = a clean checkout of the tree under judgment"
+  },
+  "sealed_at": "2026-07-14T09:05:00Z",
+  "spec_hash": "df27517d403525dae70e6d66a75ad9e6f7fc63c9f566967032e283061cfc149e",
+  "task_id": "eaitl-preview-engine"
+}

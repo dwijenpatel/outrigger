@@ -1,0 +1,13 @@
+Implementation is complete and committed (`c646832` on `task/eaitl-preview-engine-a1`).
+
+**What was built:**
+- `eaitl/` — pure-stdlib package: `model.py` (frozen-dataclass IR/Transform/Mapping/Filter/ErrorRecord), `parser.py` (dict→typed IR, raises `MappingError` on structural faults), `ops.py` (all 16 ops via a registry, each raising internal `OpDataError` on bad data), `resolve.py` (row-key-vs-literal/`{"lit":...}` arg resolution), `engine.py` (`apply_ir` orchestration: map → capture per-field errors → AND-filter), `errors.py`, `__init__.py` (exports `apply_ir`, `MappingError`).
+- `examples/raw_orders_to_analytics_orders.json` — the design-draft's worked example as a fixture.
+- `tests/` — 35 stdlib-unittest tests: the worked-example oracle, all 12 structural fatal cases, and the op/error-model edge cases (missing field, null value, divide-by-zero, unparseable date, the `{lit}` escape, filter dropping a row, plus per-op coverage).
+
+**Checks, all green:**
+- `python3 -c "import eaitl; ..."` — OK
+- `mypy --strict eaitl` — no issues in 7 source files
+- `python3 -m unittest discover -s tests -q` — 35 tests, OK
+
+One design note worth flagging: the spec's ARG RESOLUTION rule states a non-matching string arg becomes a *literal* (not an error) — this is required for the worked example's `concat` separator `" "` to resolve correctly. Under that rule, a genuinely missing source field degrades to a literal (its own field-name string) rather than raising immediately; it only surfaces as a captured error once a type-sensitive op (divide, to_date, cast, etc.) rejects that literal. I implemented it exactly per the pinned rule and covered this behavior in `test_ops.py::MissingFieldTest` using `divide`.

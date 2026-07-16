@@ -1,0 +1,81 @@
+{
+  "base": {
+    "ref": "main",
+    "sha": "e64604deb3851c6fd1f082df414d9553a847cdcd"
+  },
+  "checks": [
+    {
+      "cmd": "python3 -c \"import eaitl; assert hasattr(eaitl, 'apply_ir') and hasattr(eaitl, 'MappingError')\"",
+      "duration_s": 0.029,
+      "exit": 0,
+      "output_lines": 0,
+      "output_tail": [],
+      "timed_out": false
+    },
+    {
+      "cmd": "mypy --strict eaitl",
+      "duration_s": 0.418,
+      "exit": 0,
+      "output_lines": 1,
+      "output_tail": [
+        "Success: no issues found in 7 source files"
+      ],
+      "timed_out": false
+    },
+    {
+      "cmd": "python3 -m unittest discover -s tests -q",
+      "duration_s": 0.04,
+      "exit": 0,
+      "output_lines": 4,
+      "output_tail": [
+        "----------------------------------------------------------------------",
+        "Ran 35 tests in 0.001s",
+        "",
+        "OK"
+      ],
+      "timed_out": false
+    },
+    {
+      "cmd": "python3 /Users/dwijen/repos/outrigger/tools/heldout-suite/heldout.py verify --workspace /Users/dwijen/repos/outrigger/docs/research/internal/t2-pilot-1/pilot-eaitl-preview/heldout/eaitl-preview-engine",
+      "duration_s": 0.035,
+      "exit": 0,
+      "output_lines": 4,
+      "output_tail": [
+        "{",
+        "  \"fresh\": true,",
+        "  \"reasons\": []",
+        "}"
+      ],
+      "timed_out": false
+    },
+    {
+      "cmd": "PYTHONPATH=. python3 -m unittest discover -s /Users/dwijen/repos/outrigger/docs/research/internal/t2-pilot-1/pilot-eaitl-preview/heldout/eaitl-preview-engine/suite -t /Users/dwijen/repos/outrigger/docs/research/internal/t2-pilot-1/pilot-eaitl-preview/heldout/eaitl-preview-engine/suite",
+      "duration_s": 0.044,
+      "exit": 0,
+      "output_lines": 5,
+      "output_tail": [
+        "..............................................................................................................................",
+        "----------------------------------------------------------------------",
+        "Ran 126 tests in 0.005s",
+        "",
+        "OK"
+      ],
+      "timed_out": false
+    }
+  ],
+  "contract": 1,
+  "merge": {
+    "conflicts": [],
+    "judged_commit": "15668dd48a7795a7baca85ae4c6a96ccc63d85f4",
+    "performed": true,
+    "up_to_date": false
+  },
+  "ok": true,
+  "repo": "/Users/dwijen/repos/eaitl",
+  "source": {
+    "ref": "task/eaitl-preview-engine-a1",
+    "sha": "c6468329cb18a4b98112eb9c1d85bdcab2990751"
+  },
+  "tool": "merge-gate",
+  "ts": "2026-07-14T09:17:28Z"
+}

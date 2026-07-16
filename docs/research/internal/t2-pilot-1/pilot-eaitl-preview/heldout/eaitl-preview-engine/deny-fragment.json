@@ -1,0 +1,6 @@
+{
+  "comment": "merge into the implementer-spawner's settings: the implementer must never read this workspace",
+  "deny_read": [
+    "/Users/dwijen/repos/outrigger/docs/research/internal/t2-pilot-1/pilot-eaitl-preview/heldout/eaitl-preview-engine"
+  ]
+}

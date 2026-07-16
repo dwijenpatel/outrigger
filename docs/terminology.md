@@ -669,7 +669,11 @@ anti-reward-hack guard) · **wheelhouse/m87** (IssueOps ratification cards).
 **Meta-Harness** · **ACE** / **MCE** (context engineering) · **Autodata** · **Anchored Self-Play** ·
 **Absolute Zero** · **TTT-Discover** / **UG-TTT** (the counterpoint: weights optimized at test
 time, harness held fixed) · **AI Scientist** (Nature 2026; its completion gate is its own
-automated peer review — the self-grading risk).
+automated peer review — the self-grading risk) · **autoresearch** (Karpathy, Mar 2026; the
+minimal single-GPU keep-if-val-improved loop — and the seed-mining cautionary tale) ·
+**ENPIRE** (NVIDIA GEAR, Jun 2026; "physical autoresearch" — robot-policy self-improvement
+behind a frozen agent-authored verifier) · **OpenEvolve** (the open AlphaEvolve
+reimplementation; reproduced circle-packing within 0.04%).
 
 **Benchmarks:** **SWE-bench Verified** (whose hidden `FAIL_TO_PASS` + `PASS_TO_PASS` split is the
 architecture validating this design; ~31% of passing patches ride on tests too weak to catch a

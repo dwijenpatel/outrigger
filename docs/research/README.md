@@ -57,7 +57,13 @@ independent-replication; ≥2/3 refutes kill; 0 killed, 5 single-lens number cor
 adjudicating the root causes and effect sizes of long-horizon coding-agent failure against the
 top-level README's claims, adding the fifteenth subtopic folder
 ([external/failure-modes/](external/failure-modes/README.md)) with a committed machine-readable
-verification record.
+verification record. An **auto-research retrieval pass (2026-07-15)** — four Opus 4.8 agents
+mirroring the primary artifacts of Karpathy's `autoresearch`, NVIDIA's ENPIRE, and AlphaEvolve's
+2026 developments (product GA, the 67-problem math repo, the matmul-novelty dispute), plus a
+landscape sweep, ahead of the 2026-07-18 AGI House auto-research summit — added
+[external/self-improvement/auto-research-systems-2026-07.md](external/self-improvement/auto-research-systems-2026-07.md)
+with three gaming-ledger additions; retrieval-grade verification only (no adversarial panel), so
+nothing from it entered distilled/.
 
 ## Layout
 
@@ -415,3 +421,7 @@ the TrueFoundry 10× caching case study (single unaudited vendor anecdote, gatew
 - Watch for third-party evaluations/reproductions of Zenith (none existed 2026-07-09) and for
   a Meta-Zenith or Meta-Harness code release — either changes the §12 task-conditional
   harness-configuration picture.
+- **ENPIRE code release** (promised as of Jun 2026) — on arrival, audit reward-synthesis +
+  Stage-2 logs; and re-pull AlphaEvolve's live `status.json` before citing any "current
+  record" (both tracked in
+  [external/self-improvement/auto-research-systems-2026-07.md](external/self-improvement/auto-research-systems-2026-07.md)).

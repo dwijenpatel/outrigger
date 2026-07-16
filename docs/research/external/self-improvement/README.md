@@ -4,7 +4,8 @@
 generate/configure harnesses, evolutionary and reflective search over scaffolds, evaluator
 gaming, and the governance of self-modification.
 
-**Coverage: ● rich** (2026-07-10) — the 2026-07-09 deep-research pass.
+**Coverage: ● rich** (2026-07-15) — the 2026-07-09 deep-research pass + the 2026-07-15
+auto-research retrieval pass.
 
 ## Holdings
 
@@ -14,6 +15,12 @@ gaming, and the governance of self-modification.
   evaluator-hack), import candidates (two-split promotion rule, weakness mining, leakage
   audits), and the novelty re-assessment (human-ratified self-modification remains
   unpublished anywhere).
+- [auto-research-systems-2026-07.md](auto-research-systems-2026-07.md)
+  — the retrieval pass on the systems that made the loop mainstream in 2026: Karpathy's
+  `autoresearch` (and its in-the-wild seed-mining failure), NVIDIA's ENPIRE (physical
+  autoresearch behind a frozen agent-authored verifier), AlphaEvolve's product GA + live math
+  ledger + matmul-novelty dispute; gaming-ledger additions 8–10; confirmed-primary landscape
+  notes. Raw mirrors (repo clones, papers) at `~/repos/auto-research-mirrors/`.
 
 ## Related material elsewhere
 
@@ -33,3 +40,10 @@ gaming, and the governance of self-modification.
   invariant, not a convention.
 - Watch: Meta-Zenith or Meta-Harness code release (either changes the harness-generation
   picture); independent replication of Self-Harness/DGM numbers.
+- Watch: ENPIRE code release (audit its Stage-2 logs for reward-hacking on arrival — gaming
+  item 10 graduates or closes); AlphaEvolve's live `status.json` in
+  `alphaevolve_repository_of_problems` (records move — re-pull before citing any "current
+  record").
+- **n-of-m gate repeats / pass-stability**: autoresearch's non-reproducing keeps ask whether a
+  single gate pass conflates luck with correctness — grading-time analysis first; any gate
+  change enters via the evidence channel.

@@ -1,0 +1,23 @@
+{
+  "contract": 1,
+  "role": "implementer",
+  "attempt": 1,
+  "worker": {
+    "tool": "claude",
+    "model": "claude-sonnet-5",
+    "effort": "xhigh"
+  },
+  "isolation": {
+    "deny_read": [
+      "/Users/dwijen/repos/eaitl-heldout-slice2",
+      "/Users/dwijen/repos/eaitl-arm-H-heldout",
+      "/Users/dwijen/repos/outrigger",
+      "/Users/dwijen/repos/eaitl-arm-H",
+      "/Users/dwijen/repos/eaitl-arm-F"
+    ],
+    "sandbox": true,
+    "network": true
+  },
+  "cwd": "/Users/dwijen/repos/eaitl-arm-N",
+  "timeout_s": 3600
+}

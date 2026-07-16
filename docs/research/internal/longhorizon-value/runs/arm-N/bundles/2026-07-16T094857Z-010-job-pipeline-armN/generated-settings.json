@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(//Users/dwijen/repos/eaitl-heldout-slice2)",
+      "Read(//Users/dwijen/repos/eaitl-heldout-slice2/**)",
+      "Read(//Users/dwijen/repos/eaitl-arm-H-heldout)",
+      "Read(//Users/dwijen/repos/eaitl-arm-H-heldout/**)",
+      "Read(//Users/dwijen/repos/outrigger)",
+      "Read(//Users/dwijen/repos/outrigger/**)",
+      "Read(//Users/dwijen/repos/eaitl-arm-H)",
+      "Read(//Users/dwijen/repos/eaitl-arm-H/**)",
+      "Read(//Users/dwijen/repos/eaitl-arm-F)",
+      "Read(//Users/dwijen/repos/eaitl-arm-F/**)"
+    ]
+  },
+  "sandbox": {
+    "allowUnsandboxedCommands": false,
+    "autoAllowBashIfSandboxed": true,
+    "enabled": true,
+    "excludedCommands": [],
+    "failIfUnavailable": true,
+    "filesystem": {
+      "denyRead": [
+        "/Users/dwijen/repos/eaitl-heldout-slice2",
+        "/Users/dwijen/repos/eaitl-arm-H-heldout",
+        "/Users/dwijen/repos/outrigger",
+        "/Users/dwijen/repos/eaitl-arm-H",
+        "/Users/dwijen/repos/eaitl-arm-F"
+      ]
+    }
+  }
+}

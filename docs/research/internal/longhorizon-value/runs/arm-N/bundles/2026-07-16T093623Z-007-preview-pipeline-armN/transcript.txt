@@ -1,0 +1,7 @@
+Implemented and committed `preview-pipeline`:
+
+- **`eaitl/preview.py`**: `run_preview(text, fmt, ir)` composes `introspect_source` → samples → `apply_ir`, returning exactly `{"preview_rows": ..., "errors": ...}`. No re-implementation, filtering, or new error handling — fatal errors (`IntrospectError`, `MappingError`) propagate naturally since neither is caught.
+- **`eaitl/__init__.py`**: added `run_preview` export (only edit to an existing file, as required).
+- **`tests/test_preview.py`**: worked-example test against the fixture, differential tests proving `run_preview` matches hand-composed `introspect_source` + `apply_ir` for both JSON and CSV, a bounded-by-construction test (1000 rows → 10 previewed), per-row error pass-through (divide-by-zero), and fatal-error pass-through for both `IntrospectError` and `MappingError`.
+
+Checks: `mypy --strict eaitl` clean (14 files), full suite `python3 -m unittest discover -s tests -t .` passes (326 tests, including the 7 new ones).

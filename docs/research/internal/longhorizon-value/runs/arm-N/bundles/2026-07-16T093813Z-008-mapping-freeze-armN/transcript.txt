@@ -1,0 +1,6 @@
+Committed. Summary:
+
+- Added `eaitl/freeze.py` exporting `confirm_mapping(ir)`, which composes `validate_ir` (raising `MappingError` naming the first problem's code/location on any malformed plan) and otherwise returns `{"version": <sha256 hex>, "ir": ir}`, where `version` is the SHA-256 hex digest of `json.dumps(ir, sort_keys=True, separators=(",", ":"), ensure_ascii=False)`.
+- Wired `confirm_mapping` into `eaitl/__init__.py` (the only edit to an existing file).
+- Added `tests/test_freeze.py` covering the pinned worked-example digest, key-order insensitivity, array-order sensitivity, the refuses-malformed raise, and idempotence.
+- `python3 -m mypy --strict eaitl` and `python3 -m unittest discover -s tests -t .` both pass (337 tests), and the pinned digest was independently verified to match exactly before committing.

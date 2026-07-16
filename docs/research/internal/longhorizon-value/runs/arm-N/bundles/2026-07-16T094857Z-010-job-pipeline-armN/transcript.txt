@@ -1,0 +1,5 @@
+Committed as `fb9aa8b`.
+
+**Summary**: Added `eaitl/pipeline.py` exporting `run_job(text, fmt, target_schema, target_examples=None)`, which composes the six ratified stages (introspect → propose → validate → confirm → compile → preview) into one pure job record. All three expected exception types (`IntrospectError`, `MatchError`, `MappingError`) plus a non-empty `validate_ir` result stop the job at their stage, recording only the completed-prefix `stages`; any other exception propagates as a bug. Registered `run_job` in `eaitl/__init__.py` — the only edit to an existing file.
+
+Verified against the spec's worked example end-to-end, including the exact frozen version digest, plus all four boundary cases (no-examples fallback, truncated JSON, malformed target schema, nothing-proposable-but-completes). `mypy --strict eaitl` and the full `tests/` suite (381 tests, including 20 new pipeline tests) pass.

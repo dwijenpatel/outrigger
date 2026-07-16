@@ -1,0 +1,7 @@
+Implemented and committed. Summary:
+
+- **`eaitl/validate.py`** — new file exporting `validate_ir(ir: object) -> list[dict[str, str]]`, a pure, never-raising function that checks mappings, filters, output-check validations, and optional source/target against the fixed code set from the spec (`not_an_object`, `mappings_missing` as fatal short-circuits; everything else collected together). Operation names are read live from `eaitl.ops.OP_REGISTRY`; argument-count ranges live in the validator's own `ARG_COUNTS` table. It's intentionally stricter than the engine on duplicate `target_field`, wrong argument counts, and non-predicate filters, while staying lenient on unknown keys, optional `source`/`target`, and column existence.
+- **`eaitl/__init__.py`** — the only edit to an existing file: added the `validate_ir` export.
+- **`tests/test_validate.py`** — new `unittest` suite (69 new tests) covering every code, the fatal short-circuit behavior, "report everything at once," the `ARG_COUNTS`/`OP_REGISTRY` key-equality assertion, and a never-raises sweep over malformed inputs.
+
+Verified: `python3 -m mypy --strict eaitl` → clean; `python3 -m unittest discover -s tests -t .` → 87 tests, all pass (including the pre-existing engine tests, untouched). Committed as `a04a247`.

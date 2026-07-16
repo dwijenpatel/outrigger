@@ -1,0 +1,1 @@
+Implemented `validate_output(ir, rows)` in `eaitl/validations.py`, exported it from `eaitl/__init__.py` (the only edit to an existing file), and added `tests/test_validations.py` covering the pinned semantics and structural-error cases. `mypy --strict eaitl` is clean and all 181 tests pass (previous 138 + 43 new). Changes are committed as `9c23635`.

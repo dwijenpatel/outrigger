@@ -1,0 +1,182 @@
+{
+  "arm_repo": "/Users/dwijen/repos/eaitl-arm-N",
+  "graded_head": "d3931267b87030bc08dac3a3fdbb695985bb568b",
+  "suites": [
+    {
+      "workspace": "/Users/dwijen/repos/eaitl-heldout-slice2/deterministic-matcher",
+      "seal": "fresh",
+      "task_id": "deterministic-matcher",
+      "exit": 0,
+      "ok": true,
+      "ran": 64,
+      "failures": 0,
+      "errors": 0,
+      "tail": [
+        "----------------------------------------------------------------------",
+        "Ran 64 tests in 0.002s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "workspace": "/Users/dwijen/repos/eaitl-heldout-slice2/end-to-end-cli",
+      "seal": "fresh",
+      "task_id": "end-to-end-cli",
+      "exit": 1,
+      "ok": false,
+      "ran": 29,
+      "failures": 0,
+      "errors": 3,
+      "tail": [
+        "----------------------------------------------------------------------",
+        "Ran 29 tests in 0.054s",
+        "",
+        "FAILED (errors=3)"
+      ]
+    },
+    {
+      "workspace": "/Users/dwijen/repos/eaitl-heldout-slice2/ir-contract",
+      "seal": "fresh",
+      "task_id": "ir-contract",
+      "exit": 0,
+      "ok": true,
+      "ran": 78,
+      "failures": 0,
+      "errors": 0,
+      "tail": [
+        "----------------------------------------------------------------------",
+        "Ran 78 tests in 0.001s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "workspace": "/Users/dwijen/repos/eaitl-heldout-slice2/job-pipeline",
+      "seal": "fresh",
+      "task_id": "job-pipeline",
+      "exit": 1,
+      "ok": false,
+      "ran": 38,
+      "failures": 3,
+      "errors": 0,
+      "tail": [
+        "----------------------------------------------------------------------",
+        "Ran 38 tests in 0.007s",
+        "",
+        "FAILED (failures=3)"
+      ]
+    },
+    {
+      "workspace": "/Users/dwijen/repos/eaitl-heldout-slice2/mapping-freeze",
+      "seal": "fresh",
+      "task_id": "mapping-freeze",
+      "exit": 0,
+      "ok": true,
+      "ran": 19,
+      "failures": 0,
+      "errors": 0,
+      "tail": [
+        "----------------------------------------------------------------------",
+        "Ran 19 tests in 0.001s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "workspace": "/Users/dwijen/repos/eaitl-heldout-slice2/output-validations",
+      "seal": "fresh",
+      "task_id": "output-validations",
+      "exit": 0,
+      "ok": true,
+      "ran": 70,
+      "failures": 0,
+      "errors": 0,
+      "tail": [
+        "----------------------------------------------------------------------",
+        "Ran 70 tests in 0.001s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "workspace": "/Users/dwijen/repos/eaitl-heldout-slice2/policy-validation",
+      "seal": "fresh",
+      "task_id": "policy-validation",
+      "exit": 1,
+      "ok": false,
+      "ran": 38,
+      "failures": 0,
+      "errors": 2,
+      "tail": [
+        "----------------------------------------------------------------------",
+        "Ran 38 tests in 0.002s",
+        "",
+        "FAILED (errors=2)"
+      ]
+    },
+    {
+      "workspace": "/Users/dwijen/repos/eaitl-heldout-slice2/preview-pipeline",
+      "seal": "fresh",
+      "task_id": "preview-pipeline",
+      "exit": 0,
+      "ok": true,
+      "ran": 22,
+      "failures": 0,
+      "errors": 0,
+      "tail": [
+        "----------------------------------------------------------------------",
+        "Ran 22 tests in 0.007s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "workspace": "/Users/dwijen/repos/eaitl-heldout-slice2/python-compiler",
+      "seal": "fresh",
+      "task_id": "python-compiler",
+      "exit": 0,
+      "ok": true,
+      "ran": 89,
+      "failures": 0,
+      "errors": 0,
+      "tail": [
+        "----------------------------------------------------------------------",
+        "Ran 89 tests in 0.074s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "workspace": "/Users/dwijen/repos/eaitl-heldout-slice2/source-introspect",
+      "seal": "fresh",
+      "task_id": "source-introspect",
+      "exit": 0,
+      "ok": true,
+      "ran": 121,
+      "failures": 0,
+      "errors": 0,
+      "tail": [
+        "----------------------------------------------------------------------",
+        "Ran 121 tests in 0.002s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "workspace": "/Users/dwijen/repos/eaitl-heldout-slice2/ts-compiler",
+      "seal": "fresh",
+      "task_id": "ts-compiler",
+      "exit": 1,
+      "ok": false,
+      "ran": 74,
+      "failures": 4,
+      "errors": 0,
+      "tail": [
+        "----------------------------------------------------------------------",
+        "Ran 74 tests in 2.151s",
+        "",
+        "FAILED (failures=4)"
+      ]
+    }
+  ]
+}

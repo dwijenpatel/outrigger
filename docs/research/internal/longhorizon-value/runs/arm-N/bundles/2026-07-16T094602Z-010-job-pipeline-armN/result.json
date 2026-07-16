@@ -1,0 +1,23 @@
+{
+  "binary": {
+    "path": "/Users/dwijen/.local/bin/claude",
+    "version": "2.1.207 (Claude Code)"
+  },
+  "contract": 1,
+  "duration_s": 124.637,
+  "error_summary": "API Error: Server error mid-response. The response above may be incomplete.",
+  "exit": 1,
+  "finished_at": "2026-07-16T09:48:06Z",
+  "ok": false,
+  "started_at": "2026-07-16T09:46:02Z",
+  "timed_out": false,
+  "usage": {
+    "api_duration_ms": 124894,
+    "cache_creation_tokens": 99295,
+    "cache_read_tokens": 209403,
+    "cost_usd": 0.8357981999999999,
+    "input_tokens": 10,
+    "num_turns": 24,
+    "output_tokens": 8138
+  }
+}

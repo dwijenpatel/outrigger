@@ -1,0 +1,10 @@
+Implemented and committed the `eaitl run` CLI:
+
+- **`eaitl/cli.py`** — `main(argv)`: parses argv (`run <source> <target_schema> [<target_examples>] --out <dir>`), determines `fmt` from the source extension, reads the files, calls `run_job` exactly once, writes `transform.py`/`transform.mts`/`job.json` (or just `job.json` on failure) under `--out`, prints the pinned stdout block, and returns 0/1/2.
+- **`eaitl/__main__.py`** — `sys.exit(main())`.
+- **`eaitl/__init__.py`** — added `main` export (the only edit to an existing file).
+- **`tests/test_cli.py`** — 9 new unittest cases covering the worked example (byte-exact `transform.py`/`transform.mts`, exact stdout, `job.json` round-trip), the no-examples fallback (`warnings: 2`), all four usage-error boundaries (bad extension, missing file, invalid JSON, missing `--out`/bad argv — each asserting `run_job` was never called and nothing written), the truncated-JSON failed-job case (`stage: introspect`, `stages: {}`), and deterministic re-run byte-identity.
+
+Verified live via `python3 -m eaitl` against real files: the worked example reproduces the pinned version hash and stdout exactly, and all boundary cases (bad extension → exit 2 nothing written, truncated JSON → exit 1 with only `job.json` written) match spec.
+
+`mypy --strict eaitl` is clean and all 390 tests pass (`python3 -m unittest discover -s tests -t .`). Committed as `d393126`.

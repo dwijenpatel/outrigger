@@ -1,0 +1,7 @@
+Committed as `592de72`. Summary of what was implemented:
+
+- **`eaitl/introspect.py`**: `introspect_source(text, fmt) -> dict` and `IntrospectError`. Pure, stdlib-only, handles CSV (BOM stripping, header validation, ragged-row detection) and JSON (array-of-objects validation, first-seen key union) parsing, and per-value classification following the exact spec rules (bool-token check before int, ASCII-only leading-zero-safe int/float regexes, no scientific notation, zero-padded date/timestamp with calendar validation, int+float→float fold, any other mix→string).
+- **`eaitl/__init__.py`**: only the two new export lines added, per constraint — no engine files touched.
+- **`tests/test_introspect.py`**: 70+ new unittest cases covering the worked example, every named edge case in the spec (leading zeros, bool tokens, scientific notation, date/timestamp validity, mixed-type folding, missing-value rules, nested values, whitespace stripping, sample capping/ordering, CSV/JSON structural errors).
+
+Verified: `mypy --strict eaitl` clean, `mypy --strict tests/test_introspect.py` clean, and `python3 -m unittest discover -s tests -t .` passes all 157 tests (86 pre-existing + new introspection tests), confirming the frozen engine is unaffected.

@@ -1,0 +1,9 @@
+Committed as `9f19b1d`.
+
+**Summary:** Added `eaitl/compile_python.py` exporting `compile_python(ir) -> str`, which generates a standalone stdlib-only Python module (`transform(rows) -> (output_rows, errors)`) that is a direct structural transliteration of the engine's `apply_ir`/`ops`/`resolve` logic — same control flow, same f-string message templates — baked in as plain functions plus a literal data table of mappings/filters, so op parity holds by construction rather than by hand-matched behavior. Structural errors raise the reused `MappingError` (via `eaitl.parser.parse_ir`) at compile time; runtime-tolerated defects like wrong arity or duplicate target fields compile cleanly to engine-identical runtime behavior.
+
+Verified:
+- `mypy --strict eaitl` clean
+- Full existing suite (217 tests) plus 42 new differential tests (259 total) pass, covering every named edge case (true division on negatives, `to_date` Z/offset handling, concat null→`""`, cast/arithmetic bool asymmetry, comparison failures, `hash` of `str()`, substring slicing incl. boolean-index rejection, literal-vs-dynamic arg resolution, filters against the mapped row, error capture, degenerate plans, determinism)
+- An ad-hoc 3,438-case differential fuzz sweep across op/argument combinations (not committed, scratch-only) found zero mismatches against `apply_ir`
+- Only edit to existing files was the `compile_python` export in `eaitl/__init__.py`, per the constraint

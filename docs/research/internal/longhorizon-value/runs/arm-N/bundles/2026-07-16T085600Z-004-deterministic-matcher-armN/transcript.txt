@@ -1,0 +1,6 @@
+Committed as `df2e09c`. Summary:
+
+- **`eaitl/match.py`**: `propose_mappings()` and `MatchError`, implementing the four-lane ladder exactly as specified — exact normalized name, unique containment, example-driven inference (ratio ∈ {10,100,1000}, concatenation with derived separator, distinguishing-equality for bool, `to_date` extraction reusing the engine's own `OP_REGISTRY["to_date"]` for parity), then unique type compatibility (computed in a proper two-phase pass so a target's "only unmapped field of its type" check reflects the final state after lanes 1–3, independent of target-schema order). Ties/inconsistencies always fall through; unresolved targets are simply omitted.
+- **`eaitl/__init__.py`**: only the two required export lines added.
+- **`tests/test_match.py`**: 217 total tests pass (added ~40), covering the pinned worked example (with and without `target_examples`), each lane in isolation, every skip rule (ties, inconsistent pairs, single-truth equality), fatal `MatchError` cases, well-formedness via `validate_ir`, and determinism.
+- `mypy --strict eaitl` is clean; full test suite passes.

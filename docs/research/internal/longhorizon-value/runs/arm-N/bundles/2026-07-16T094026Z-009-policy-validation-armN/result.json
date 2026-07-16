@@ -1,0 +1,22 @@
+{
+  "binary": {
+    "path": "/Users/dwijen/.local/bin/claude",
+    "version": "2.1.207 (Claude Code)"
+  },
+  "contract": 1,
+  "duration_s": 335.35,
+  "exit": 0,
+  "finished_at": "2026-07-16T09:46:02Z",
+  "ok": true,
+  "started_at": "2026-07-16T09:40:26Z",
+  "timed_out": false,
+  "usage": {
+    "api_duration_ms": 305745,
+    "cache_creation_tokens": 85406,
+    "cache_read_tokens": 2554153,
+    "cost_usd": 1.6333689000000002,
+    "input_tokens": 82,
+    "num_turns": 41,
+    "output_tokens": 23442
+  }
+}

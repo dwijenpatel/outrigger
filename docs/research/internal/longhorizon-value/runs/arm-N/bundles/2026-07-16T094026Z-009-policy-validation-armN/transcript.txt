@@ -1,0 +1,10 @@
+Committed. Summary:
+
+- **`eaitl/policy.py`** — new `validate_mappings(ir, target_schema=None) -> list[dict[str, str]]`. Runs `validate_ir` first and raises `MappingError` naming the first problem for a malformed plan; otherwise returns advisory warnings (never raises for those):
+  - `pii_unhashed` — pinned 10-token name match on `target_field` or any dynamic (non-literal) string arg, suppressed by `op == "hash"`.
+  - `non_deterministic_op` — pinned 17-op `DETERMINISTIC_ALLOWLIST` (identical to today's engine registry, so inert until it grows).
+  - `unmapped_target` — one warning per schema field with no covering mapping, in schema order, only when `target_schema` is given (itself validated, raising `MappingError` if malformed).
+- **`eaitl/__init__.py`** — only existing-file edit, adding `validate_mappings` to imports/`__all__`.
+- **`tests/test_policy.py`** — 24 tests covering the worked example exactly, hash suppression, literal-vs-dynamic arg distinction, the allowlist/registry live-sync assertion, unmapped-target ordering, and malformed-plan/malformed-schema error paths.
+
+`mypy --strict eaitl` and `tests/test_policy.py` are clean; the full suite (`python3 -m unittest discover -s tests -t .`) passes all 361 tests.

@@ -1,0 +1,20 @@
+The suite is complete and clean. Here's a final summary of what I authored and how I verified it.
+
+## Held-out suite for `policy-validation`
+
+**5 test files in `suite/`**, covering `validate_mappings(ir, target_schema=None)` at its declared seam:
+
+| File | What it pins |
+|---|---|
+| `test_worked_example.py` | The spec's anchor example holds *exactly* (ordered `[pii_unhashed@mappings[0], unmapped_target@target_schema]`); hashing mapping[0] removes the PII warning; omitting the schema removes the unmapped warning; both together → `[]`. |
+| `test_pii_unhashed.py` | Each of the 10 pinned tokens flags (as `target_field` and as a dynamic arg); tokenization splits on non-alphanumerics; **token-membership not substring** (`customerEmail`, `doberman`, `addressee`… don't flag); `hash` suppresses; literal args don't count; class is mappings-only (not filters); location index tracks the offending mapping. |
+| `test_non_deterministic_op.py` | Live-sync: every registry op is treated as deterministic (registry ⊆ allowlist); the allowlist is **frozen, not `set(OP_REGISTRY)`** — a monkeypatched future op warns at `mappings[i].transform` / `filters[i]`. |
+| `test_unmapped_target.py` | One warning per uncovered field in schema order; fully-covered → none; no schema → class skipped; empty `fields` → none. |
+| `test_contract_and_errors.py` | Export surface + `eaitl.policy` module; returns a list; empty when clean; never raises on warnings; record shape is exactly `{code, message, location}` (all `str`); malformed IR/schema raise `MappingError`; plus two base-passing regression guards (engine registry == the pinned 17 ops, `apply_ir` unchanged). |
+
+**Verification (three independent runs):**
+- **Fails-on-base** — official `heldout.py validate` reports `ok: true`, split `failed:1, errored:35, passed:2`. The runner completes; the two engine-seam guards pass on base; the rest fail/error because `validate_mappings` doesn't exist yet.
+- **Satisfiable** — a spec-faithful reference implementation I wrote passes **38/38**, confirming no test is over-strict or self-contradictory (arities, location strings, ordering, error types all consistent with a correct impl).
+- **Adversarial teeth** — a gaming implementation (live allowlist, substring PII matching, literal-arg scanning, filter PII scanning) fails exactly the **9** tests targeting those shortcuts, and nothing else.
+
+I made subTest-looping methods bind the function once up front so they error once (not per-iteration) on base — that turned the earlier cosmetic `passed: -50` into a clean `passed: 2` without losing per-case diagnostics on a correct tree. The suite directory holds only the 5 `test_*.py` files (no `__init__.py`, no bytecode). Per the role contract, I did not run `seal`.

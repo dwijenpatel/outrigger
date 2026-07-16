@@ -1,0 +1,22 @@
+The suite is complete and validated. Here's a summary of what I authored and how I verified it.
+
+## Deliverable: held-out suite for `end-to-end-cli`
+
+Six files in `suite/` — a shared helper plus five test modules (29 tests total):
+
+| File | What it pins |
+|---|---|
+| `_cli_support.py` | Shared harness: `run_cli()` (captures rc/stdout/stderr, normalizes argparse's `SystemExit`), fixture builders, the canonical `job.json` serializer. Importing it pulls in `eaitl.cli.main`. |
+| `test_usage_errors.py` | Exit **2** / nothing on stdout / message on stderr / no artifacts written — for bad extension, missing files, invalid JSON in schema/examples, missing `--out`, missing positionals, unknown subcommand. "job.json absent" is the observable proof `run_job` was never called. |
+| `test_failed_job.py` | The exit-**1** path: a truncated *source* is passed as raw text and fails at introspect (`stage: introspect`, `stages: {}`, only `job.json` written), plus the sharp **exit‑1 (bad source) vs exit‑2 (bad schema)** boundary, case‑insensitive `.JSON`, and deterministic overwrite. |
+| `test_completed_job.py` | The exit-**0** path: stdout is rebuilt *from the record the CLI wrote* (no hard-coded hashes/counts), transform files checked byte‑for‑byte against `stages.compile.*`, exactly three artifacts under `--out`, `ensure_ascii=False`, optional examples arg, determinism. |
+| `test_public_interface.py` | `eaitl.cli.main` exists with `argv=None` default; `eaitl.main` is re‑exported; `python -m eaitl run …` works end‑to‑end (guards `__main__.py`). |
+| `test_engine_regression.py` | Base-passing guard: the engine still imports *through the package* and behaves — catches an `__init__.py` edit that breaks `import eaitl`. |
+
+## How I verified it (I never run `seal`)
+
+1. **Passes on a spec-faithful implementation** — I built a throwaway reference CLI + stub pipeline in my scratchpad (not shipped) and ran the suite through the *exact* `heldout.py` discovery mechanics: **29/29 pass**.
+2. **Has teeth** — 7 targeted mutations (source pre-parsed as JSON, `ensure_ascii=True`, usage errors to stdout, wrong stage name, `sort_keys=False`, `--out` defaulting to `.`, transform written on failure) were each caught by exactly the intended test(s).
+3. **Fails on base** — the real `validate` couldn't run (sandbox blocks `git worktree add` on the target repo's `.git`), so I reproduced it faithfully against a pristine base checkout: **`ran=7, errored=4, passed=3`** → policy satisfied (≥1 non-pass), runner completes, and the 3 passing engine-regression tests give a healthy base baseline.
+
+Key design choice given my inputs: I could **not** reconstruct the pipeline task's pinned 3-row fixtures or the `ec4a652a…` version hash, so I never hard-code matcher/compiler output. Instead every derived value is cross-checked against the `job.json` record the CLI itself produced — the tests pin the CLI's *contract*, staying robust to whatever the (unseen) matcher/compiler emit while still failing hard on any spec violation.

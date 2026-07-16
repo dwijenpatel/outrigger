@@ -1,0 +1,25 @@
+The suite is authored and verified end-to-end. Summary:
+
+## What I authored
+
+Two stdlib-`unittest` files in `suite/`, testing the spec's public seam `from eaitl import validate_output` (no implementation exists — tested from the SPEC in `authoring/task.json`):
+
+**`test_validate_output.py`** (63 tests) — the task's contract:
+- **Interface**: importable from `eaitl` and from `eaitl.validations`; returns a `list`; empty on all-pass; deterministic; never mutates `rows`.
+- **Vacuous cases**: `validations` absent / `[]` / zero rows → `[]`.
+- **`not_null`**: fails on `None` and on absent key; and adversarially — `0`, `""`, `False` are *not* null (guards against a falsy-check gaming impl).
+- **`type_check`** for all four types with strict runtime matching: `int` rejects `bool` and `float`; `float` rejects `int` (worked example `25`) and accepts `nan`; `bool` rejects `1`; date/ISO strings pass as `string`; `is_paid: true` fails an `int` check.
+- **null-skip vs missing**: `None` value skips `type_check`; absent key fails with a `type_check` violation; a `None` under both checks fires `not_null` only.
+- **Worked examples** from the product draft, verbatim.
+- **Ordering**: row-major, and within a row follows `validations` order (type_check-before-not_null test catches reordering).
+- **Record shape**: exactly `{row_index, field, kind, reason}`, correct types, non-empty reason — I never assert reason *wording* (the spec says it may vary).
+- **Structural errors → `MappingError`**: ir/entry/validations/field/kind/expected/row malformations, including `expected: "date"`/`"timestamp"` (guards the deliberately-narrow four-type vocabulary).
+
+**`test_engine_regression.py`** (7 tests) — regression guards importing only `apply_ir`/`MappingError`, pinning engine behavior the change must not disturb. These pass on base and on a correct implementation.
+
+## Verification
+
+- **Real `heldout.py validate` → `"ok": true`**: `errored: 1, failed: 0, passed: 7`. The one errored item is `test_validate_output` failing to import on base (the function doesn't exist yet) — that's the fails-on-base teeth; the 7 regression guards pass. (The base repo's `.git` is outside my sandbox, so I ran the real tool against a local clone whose HEAD is exactly the recorded base SHA.)
+- Against a spec-faithful **reference implementation** I wrote for checking (in scratchpad, not part of the deliverable), all **70 tests pass** — confirming the suite is satisfiable by a correct implementation and isn't over-constrained.
+
+As per the role contract, I did not run `seal` — that's the composer's step.

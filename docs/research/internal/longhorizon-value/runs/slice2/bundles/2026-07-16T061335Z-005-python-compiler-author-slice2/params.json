@@ -1,0 +1,17 @@
+{
+  "contract": 1,
+  "role": "author",
+  "attempt": 1,
+  "worker": {
+    "tool": "claude",
+    "model": "claude-opus-4-8",
+    "effort": "xhigh"
+  },
+  "isolation": {
+    "deny_read": [],
+    "sandbox": true,
+    "network": true
+  },
+  "cwd": "/Users/dwijen/repos/eaitl-heldout-slice2/python-compiler",
+  "timeout_s": 1800
+}

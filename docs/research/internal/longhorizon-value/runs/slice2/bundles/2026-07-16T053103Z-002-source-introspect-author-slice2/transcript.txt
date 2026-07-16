@@ -1,0 +1,26 @@
+The suite is authored and verified. Here's the summary.
+
+## Held-out suite for `source-introspect` — done
+
+I wrote **9 test files (121 tests)** into `suite/`, testing the spec (no implementation exists yet), then verified both directions.
+
+### Verification
+- **Fails-on-base**: real `heldout.py validate` against a clean checkout of `c646832` → `ok: true`, split `errored=8, failed=0, passed=4`. The 8 feature modules error at import (`introspect_source`/`IntrospectError` don't exist on base); the 4 regression guards pass. Policy satisfied (runner completes, ≥1 test fails/errors).
+- **Passes-on-correct**: I built a spec-faithful reference implementation in a scratch copy and ran the suite against it → **121/121 pass**, confirming the tests are internally consistent and not self-contradictory.
+
+### Coverage (aimed at the seams a blind author can pin from the spec)
+| File | What it pins |
+|---|---|
+| `test_interface.py` | Import paths (`eaitl` + `eaitl.introspect`), exact `{schema, samples}` shape, the worked-example **full-output oracle**, determinism |
+| `test_classification_string.py` | Every string rule + adversarial cases: leading-zero (`007`→string), no `+`/underscore/non-ASCII-digit ints, `.5`/`5.`/`1e5`→string, **invalid dates/moments** (`2026-02-30`, hour-25) →string, whitespace-strip |
+| `test_classification_json.py` | The `isinstance(True, int)` trap (JSON `true`→bool, never int), `25.0` stays float, `NaN`/`Infinity`→float, nested→string |
+| `test_column_type.py` | Folding: all-same, int+float→float, other-mix→string, all-missing→string, missing values never veto |
+| `test_samples.py` | `min(10,n)`, input order, **raw/uncoerced** samples, CSV every-key/`""`, JSON exact-keys/dup-key-last/nan |
+| `test_csv_structure.py` | BOM strip, header order, dup/empty header, ragged row, zero rows |
+| `test_json_structure.py` | Array-of-objects requirement, union-of-keys order, unparseable/empty-array fatals |
+| `test_errors_and_purity.py` | Unknown-`fmt` fatals, value-level oddities **never raise** |
+| `test_regression_engine.py` | Base-passing guard: engine (`apply_ir`/`MappingError`) still imports and behaves |
+
+The strongest anti-gaming tests target exactly the spec's named traps: bool-before-int for JSON, leading-zero exclusion, `25.0`-stays-float, and validity (not just format) for dates/timestamps.
+
+I did **not** seal — that's the composer's step. `validation.json` was written into the workspace by the validate run.

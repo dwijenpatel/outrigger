@@ -1,0 +1,27 @@
+The suite is complete and verified. Here's the final state.
+
+## Summary
+
+I authored a held-out test suite for `job-pipeline` in `suite/`, testing `run_job` purely from the spec. **Official `heldout.py validate` returns `"ok": true`** (6 errored, 0 failed, 2 passed on base — fails-on-base policy satisfied, runner completes).
+
+### Verification performed
+- **Against base** (engine-only checkout): the 6 modules that import `run_job` error (it doesn't exist yet) → satisfies "≥1 test fails on base"; the engine regression guard passes (base-passing guard, as welcomed).
+- **Against a spec-faithful reference implementation** I built in the scratchpad (reusing the real base `apply_ir` for compile/preview): **all 38 tests pass, 0 skipped, 0 failed** — confirming the suite goes green against a conformant build and has no wiring bugs.
+
+### Suite contents (`suite/`)
+| File | What it pins |
+|---|---|
+| `_pipeline_fixtures.py` | Shared pinned inputs/expectations (no `eaitl` import, so it loads on base) |
+| `test_worked_example.py` | End-to-end oracle: record shape (exactly 4 keys — catches spurious `job_id`/timestamp), stage order, introspect schema/samples, 5-mapping proposal, `warnings: []`, **the pinned version digest**, both compiled languages, preview rows == the three target examples, JSON round-trip |
+| `test_no_examples.py` | Fallback: 3-mapping proposal, **exactly two `unmapped_target` warnings in schema order**, 3-key preview rows |
+| `test_empty_proposal.py` | Silence-with-warnings boundary: single bool field → completes (not fails), empty mappings, one warning, still freezes/compiles, previews to `[{}, {}, {}]` |
+| `test_failures.py` | Stage-prefix rule: truncated JSON → failed at `introspect`, `stages == {}`; malformed schema → failed at `propose`, `stages` holds `introspect` only |
+| `test_determinism.py` | Equal inputs → equal records (incl. canonical JSON), inputs not mutated |
+| `test_composition.py` | Differential faithfulness: each stage artifact == the ratified stage function's own output (robust to internal shapes; skips if a function isn't exported) |
+| `test_engine_regression.py` | Base-passing guard: the engine `apply_ir` must not change |
+
+### Key design choices
+- **Exact-match oracles** only on values the spec pins verbatim (version digest, preview rows, warnings, introspect field types); **leniency** on neighbor-owned artifact shapes (`introspect`/`preview` "full return"), which the differential tests pin verbatim instead.
+- **Warning assertions** scan string leaves rather than guessing key names (`code` vs `kind`, etc.), so they stay robust while still enforcing count, field identity, and order.
+
+`validation.json` at the workspace root is validate's normal artifact. I did not run `seal` (composer's verb).

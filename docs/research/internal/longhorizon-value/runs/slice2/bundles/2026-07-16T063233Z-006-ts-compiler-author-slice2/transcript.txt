@@ -1,0 +1,20 @@
+The held-out suite for `ts-compiler` is complete and validated in both directions.
+
+## What I built
+
+Five `test_*.py` files in `suite/`, testing the **spec** of `compile_ts(ir) -> str` (no implementation existed):
+
+| File | Coverage | Needs node/tsc? |
+|---|---|---|
+| `test_compile_ts_present.py` | importable/callable, returns `str`, byte-identical determinism, no input mutation | no |
+| `test_compile_ts_structural.py` | every parser-rejected plan raises the **reused** `eaitl.MappingError`; runtime-tolerated plans (wrong arity, duplicate targets, empty mappings) still compile | no |
+| `test_compile_ts_source.py` | exported surface (`Row`/`TransformError`/`transform` signature), zero-imports, and the op→`OutputRow` field-type derivation (incl. `cast` literal-vs-dynamic → `unknown`, duplicate-target last-wins, mappings order, empty `{}`) | no |
+| `test_ts_differential.py` | compiles → runs the **pinned strict tsc gate** → executes under **node** → JSON-compares `transform(rows)` to `apply_ir` across ~30 in-domain scenarios (Python equality, cross-type ordering errors, divide-by-zero, cast forms, timezone-free `to_date`, `concat`/`hash` Python-text rendering, filters resolving against the *output* row, etc.), plus a tsc companion that pins the exported type surface | yes (skips if absent) |
+| `test_engine_parity_anchor.py` | base-passing regression guards on the frozen engine semantics `compile_ts` must mirror | no |
+
+## Key design choices
+- **Guaranteed base failure, cleanly**: guarded imports + `setUp`-fail mean every `compile_ts` test *fails* (not errors) on a checkout without the feature — verified `failed: 68, passed: 6, errored: 0, ok: true`. The Python-only tests carry the base-failure guarantee even if node/tsc are unavailable in grading.
+- **In-domain differential**: all differential inputs stay strictly inside the spec's guaranteed parity domain (safe integers, no float→text, no non-finite, no unpaired surrogates), and compare to `apply_ir` at runtime — so a spec-faithful implementation must match exactly, including reason strings and error placement.
+- **Self-validated**: I built a faithful reference `compile_ts` (embedded SHA-256 confirmed byte-equal to `hashlib`, including a Unicode string; pinned tsc gate passes) and ran the full suite against it — **74/74 pass**. This proves the suite discriminates correctly rather than rejecting good code.
+
+`validate` result against base `c6468329`: runner completes, 68 fail, 6 pass, 0 errors — satisfying the seal policy. I did not run `seal` (not my role).

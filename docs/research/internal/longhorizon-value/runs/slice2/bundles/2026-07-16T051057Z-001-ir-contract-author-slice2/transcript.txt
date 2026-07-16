@@ -1,0 +1,22 @@
+The suite is complete and verified. Here's what I authored and how I checked it.
+
+## What I built
+
+A held-out `unittest` suite in `suite/` for the `validate_ir` contract, organized into 7 test files plus one shared helper (`_validate_helpers.py`, which carries the closed set of 20 problem codes and shape-checkers, and is deliberately free of any `eaitl` import so the regression guards load on base):
+
+- **`test_validate_contract.py`** — the public seam (`from eaitl import validate_ir` alongside the untouched `apply_ir`/`MappingError`), well-formed baselines, the two fatal short-circuits (`not_an_object`, `mappings_missing` each return exactly one problem even when other things are wrong), a never-raises fuzz over 14 adversarial inputs, and a shape invariant on every returned problem.
+- **`test_validate_mappings.py`**, **`_filters.py`**, **`_validations.py`**, **`_source_target.py`** — every rule and code from the spec, each violation isolated so exactly one code fires, plus cross-item collection (every mapping/filter/validation is checked, not just the first bad one) and the spec-named "three wrong-arg-count mappings → three problems" edge.
+- **`test_validate_argcounts.py`** — the count table equals the live `OP_REGISTRY` keys, every registry op is recognized at a valid count, ranges are enforced at their boundaries, and an **adversarial live-registry test** (removes a real op from the registry and expects `unknown_op`, catching a copy-at-import implementation).
+- **`test_engine_regression.py`** — base-passing guards that the engine's committed behavior and public surface are unchanged.
+
+## How I verified it (I never run `seal`)
+
+I wrote a private spec-compliant reference implementation (in scratchpad, never shipped) and ran the suite through the *exact* `heldout.py` runner logic:
+
+- **Against a compliant impl: 78/78 pass** — the suite is consistent with the spec.
+- **Against the unchanged base** (confirmed at the recorded commit `c646832`, clean tree): 6 pass (regression guards), **6 error** with `ImportError: cannot import name 'validate_ir'` — so the fails-on-base policy is satisfied and the runner completes.
+- **Teeth check against three gaming variants**: hardcoded op names → caught (1 fail, the live-registry test); filter locations using `.transform` → caught (7 fails); duplicate-target reporting the first occurrence → caught (2 fails).
+
+The authoritative `heldout validate` itself is blocked here only by the sandbox (it can't create a git worktree inside the base repo's `.git`); my replication uses its identical `loader.discover(start_dir=suite, top_level_dir=suite)` runner against the true base checkout, and the failed attempt left no residue in the base repo.
+
+One design note worth flagging: filter problems are asserted at `filters[i]` (not `filters[i].transform`), per the spec's filter section — that's the distinction the 7-failure variant confirms matters. Ambiguous co-occurrence cases (a missing/unknown filter op is also non-predicate) are asserted leniently so any spec-compliant ordering passes, while the unambiguous cases are pinned exactly.

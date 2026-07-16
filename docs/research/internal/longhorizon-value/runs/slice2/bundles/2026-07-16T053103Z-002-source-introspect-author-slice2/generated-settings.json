@@ -1,0 +1,9 @@
+{
+  "sandbox": {
+    "allowUnsandboxedCommands": false,
+    "autoAllowBashIfSandboxed": true,
+    "enabled": true,
+    "excludedCommands": [],
+    "failIfUnavailable": true
+  }
+}

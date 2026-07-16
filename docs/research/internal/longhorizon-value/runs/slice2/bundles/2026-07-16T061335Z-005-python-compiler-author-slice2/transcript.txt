@@ -1,0 +1,27 @@
+The held-out suite for `python-compiler` is written, validated, and proven to have teeth.
+
+## What I did
+
+I read the frozen engine (`engine.py`, `ops.py`, `resolve.py`, `parser.py`, `model.py`, `errors.py`) and **ran `apply_ir` directly on the base checkout** to capture the exact behavior — output values *and* error `reason` strings — for every named edge, so my assertions pin reality, not my guesses.
+
+## The suite (`suite/`, 89 tests across 7 modules + 1 harness)
+
+- **`_diff_harness.py`** — the differential oracle. It compiles a plan, `exec`s the generated source **with `import eaitl` blocked**, runs `transform`, and asserts full equality against `apply_ir`. Blocking the import enforces the "standalone / never imports eaitl" contract on *every* differential check. `compile_python` is imported lazily so base checkouts (where it's absent) don't crash discovery.
+- **`test_export_and_interface.py`** — export exists (the clean fails-on-base anchor), returns `str`, defines `transform(rows)->(list,list)`, standalone, byte-identical determinism, non-mutation, degenerate plans.
+- **`test_parity_ops.py`** — every named op edge with explicit expected values *and* differential parity: true-division on negatives, `to_date` Z/offset without tz conversion, concat null→`""`, cast bool/`1e5`/failure/unsupported-target, arithmetic bool-rejection asymmetry, comparison failures, `hash(null)`→digest of `"None"`, substring negative/out-of-range/bool-index, rename==copy.
+- **`test_arg_resolution.py`** — `{"lit":X}`, dynamic key/non-key/non-string, mappings-resolve-against-source vs filters-resolve-against-output.
+- **`test_filters.py`** — falsy-drop-no-error, op-failure-drop-with-record, short-circuit, row-index coverage under filtering.
+- **`test_structural_errors.py`** — the reused `MappingError` at **compile time**; runtime-tolerated defects (wrong arity, duplicate target) still compile.
+- **`test_worked_example.py`** — the draft's five-mapping scenario, inlined (no file dependency).
+- **`test_differential_breadth.py`** — 19 diverse scenarios as individual methods.
+
+## Verification (I never seal)
+
+| Implementation | Result |
+|---|---|
+| Clean base (no `compile_python`) | `failed=1, errored=86, passed=2` → **`heldout.py validate` reports `ok: true`** |
+| Correct reference | **89/89 pass** |
+| Gaming impl that delegates to `eaitl` | **70 fail** (standalone guard fires) |
+| Standalone-but-wrong (floor division) | **9 fail**, incl. the explicit divide pin + worked example |
+
+The official `heldout.py validate` was blocked against the real base repo only because the sandbox can't write a worktree into its `.git`; I confirmed it end-to-end against a writable copy of the same commit (`c646832`).

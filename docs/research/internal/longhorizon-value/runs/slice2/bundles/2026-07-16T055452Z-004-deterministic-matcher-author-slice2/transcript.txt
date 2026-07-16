@@ -1,0 +1,22 @@
+The held-out suite is complete and validated. Here's a summary of what I authored for `deterministic-matcher`.
+
+## Deliverable: 5 test files in `suite/`
+
+**`test_worked_example.py`** — The pinned crown-jewel scenarios:
+- The three-sample worked example returns the exact IR (byte-for-byte), in target-schema order, with canonical `{"lit": X}` literals — including the adversarial check that `is_paid` binds to `equals(status, "paid")` (the unique survivor), *not* `order_id`.
+- The proposed IR **actually resolves on the engine** (`apply_ir`) to reproduce the target examples.
+- The no-examples fallback returns exactly its three mappings (`id` via lane 2 copy, `amount_usd` via lane-4 **cast** — not divide, `order_date` via lane-4 to_date), with `customer_name`/`is_paid` omitted.
+
+**`test_lanes.py`** — Lanes 1/2/4 in isolation: exact-name copy/cast, raw-source-name column refs, identical-normalization ties falling through, containment, unique type-compat, and the two "tie → omit" guards (multiple compatible sources; multiple unmapped targets of a type).
+
+**`test_example_lane.py`** — Lane 3: ratio `{10,100,1000}` (incl. `/1000`), exotic-ratio rejection, concat with a non-space separator, the bool/equality lane, single-truth skip, inconsistent-pair skip, date extraction — each with engine-resolution cross-checks.
+
+**`test_errors_and_boundaries.py`** — Every `MatchError` fatal (malformed/duplicate schemas, bad sample/example shapes), the boundaries (empty samples, zero-field target, all six types, unmatchable→empty, extra-keys-ignored), the export seam (`eaitl` + `eaitl.match`, `MatchError` distinct from `MappingError`), and a structural well-formedness helper.
+
+**`test_engine_contract_regression.py`** — Base-passing guards pinning the engine semantics the emitted ops depend on.
+
+## Verification
+- **Seal policy (official `validate`): `ok: true`**, split `passed=7, failed=0, errored=4` — the 4 `propose_mappings` modules can't import on the unchanged base, and the runner completes.
+- **Correctness cross-check:** I built a reference implementation strictly from the spec; the suite caught **two real bugs in my own tests** (a target name that was an incidental substring of a source, and a wrong expected value that assumed division in the no-examples path). After fixing, **all 64 tests pass** against the faithful reference — strong evidence a correct implementation passes.
+
+All scratch artifacts (reference impl, repo copy) stayed in the isolated scratchpad; the deliverable directory holds only the five `test_*.py` files.

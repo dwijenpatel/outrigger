@@ -1,0 +1,21 @@
+The suite is authored, validated, and clean. Here's what I did.
+
+## Summary
+
+I wrote the held-out test suite for `mapping-freeze` from the spec alone (no implementation exists yet), into `suite/` as two files.
+
+**`suite/test_confirm_mapping.py`** — the contract teeth (imports `eaitl.confirm_mapping`, which doesn't exist on base, so the whole module reports *errored* on base):
+- **Pinned worked-example digest** — I independently recomputed the SHA-256 from the exact canonical rule (`sort_keys=True, separators=(",",":"), ensure_ascii=False`, UTF-8) and confirmed it equals the spec's pin `a4ae8a15…0ad90fb`.
+- **Return shape** — result is a dict with exactly `{"version", "ir"}`; version is 64-char lowercase hex; `ir` returned unchanged.
+- **Purity** — input not mutated; idempotent across calls; re-confirmation never refused (freeze keeps no memory).
+- **Canonical-form consequences** — object key-order is identity-irrelevant (same digest); array-order is identity-relevant (mappings swap → different digest); extra/proposer keys change the digest; a non-ASCII plan matches a second pinned digest I computed (`f0bda70d…`) that catches a wrong `ensure_ascii=True` implementation.
+- **Module path** — `confirm_mapping` lives in `eaitl.freeze`.
+- **Refuses malformed** — raises `MappingError` for missing `mappings`, unknown op, and several structural defects (asserting only the exception *type*, never `validate_ir`'s internal problem codes, which I can't see).
+
+**`suite/test_freeze_regression.py`** — base-passing guards that the only edit to existing files is the new export: `apply_ir`/`MappingError` stay importable and the engine still maps, filters, and raises exactly as before.
+
+## Verification
+- **Fails-on-base**: official `heldout.py validate` returns `ok: true` — base split `errored=1, failed=0, passed=4` (the contract module can't import on base; regression guards pass). The real target repo's `.git` isn't writable in this sandbox, so I ran `validate` against a scratchpad copy whose `HEAD` is exactly the base sha `c6468329…`.
+- **No false negatives**: I built a spec-faithful reference merge (a `validate_ir` mirroring the parser's structural checks + a `confirm_mapping`) and all **19 tests pass**, so a correct implementation isn't wrongly failed.
+
+`validation.json` (`ok: true`) is recorded in the workspace. I did not — and will not — run `seal`.

@@ -1,0 +1,25 @@
+The base repo is clean and untouched (I only read it). The held-out suite is authored and validated.
+
+## Summary
+
+I authored a stdlib-`unittest` held-out suite for `preview-pipeline` in `suite/`, testing `run_preview(text, fmt, ir) -> {"preview_rows", "errors"}` from the **spec alone** (no implementation exists yet).
+
+**Files written** (`suite/`):
+- `_preview_support.py` — lazily-binding loaders (no `eaitl` imports at module load, so it imports cleanly on base) + the core `assert_preview_composes` differential oracle + `find_json_source` (source-encoding hedge).
+- `test_run_preview_export.py` — export-presence (guarantees genuine base failures).
+- `test_run_preview_composition.py` — 6 scenarios of the differential identity `run_preview ≡ introspect_source → apply_ir(ir, samples)`.
+- `test_run_preview_return_contract.py` — exactly `{preview_rows, errors}`, no `schema` key.
+- `test_run_preview_errors.py` — `IntrospectError`/`MappingError` pass-through + source-fatality-beats-bad-plan precedence.
+- `test_run_preview_worked_example.py` — the product-draft anchor + divide-by-zero "previews show failures".
+- `test_run_preview_bounded.py` — preview covers introspection's ≤10 samples, not the whole file.
+- `test_engine_regression.py` — base-passing guards on the `apply_ir` behavior the preview delegates to.
+
+**Design choice that de-risks the unknowns:** the required `source-introspection` dependency isn't in the base checkout, and its exact internals (sample key name, JSON source encoding, export location) aren't fully pinned by the spec. So the backbone is **differential composition** — whatever `introspect_source` does, `run_preview` must do the same — which is robust to all of that, plus resilient loaders and a multi-encoding source finder so I never false-fail correct-but-different implementations.
+
+**Validation evidence** (the sandbox blocks the real `heldout.py validate`'s `git worktree add` into the base repo's `.git`, so I ran the identical discovery/runner logic against the base tree, which is already at the recorded base SHA and clean — an exact equivalent):
+- **Base (unchanged):** ran 22 → **2 genuine failures** (export tests) + 16 errors, 0 skips → fails-on-base policy satisfied.
+- **Faithful reference impls** (canonical; and a variant with a different samples key + no top-level re-export): **22/22 pass, 0 skips**.
+- **Single-object-only source variant:** 21 pass, 1 legitimate skip (a bounded test needing 25 rows can't exist in that format).
+- **4 gaming implementations** (leaks schema key / transforms whole file / hides per-row errors / swallows `IntrospectError`): **each caught** by the intended tests.
+
+I did not run `seal` (not my role), and the suite's quality is for `validate`/seal to decide, not for me to assert.

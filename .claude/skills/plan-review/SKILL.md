@@ -46,7 +46,7 @@ this exception to smuggle in style critique about wording you dislike.
 
 Arguments name the plan artifacts; otherwise discover them: `plan.json` or
 `tasks.json`, the spec files they reference (e.g. `specs/`), the design doc the plan
-was derived from, and the repo's `CLAUDE.md` conventions file. Read all of it fully.
+was derived from, and the repo's `AGENTS.md` conventions file. Read all of it fully.
 The review unit is the whole plan — divergences live *between* files as often as
 within one.
 
@@ -101,7 +101,7 @@ establishes — a pattern repeated across bullets, stages, or tasks — and any 
 instance silently breaks the pattern. A break is either called out explicitly in the
 prose ("unlike the other stages…") or it is a probable drafting error whose two
 readings are "the pattern holds" vs "the break is intended". Also flag quiet
-deviations from the repo's CLAUDE.md conventions.
+deviations from the repo's AGENTS.md conventions.
 
 **Substrate-truth finder (×1) — runs in BOTH tiers, and is not optional.** Enumerate every
 sentence asserting external behavior: framework defaults, middleware or hook ordering,

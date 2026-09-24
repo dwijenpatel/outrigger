@@ -356,7 +356,7 @@ operator-run smoke; a dash = not applicable.
 
 | Check | Claude Code | Codex |
 |---|---|---|
-| Shared instructions loaded | CLAUDE.md imports AGENTS.md (live-pending: eyeball one session) | native AGENTS.md (live-pending) |
+| Shared instructions loaded | native AGENTS.md, v2.1.277+ (live-pending: eyeball one session) | native AGENTS.md (live-pending) |
 | Skill discovered | `.claude/skills` (proven in use) | `.agents/skills` symlink (live-pending) |
 | Dry-run argv/config | mock ✓ | mock ✓ |
 | Wrong-tool refusal | mock ✓ | mock ✓ |
